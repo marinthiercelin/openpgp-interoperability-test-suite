@@ -1,0 +1,47 @@
+<a name="{{slug}}"><h2>{{title}}</h2></a>
+<p>
+  {{description}}
+</p>
+<table>
+  <tr style="border: none">
+    <th></th>
+    <th class="rotate"><div><span>Consumer</span></div></th>
+    {% for impl in consumers %}
+    <th class="rotate"><div><span>{{impl.implementation}}/{{impl.version}}</span></div></th>
+    {% endfor %}
+  </tr>
+  <tr>
+    <th>Producer</th>
+    <th>Artifact</th>
+  </tr>
+  {% for row in results %}
+  <tr>
+    <th>{{row.artifact.producer.implementation}}/{{row.artifact.producer.version}}</th>
+    <th>
+      {% if row.artifact.data %}
+      <form action="https://dump.sequoia-pgp.org" method="post">
+	<button type="submit" title="Inspect with packet dumper">🔎</button>
+	<input name="data" type="hidden" value="{{row.artifact.data|pgp2string}}" />
+      </form>
+      {% else %}
+      <span title="{{row.artifact.error}}">✗</span>
+      {% endif %}
+    </th>
+    {% if row.results %}
+    {% for result in row.results %}
+    <td>
+      {% if result.data %}
+      <span title="{{result.data|bin2string}}">✓</span>
+      {% else %}
+      <span title="{{result.error}}">✗</span>
+      {% endif %}
+    </td>
+    {% endfor %}
+    {% else %}
+    {% for _ in consumers %}
+    <td></td>
+    {% endfor %}
+    {% endif %}
+  </tr>
+  {% endfor %}
+</table>

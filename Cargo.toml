@@ -1,0 +1,28 @@
+[package]
+name = "openpgp-test-suite"
+version = "0.1.0"
+authors = ["Justus Winter <justus@sequoia-pgp.org>"]
+homepage = "https://sequoia-pgp.org/"
+repository = "https://gitlab.com/sequoia-pgp/openpgp-test-suite"
+readme = "README.md"
+keywords = ["openpgp", "interoperability", "tests", "encryption", "signing"]
+categories = ["cryptography", "authentication", "email"]
+license = "GPL-3.0"
+edition = "2018"
+
+[badges]
+gitlab = { repository = "sequoia-pgp/sequoia" }
+maintenance = { status = "actively-developed" }
+
+[dependencies]
+failure = "0.1"
+gpgme = "0.9"
+lazy_static = "1.4"
+sequoia-openpgp = "0.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tempfile = "3.1"
+tera = "0.11"
+
+[build-dependencies]
+vergen = "3"

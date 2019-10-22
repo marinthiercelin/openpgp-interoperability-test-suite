@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <style>
+      table {
+	  border-collapse: collapse;
+      }
+
+      td { border-left:   1px solid #ccc }
+      tr { border-bottom: 1px solid #ccc }
+
+      th, td {
+	  text-align: center;
+	  min-width: 3em;
+      }
+
+      /* Rotate table headings.  */
+      th.rotate {
+	  height: 150px;
+	  white-space: nowrap;
+      }
+
+      th.rotate > div {
+	  transform: translate(25px, 51px) rotate(315deg);
+	  width: 30px;
+      }
+      th.rotate > div > span {
+	  padding: 5px 10px;
+      }
+      /* /Rotate table headings.  */
+
+      pre { background-color: #eee; }
+    </style>
+  </head>
+  <body>
+    <h1>{{title}}</h1>
+    <p>
+      These are the results of running the OpenPGP interoperability
+      test suite version {{version}}
+      (<a href="https://gitlab.com/sequoia-pgp/openpgp-test-suite/commit/{{
+      commit }}">{{commit}}</a>).
+    </p>
+    <ol>
+      <li>
+	Tests
+	<ol>
+	  {% for title_slug in toc %}
+	  <li><a href="#{{title_slug.1}}">{{title_slug.0}}</a></li>
+	  {% endfor %}
+	</ol>
+      </li>
+      <li><a href="#hall-of-fame">Hall of Fame</a></li>
+      <li><a href="#configuration">Configuration</a></li>
+    </ol>
+    {{body | safe}}
+    <hr />
+    {% include "hall-of-fame.inc.html" %}
+    <hr />
+    <a name="configuration"><h1>Configuration</h1></a>
+    <p>
+      This is the configuration used to produce this report:
+    </p>
+    <pre><code>{{configuration | json_encode(pretty=true)}}</code></pre>
+    <hr />
+    <p>
+      OpenPGP interoperability test suite version {{version}}
+      (<a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/commit/{{
+		commit }}">{{commit}}</a>) powered
+      by <a href="https://sequoia-pgp.org">Sequoia-PGP</a>.
+    </p>
+  </body>
+</html>

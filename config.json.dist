@@ -1,0 +1,24 @@
+{
+  "drivers": [
+    {
+      "driver": "sq",
+      "path": "/path/to/sq"
+    },
+    {
+      "driver": "gnupg",
+      "path": "/usr/bin/gpg"
+    },
+    {
+      "driver": "gnupg",
+      "path": "/usr/bin/gpg1"
+    },
+    {
+      "driver": "rnp",
+      "path": "/path/to/rnp/and/rnpkeys"
+    },
+    {
+      "driver": "dkgpg",
+      "path": "/path/to/dkgpg/distribution"
+    }
+  ]
+}
