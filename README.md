@@ -71,6 +71,13 @@ decrypt KEY-FILE [KEY-FILE...]
 Decrypts using the given key material, reading ciphertext on stdin,
 producing cleartext on stdout.
 
+```
+generate [USERID...]
+```
+
+Generates a TSK with default options, and the given userids (if any),
+writing the result to stdout.
+
 ### Exit status codes
 
 - 0: Success

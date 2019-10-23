@@ -70,6 +70,9 @@ pub trait OpenPGP {
                -> Result<Data>;
     fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8])
                -> Result<Data>;
+    fn generate_key(&mut self, _userids: &[&str]) -> Result<Data> {
+        Err(Error::NotImplemented.into())
+    }
 }
 
 /// Test suite configuration.

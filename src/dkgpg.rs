@@ -6,7 +6,7 @@ use tempfile::{TempDir, NamedTempFile};
 use sequoia_openpgp as openpgp;
 use openpgp::serialize::Serialize;
 
-use crate::{Implementation, Version, Error, Result};
+use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -29,6 +29,7 @@ impl DKGPG {
         where I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr>
     {
         let o = process::Command::new(&self.prefix.join(tool))
+            .current_dir(self.homedir.path())
             .arg("--verbose")
             .args(args)
             .output()?;
@@ -128,5 +129,22 @@ impl crate::OpenPGP for DKGPG {
                            "-i",
                            ciphertext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
+        if userids.len() == 0 {
+            return Err(failure::format_err!(
+                "Generating UID-less keys not supported"));
+        }
+
+        let mut args = vec!["--no-passphrase", "--yaot"];
+        for u in userids {
+            args.push("-u");
+            args.push(u);
+        }
+        args.push("localhost");
+        self.run("dkg-generate", &args[..])?;
+        Ok(std::fs::read(self.homedir.path().join("localhost-sec.asc"))?
+           .into_boxed_slice())
     }
 }

@@ -7,7 +7,7 @@ use tempfile::{TempDir, NamedTempFile};
 use sequoia_openpgp as openpgp;
 use openpgp::serialize::Serialize;
 
-use crate::{Implementation, Version, Error, Result};
+use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -96,6 +96,15 @@ impl crate::OpenPGP for Generic {
         let o = self.run(&["decrypt",
                            recipient_file.path().to_str().unwrap()],
                            ciphertext)?;
+        Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
+        let mut args = vec!["generate"];
+        for u in userids {
+            args.push(u);
+        }
+        let o = self.run(&args[..], &[])?;
         Ok(o.stdout.clone().into_boxed_slice())
     }
 }

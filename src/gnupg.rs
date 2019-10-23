@@ -6,7 +6,7 @@ use openpgp::serialize::Serialize;
 
 use gpgme::{Context, EncryptFlags, Protocol};
 
-use crate::{Implementation, Version, Result};
+use crate::{Data, Implementation, Version, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -20,6 +20,10 @@ pub struct GnuPG {
 impl GnuPG {
     pub fn new<P: AsRef<Path>>(engine: P) -> Result<GnuPG> {
         let homedir = TempDir::new()?;
+        //std::fs::write(homedir.path().join("gpg.conf"),
+        //               "batch\n\
+        //                ")?;
+        // XXX
         let mut ctx = Context::from_protocol(Protocol::OpenPgp)?;
         ctx.set_armor(true);
         ctx.set_engine_path(
@@ -77,5 +81,24 @@ impl crate::OpenPGP for GnuPG {
         let mut plaintext = Vec::new();
         self.ctx.decrypt(ciphertext, &mut plaintext)?;
         Ok(plaintext.into_boxed_slice())
+    }
+
+    fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
+        if userids.len() == 0 {
+            return Err(failure::format_err!(
+                "Generating UID-less keys not supported"));
+        }
+
+        use gpgme::CreateKeyFlags;
+        let r = self.ctx.create_key_with_flags(userids[0], "default", None,
+                                               CreateKeyFlags::NOPASSWD)?;
+        let fp = r.fingerprint().unwrap();
+        let key = self.ctx.get_key(fp)?;
+        for &u in &userids[1..] {
+            self.ctx.add_uid(&key, u)?;
+        }
+        let mut r = Vec::new();
+        self.ctx.export_keys(&[key], gpgme::ExportMode::SECRET, &mut r)?;
+        Ok(r.into_boxed_slice())
     }
 }

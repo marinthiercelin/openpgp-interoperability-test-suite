@@ -6,7 +6,7 @@ use tempfile::{TempDir, NamedTempFile};
 use sequoia_openpgp as openpgp;
 use openpgp::serialize::Serialize;
 
-use crate::{Implementation, Version, Error, Result};
+use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -113,5 +113,22 @@ impl crate::OpenPGP for RNP {
                            "--output=-",
                            ciphertext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
+        if userids.len() == 0 {
+            return Err(failure::format_err!(
+                "Generating UID-less keys not supported"));
+        }
+
+        let mut args = vec!["--generate-key"];
+        for u in userids {
+            args.push("--userid");
+            args.push(u);
+        }
+
+        self.run("rnpkeys", &args[..])?;
+        Ok(std::fs::read(self.homedir.path().join("secring.gpg"))?
+           .into_boxed_slice())
     }
 }

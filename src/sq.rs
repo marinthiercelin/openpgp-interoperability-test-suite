@@ -7,7 +7,7 @@ use tempfile::{TempDir, NamedTempFile};
 use sequoia_openpgp as openpgp;
 use openpgp::serialize::Serialize;
 
-use crate::{Implementation, Version, Error, Result};
+use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -27,6 +27,7 @@ impl Sq {
         where I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr>
     {
         let o = process::Command::new(&self.sq)
+            .current_dir(self.homedir.path())
             .arg("--home").arg(self.homedir.path())
             .args(args)
             .output()?;
@@ -98,5 +99,15 @@ impl crate::OpenPGP for Sq {
                            recipient_file.path().to_str().unwrap(),
                            ciphertext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
+        let mut args = vec!["key", "generate", "--export", "key"];
+        for u in userids {
+            args.push("--userid");
+            args.push(u);
+        }
+        self.run(&args[..])?;
+        Ok(std::fs::read(self.homedir.path().join("key"))?.into_boxed_slice())
     }
 }
