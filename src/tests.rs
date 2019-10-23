@@ -62,6 +62,7 @@ pub struct EncryptDecryptRoundtrip {
     description: String,
     cert: openpgp::TPK,
     cipher: Option<openpgp::constants::SymmetricAlgorithm>,
+    aead: Option<openpgp::constants::AEADAlgorithm>,
     message: Data,
 }
 
@@ -73,19 +74,24 @@ impl EncryptDecryptRoundtrip {
             description: description.into(),
             cert,
             cipher: None,
+            aead: None,
             message,
         }
     }
 
     pub fn with_cipher(title: &str, description: &str, cert: openpgp::TPK,
                        message: Data,
-                       cipher: openpgp::constants::SymmetricAlgorithm)
+                       cipher: openpgp::constants::SymmetricAlgorithm,
+                       aead: Option<openpgp::constants::AEADAlgorithm>)
                        -> Result<EncryptDecryptRoundtrip>
     {
         // Change the cipher preferences of CERT.
         let (uidb, sig) = cert.primary_key_signature_full().unwrap();
-        let builder = openpgp::packet::signature::Builder::from(sig.clone())
+        let mut builder = openpgp::packet::signature::Builder::from(sig.clone())
             .set_preferred_symmetric_algorithms(vec![cipher])?;
+        if let Some(algo) = aead {
+            builder = builder.set_preferred_aead_algorithms(vec![algo])?;
+        }
         let mut primary_keypair =
             cert.primary().key().clone().mark_parts_secret().into_keypair()?;
         let new_sig = uidb.unwrap().userid().bind(
@@ -98,6 +104,7 @@ impl EncryptDecryptRoundtrip {
             description: description.into(),
             cert,
             cipher: Some(cipher),
+            aead,
             message,
         })
     }
@@ -120,7 +127,31 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
     }
 
     fn check_producer(&self, artifact: &[u8]) -> Result<()> {
-        if let Some(cipher) = self.cipher {
+        if let Some(aead_algo) = self.aead {
+            let pp = openpgp::PacketPile::from_bytes(&artifact)
+                .context("Produced data is malformed")?;
+            match pp.children().last() {
+                Some(openpgp::Packet::AED(a)) => {
+                    if a.aead() != aead_algo {
+                        return Err(failure::format_err!(
+                            "Producer did not use {:?}, but {:?}",
+                            aead_algo, a.aead()));
+                    }
+
+                    if let Some(cipher) = self.cipher {
+                        if a.symmetric_algo() != cipher {
+                            return Err(failure::format_err!(
+                                "Producer did not use {:?} but {:?}",
+                                cipher, a.symmetric_algo()));
+                        }
+                    }
+                },
+                Some(p) => return
+                    Err(failure::format_err!("Producer did not use AEAD, found \
+                                              {} packet", p.tag())),
+                None => return Err(failure::format_err!("No packet emitted")),
+            }
+        } else if let Some(cipher) = self.cipher {
             // Check that the producer used CIPHER.
             let pp = openpgp::PacketPile::from_bytes(&artifact)
                 .context("Produced data is malformed")?;
@@ -270,7 +301,21 @@ pub fn all() -> Result<Vec<Box<ProducerConsumerTest>>> {
                           draft-bre-openpgp-samples-00, modified with the \
                           symmetric algorithm preference [{:?}].", cipher),
                 openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into_boxed_slice(), cipher)?));
+                b"Hello, world!".to_vec().into_boxed_slice(), cipher, None)?));
+    }
+    use openpgp::constants::AEADAlgorithm::*;
+    for &aead_algo in &[EAX, OCB] {
+        tests.push(
+            Box::new(EncryptDecryptRoundtrip::with_cipher(
+                &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
+                         aead_algo),
+                &format!("Encrypt-Decrypt roundtrip using the 'Bob' key from \
+                          draft-bre-openpgp-samples-00, modified with the \
+                          symmetric algorithm preference [AES256], \
+                          AEAD algorithm preference [{:?}].", aead_algo),
+                openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
+                b"Hello, world!".to_vec().into_boxed_slice(), AES256,
+                Some(aead_algo))?));
     }
 
     Ok(tests)
