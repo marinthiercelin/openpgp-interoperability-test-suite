@@ -119,8 +119,7 @@ fn real_main() -> failure::Fallible<()> {
     eprintln!("Running tests:");
     let mut results = templates::Report::new(&c);
     for test in tests::all()? {
-        results.add(test.title(), test.slug(),
-                    &tests::run_test(&implementations, test.as_ref())?)?;
+        results.add(test.title(), test.slug(), &test.run(&implementations)?)?;
     }
 
     use templates::Renderable;
