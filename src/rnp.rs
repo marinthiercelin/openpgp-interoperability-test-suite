@@ -25,10 +25,10 @@ impl RNP {
         })
     }
 
-    fn run<I, S>(&self, args: I) -> Result<process::Output>
+    fn run<I, S>(&self, tool: &str, args: I) -> Result<process::Output>
         where I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr>
     {
-        let o = process::Command::new(self.prefix.join("rnp"))
+        let o = process::Command::new(self.prefix.join(tool))
             .arg("--homedir").arg(self.homedir.path())
             .args(args)
             .output()?;
@@ -55,17 +55,9 @@ impl RNP {
 
     fn import_certificate(&mut self, c: &openpgp::TPK) -> Result<()> {
         let cert = self.stash(&c.as_tsk())?;
-        let o = process::Command::new(self.prefix.join("rnpkeys"))
-            .arg("--homedir").arg(self.homedir.path())
-            .arg("--import-key").arg(cert.path())
-            .output()?;
-        if o.status.success() {
-            Ok(())
-        } else {
-            Err(Error::EngineError(
-                o.status, String::from_utf8_lossy(&o.stderr).to_string())
-                .into())
-        }
+        self.run("rnpkeys",
+                 &["--import-key", cert.path().to_str().unwrap()])?;
+        Ok(())
     }
 }
 
@@ -87,7 +79,7 @@ impl crate::OpenPGP for RNP {
     }
 
     fn version(&self) -> Result<crate::Version> {
-        let o = self.run(&["--version"])?;
+        let o = self.run("rnp", &["--version"])?;
         let stderr = String::from_utf8_lossy(&o.stderr);
         let version = (
             &stderr[4..stderr.find("\n").unwrap_or(stderr.len())-1])
@@ -102,7 +94,8 @@ impl crate::OpenPGP for RNP {
                -> Result<Box<[u8]>> {
         self.import_certificate(recipient)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
-        let o = self.run(&["--encrypt",
+        let o = self.run("rnp",
+                         &["--encrypt",
                            "--recipient",
                            &recipient.fingerprint().to_string(),
                            "--armor",
@@ -115,7 +108,8 @@ impl crate::OpenPGP for RNP {
                -> Result<Box<[u8]>> {
         self.import_certificate(recipient)?;
         let ciphertext_file = self.stash_bytes(ciphertext)?;
-        let o = self.run(&["--decrypt",
+        let o = self.run("rnp",
+                         &["--decrypt",
                            "--output=-",
                            ciphertext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
