@@ -23,7 +23,8 @@
 	<button type="submit" title="Inspect with packet dumper">🔎</button>
 	<input name="data" type="hidden" value="{{row.artifact.data|pgp2string}}" />
       </form>
-      {% else %}
+      {% endif %}
+      {% if row.artifact.error %}
       <span title="{{row.artifact.error}}">✗</span>
       {% endif %}
     </th>
