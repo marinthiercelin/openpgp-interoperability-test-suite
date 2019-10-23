@@ -16,14 +16,34 @@ mod sq;
 mod gnupg;
 mod rnp;
 mod dkgpg;
+mod generic;
 
 /// Backends supported by the test suite.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone)]
 pub enum Implementation {
     Sequoia,
     GnuPG,
     RNP,
     DKGPG,
+    Generic(String),
+}
+
+impl fmt::Display for Implementation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Implementation::Generic(s) => f.write_str(&s),
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}
+
+impl serde::Serialize for Implementation {
+    fn serialize<S>(&self, serializer: S)
+                    -> std::result::Result<S::Ok, S::Error>
+        where S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 /// (Backend, Version)-tuple supporting multiple versions per backend.
@@ -35,7 +55,7 @@ pub struct Version {
 
 impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}/{}", self.implementation, self.version)
+        write!(f, "{}/{}", self.implementation, self.version)
     }
 }
 
@@ -74,6 +94,7 @@ impl Config {
                 "gnupg" => Box::new(gnupg::GnuPG::new(&d.path)?),
                 "rnp" => Box::new(rnp::RNP::new(&d.path)?),
                 "dkgpg" => Box::new(dkgpg::DKGPG::new(&d.path)?),
+                "generic" => Box::new(generic::Generic::new(&d.path)?),
                 _ => return Err(failure::format_err!("Unknown driver {:?}",
                                                      d.driver)),
             });
