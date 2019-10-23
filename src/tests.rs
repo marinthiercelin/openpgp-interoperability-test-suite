@@ -26,12 +26,13 @@ pub trait Test {
     }
 }
 
-/// Roundtrip tests check whether consume(produce(x)) yields x.
+/// Checks that artifacts produced by one implementation can be used
+/// by another.
 pub trait ProducerConsumerTest : Test {
     fn produce(&self, pgp: &mut OpenPGP) -> Result<Data>;
-    fn check_producer(&self, artifact: &[u8]) -> Result<()>;
+    fn check_producer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8]) -> Result<Data>;
-    fn check_consumer(&self, artifact: &[u8]) -> Result<()>;
+    fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix>
     {
         eprint!("  - {}: ", self.title());
@@ -127,6 +128,7 @@ struct TestResults {
     results: Vec<Artifact>,
 }
 
+/// Roundtrip tests check whether consume(produce(x)) yields x.
 pub struct EncryptDecryptRoundtrip {
     title: String,
     description: String,
