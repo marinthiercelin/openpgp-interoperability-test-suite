@@ -42,9 +42,11 @@
       (<a href="https://gitlab.com/sequoia-pgp/openpgp-test-suite/commit/{{
       commit }}">{{commit}}</a>).
     </p>
+    <hr />
+    <h1>Table of Contents</h1>
     <ol>
       <li>
-	Tests
+	<a href="#test-results">Test Results</a>
 	<ol>
 	  {% for title_slug in toc %}
 	  <li><a href="#{{title_slug.1}}">{{title_slug.0}}</a></li>
@@ -54,6 +56,8 @@
       <li><a href="#hall-of-fame">Hall of Fame</a></li>
       <li><a href="#configuration">Configuration</a></li>
     </ol>
+    <hr />
+    <a name="test-results"><h1>Test Results</h1></a>
     {{body | safe}}
     <hr />
     {% include "hall-of-fame.inc.html" %}
