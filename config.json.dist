@@ -19,6 +19,10 @@
     {
       "driver": "dkgpg",
       "path": "/path/to/dkgpg/distribution"
+    },
+    {
+      "driver": "generic",
+      "path": "/path/to/this/repo/glue/pgpy"
     }
   ]
 }

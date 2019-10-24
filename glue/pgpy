@@ -1,0 +1,163 @@
+#!/usr/bin/python3
+'''OpenPGP Interoperability Test Suite Generic Functionality using PGPy
+
+Author: Daniel Kahn Gillmor
+Date: 2019-10-24
+License: MIT (see below)
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation files
+(the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
+
+import sys
+import pgpy
+import logging
+
+from typing import List, Set
+
+# implemented ciphers, in the order we prefer them:
+cipherprefs = [pgpy.constants.SymmetricKeyAlgorithm.AES256,
+               pgpy.constants.SymmetricKeyAlgorithm.AES192,
+               pgpy.constants.SymmetricKeyAlgorithm.AES128,
+               pgpy.constants.SymmetricKeyAlgorithm.Camellia256,
+               pgpy.constants.SymmetricKeyAlgorithm.Camellia192,
+               pgpy.constants.SymmetricKeyAlgorithm.Camellia128,
+               pgpy.constants.SymmetricKeyAlgorithm.CAST5,
+               pgpy.constants.SymmetricKeyAlgorithm.TripleDES,
+               pgpy.constants.SymmetricKeyAlgorithm.Blowfish,
+               pgpy.constants.SymmetricKeyAlgorithm.IDEA]
+
+def version(args: List[str]) -> None:
+    print(f'pgpy {pgpy.__version__}')
+
+def generate(args: List[str]) -> None:
+    primary = pgpy.PGPKey.new(pgpy.constants.PubKeyAlgorithm.EdDSA,
+                              pgpy.constants.EllipticCurveOID.Ed25519)
+    primaryflags: Set[int] = set()
+    primaryflags.add(pgpy.constants.KeyFlags.Certify)
+    primaryflags.add(pgpy.constants.KeyFlags.Sign)
+    first: bool = True
+    uidoptions = {
+        'usage': primaryflags,
+        'primary': True,
+        'hashes': [pgpy.constants.HashAlgorithm.SHA512,
+                   pgpy.constants.HashAlgorithm.SHA384,
+                   pgpy.constants.HashAlgorithm.SHA256,
+                   pgpy.constants.HashAlgorithm.SHA224],
+        'ciphers': [pgpy.constants.SymmetricKeyAlgorithm.AES256,
+                    pgpy.constants.SymmetricKeyAlgorithm.AES192,
+                    pgpy.constants.SymmetricKeyAlgorithm.AES128],
+        'compression': [pgpy.constants.CompressionAlgorithm.Uncompressed],
+        'keyserver_flags': [pgpy.constants.KeyServerPreferences.NoModify]
+    }
+        
+    for uid in args:
+        primary.add_uid(pgpy.PGPUID.new(uid), **uidoptions)
+        if 'primary' in uidoptions: # only first User ID is Primary
+            del uidoptions['primary']
+
+    subkey = pgpy.PGPKey.new(pgpy.constants.PubKeyAlgorithm.ECDH,
+                             pgpy.constants.EllipticCurveOID.Curve25519)
+    subflags = pgpy.constants.KeyFlags.EncryptCommunications
+    subflags |= pgpy.constants.KeyFlags.EncryptStorage
+    primary.add_subkey(subkey, usage=subflags)
+    sys.stdout.buffer.write(str(primary).encode('ascii'))
+
+def convert(args: List[str]) -> None:
+    data: bytes = sys.stdin.buffer.read()
+    seckey, _ = pgpy.PGPKey.from_blob(data)
+    sys.stdout.buffer.write(str(seckey.pubkey).encode('ascii'))
+
+def encrypt(args: List[str]) -> None:
+    certs: List[pgpy.PGPKey] = []
+    for fname in args:
+        cert, _ = pgpy.PGPKey.from_file(fname)
+        if not cert.is_public:
+            raise Exception(f'file "{fname}" does not contain an OpenPGP certificate (probably a secret key)')
+        logging.info(f'loaded {cert.fingerprint} from {fname}')
+        certs.append(cert)
+
+    if not certs:
+        raise Exception('needs at least one OpenPGP certificate')
+
+    ciphers = set(cipherprefs)
+    for cert in certs:
+        keyciphers=set()
+        for uid in cert.userids:
+            if uid.selfsig and uid.selfsig.cipherprefs:
+                for cipher in uid.selfsig.cipherprefs:
+                    keyciphers.add(cipher)
+        ciphers = ciphers.intersection(keyciphers)
+    cipher = None
+    for c in cipherprefs:
+        if c in ciphers:
+            cipher = c
+            break
+    # AES128 is MTI in RFC4880:
+    if cipher is None:
+        cipher = pgpy.constants.SymmetricKeyAlgorithm.AES128
+    data: bytes = sys.stdin.buffer.read()
+    sessionkey = cipher.gen_key()
+    msg = pgpy.PGPMessage.new(data, compression=pgpy.constants.CompressionAlgorithm.Uncompressed)
+    for cert in certs:
+        msg = cert.encrypt(msg, cipher=cipher, sessionkey=sessionkey)
+    del sessionkey
+    sys.stdout.buffer.write(str(msg).encode('ascii'))
+
+def decrypt(args: List[str]) -> None:
+    seckeys: List[pgpy.PGPKey] = []
+    for fname in args:
+        seckey, _ = pgpy.PGPKey.from_file(fname)
+        if seckey.is_public:
+            raise Exception(f'file "{fname}" does not contain OpenPGP secret key material (probably a certificate)')
+        logging.info(f'loaded {seckey.fingerprint} from {fname}')
+        seckeys.append(seckey)
+
+    if not seckeys:
+        raise Exception('needs at least one OpenPGP secret key')
+    data: bytes = sys.stdin.buffer.read()
+    encmsg: pgpy.PGPMessage = pgpy.PGPMessage.from_blob(data)
+    success: bool = False
+    for seckey in seckeys:
+        try:
+            msg: pgpy.PGPMessage = seckey.decrypt(encmsg)
+            sys.stdout.buffer.write(msg.message)
+            success = True
+        except pgpy.errors.PGPDecryptionError as e:
+            logging.warning(f'could not decrypt with {seckey.fingerprint}')
+    if not success:
+        raise Exception(f'could not find anything capable of decryption')
+
+dispatch: dict = {
+    'version': version,
+    'generate': generate,
+    'convert': convert,
+    'encrypt': encrypt,
+    'decrypt': decrypt,
+}
+    
+def main() -> None:
+    cmd: str = sys.argv[1]
+    if cmd not in dispatch:
+        sys.exit(69)
+    dispatch[cmd](sys.argv[2:])
+
+if __name__ == "__main__":
+    main()
