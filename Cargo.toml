@@ -1,9 +1,9 @@
 [package]
-name = "openpgp-test-suite"
+name = "openpgp-interoperability-test-suite"
 version = "0.1.0"
 authors = ["Justus Winter <justus@sequoia-pgp.org>"]
 homepage = "https://sequoia-pgp.org/"
-repository = "https://gitlab.com/sequoia-pgp/openpgp-test-suite"
+repository = "https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite"
 readme = "README.md"
 keywords = ["openpgp", "interoperability", "tests", "encryption", "signing"]
 categories = ["cryptography", "authentication", "email"]
