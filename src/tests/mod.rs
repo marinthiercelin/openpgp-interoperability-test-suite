@@ -1,17 +1,14 @@
-use std::collections::HashSet;
-
-use failure::ResultExt;
-
-use sequoia_openpgp as openpgp;
-use openpgp::packet::Features;
-use openpgp::parse::Parse;
-
 use crate::{
     Data,
     OpenPGP,
     Result,
     Version,
+    templates::Report,
 };
+
+mod asymmetric_encryption;
+mod symmetric_encryption;
+mod key_generation;
 
 /// Metadata for the tests.
 pub trait Test {
@@ -125,287 +122,27 @@ pub struct TestMatrix {
     results: Vec<TestResults>,
 }
 
+impl TestMatrix {
+    pub fn title(&self) -> String {
+        self.title.clone()
+    }
+
+    pub fn slug(&self) -> String {
+        self.slug.clone()
+    }
+}
+
 #[derive(Debug, serde::Serialize)]
 struct TestResults {
     artifact: Artifact,
     results: Vec<Artifact>,
 }
 
-/// Roundtrip tests check whether consume(produce(x)) yields x.
-pub struct EncryptDecryptRoundtrip {
-    title: String,
-    description: String,
-    cert: openpgp::TPK,
-    cipher: Option<openpgp::constants::SymmetricAlgorithm>,
-    aead: Option<openpgp::constants::AEADAlgorithm>,
-    message: Data,
-}
-
-impl EncryptDecryptRoundtrip {
-    pub fn new(title: &str, description: &str, cert: openpgp::TPK,
-               message: Data) -> EncryptDecryptRoundtrip {
-        EncryptDecryptRoundtrip {
-            title: title.into(),
-            description: description.into(),
-            cert,
-            cipher: None,
-            aead: None,
-            message,
-        }
-    }
-
-    pub fn with_cipher(title: &str, description: &str, cert: openpgp::TPK,
-                       message: Data,
-                       cipher: openpgp::constants::SymmetricAlgorithm,
-                       aead: Option<openpgp::constants::AEADAlgorithm>)
-                       -> Result<EncryptDecryptRoundtrip>
-    {
-        // Change the cipher preferences of CERT.
-        let (uidb, sig) = cert.primary_key_signature_full().unwrap();
-        let mut builder = openpgp::packet::signature::Builder::from(sig.clone())
-            .set_preferred_symmetric_algorithms(vec![cipher])?;
-        if let Some(algo) = aead {
-            builder = builder.set_preferred_aead_algorithms(vec![algo])?;
-            builder = builder.set_features(
-                &Features::default().set_mdc(true).set_aead(true))?;
-        }
-        let mut primary_keypair =
-            cert.primary().key().clone().mark_parts_secret().into_keypair()?;
-        let new_sig = uidb.unwrap().userid().bind(
-            &mut primary_keypair,
-            &cert, builder, None, None)?;
-        let cert = cert.merge_packets(vec![new_sig.into()])?;
-
-        Ok(EncryptDecryptRoundtrip {
-            title: title.into(),
-            description: description.into(),
-            cert,
-            cipher: Some(cipher),
-            aead,
-            message,
-        })
-    }
-}
-
-impl Test for EncryptDecryptRoundtrip {
-    fn title(&self) -> String {
-        self.title.clone()
-    }
-
-    fn description(&self) -> String {
-        self.description.clone()
-    }
-}
-
-impl ProducerConsumerTest for EncryptDecryptRoundtrip {
-    fn produce(&self, pgp: &mut OpenPGP)
-               -> Result<Data> {
-        pgp.encrypt(&self.cert, &self.message)
-    }
-
-    fn check_producer(&self, artifact: &[u8]) -> Result<()> {
-        if let Some(aead_algo) = self.aead {
-            let pp = openpgp::PacketPile::from_bytes(&artifact)
-                .context("Produced data is malformed")?;
-            match pp.children().last() {
-                Some(openpgp::Packet::AED(a)) => {
-                    if a.aead() != aead_algo {
-                        return Err(failure::format_err!(
-                            "Producer did not use {:?}, but {:?}",
-                            aead_algo, a.aead()));
-                    }
-
-                    if let Some(cipher) = self.cipher {
-                        if a.symmetric_algo() != cipher {
-                            return Err(failure::format_err!(
-                                "Producer did not use {:?} but {:?}",
-                                cipher, a.symmetric_algo()));
-                        }
-                    }
-                },
-                Some(p) => return
-                    Err(failure::format_err!("Producer did not use AEAD, found \
-                                              {} packet", p.tag())),
-                None => return Err(failure::format_err!("No packet emitted")),
-            }
-        } else if let Some(cipher) = self.cipher {
-            // Check that the producer used CIPHER.
-            let pp = openpgp::PacketPile::from_bytes(&artifact)
-                .context("Produced data is malformed")?;
-            let mode = openpgp::packet::KeyFlags::default()
-                .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
-
-            let mut ok = false;
-            'search: for p in pp.children() {
-                if let openpgp::Packet::PKESK(p) = p {
-                    for (_, _, key) in self.cert.keys_all().secret(true)
-                        .key_flags(mode.clone())
-                    {
-                        let mut keypair =
-                            key.clone().mark_parts_secret().into_keypair()?;
-                        if let Ok((a, _)) = p.decrypt(&mut keypair) {
-                            if a == cipher {
-                                ok = true;
-                                break 'search;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if ! ok {
-                return Err(failure::format_err!("Producer did not use {:?}",
-                                                cipher));
-            }
-        }
-
-        Ok(())
-    }
-
-    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
-               -> Result<Data> {
-        pgp.decrypt(&self.cert, &artifact)
-    }
-
-    fn check_consumer(&self, artifact: &[u8]) -> Result<()> {
-        if &artifact[..] == &self.message[..] {
-            Ok(())
-        } else {
-            Err(failure::format_err!("Expected {:?}, got {:?}",
-                                     self.message, artifact))
-        }
-    }
-}
-
-
-pub struct GenerateThenEncryptDecryptRoundtrip {
-    title: String,
-    description: String,
-    userids: HashSet<String>,
-}
-
-impl GenerateThenEncryptDecryptRoundtrip {
-    pub fn new(title: &str, description: &str, userids: &[&str])
-               -> GenerateThenEncryptDecryptRoundtrip {
-        GenerateThenEncryptDecryptRoundtrip {
-            title: title.into(),
-            description: description.into(),
-            userids: userids.iter().map(|u| u.to_string()).collect(),
-        }
-    }
-}
-
-impl Test for GenerateThenEncryptDecryptRoundtrip {
-    fn title(&self) -> String {
-        self.title.clone()
-    }
-
-    fn description(&self) -> String {
-        self.description.clone()
-    }
-}
-
-impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
-    fn produce(&self, pgp: &mut OpenPGP)
-               -> Result<Data> {
-        let userids = self.userids.iter().map(|s| &s[..]).collect::<Vec<_>>();
-        pgp.generate_key(&userids[..])
-    }
-
-    fn check_producer(&self, artifact: &[u8]) -> Result<()> {
-        let tpk = openpgp::TPK::from_bytes(artifact)?;
-        let userids: HashSet<String> = tpk.userids()
-            .map(|uidb| {
-                String::from_utf8_lossy(uidb.userid().value()).to_string()
-            })
-            .collect();
-
-        let missing: Vec<&str> = self.userids.difference(&userids)
-            .map(|s| &s[..]).collect();
-        if ! missing.is_empty() {
-            return Err(failure::format_err!("Missing userids: {:?}",
-                                            missing));
-        }
-
-        let additional: Vec<&str> = userids.difference(&self.userids)
-            .map(|s| &s[..]).collect();
-        if ! additional.is_empty() {
-            return Err(failure::format_err!("Additional userids: {:?}",
-                                            additional));
-        }
-
-        Ok(())
-    }
-
-    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
-               -> Result<Data> {
-        let key = openpgp::TPK::from_bytes(artifact)?;
-        let ciphertext = pgp.encrypt(&key, b"Hello, World!")?;
-        pgp.decrypt(&key, &ciphertext)
-    }
-}
-
-pub fn all() -> Result<Vec<Box<ProducerConsumerTest>>> {
-    use crate::data;
-    let mut tests: Vec<Box<ProducerConsumerTest>> = Vec::new();
-    tests.push(
-        Box::new(EncryptDecryptRoundtrip::new(
-            "Encrypt-Decrypt roundtrip with key 'Alice'",
-            "Encrypt-Decrypt roundtrip using the 'Alice' key from \
-             draft-bre-openpgp-samples-00.",
-            openpgp::TPK::from_bytes(data::certificate("alice-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())));
-    tests.push(
-        Box::new(EncryptDecryptRoundtrip::new(
-            "Encrypt-Decrypt roundtrip with key 'Bob'",
-            "Encrypt-Decrypt roundtrip using the 'Bob' key from \
-             draft-bre-openpgp-samples-00.",
-            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())));
-
-    use openpgp::constants::SymmetricAlgorithm::*;
-    for &cipher in &[IDEA, TripleDES, CAST5, Blowfish, AES128, AES192, AES256,
-                     Twofish, Camellia128, Camellia192, Camellia256] {
-        tests.push(
-            Box::new(EncryptDecryptRoundtrip::with_cipher(
-                &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
-                         cipher),
-                &format!("Encrypt-Decrypt roundtrip using the 'Bob' key from \
-                          draft-bre-openpgp-samples-00, modified with the \
-                          symmetric algorithm preference [{:?}].", cipher),
-                openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into_boxed_slice(), cipher, None)?));
-    }
-    use openpgp::constants::AEADAlgorithm::*;
-    for &aead_algo in &[EAX, OCB] {
-        tests.push(
-            Box::new(EncryptDecryptRoundtrip::with_cipher(
-                &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
-                         aead_algo),
-                &format!("Encrypt-Decrypt roundtrip using the 'Bob' key from \
-                          draft-bre-openpgp-samples-00, modified with the \
-                          symmetric algorithm preference [AES256], \
-                          AEAD algorithm preference [{:?}].", aead_algo),
-                openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into_boxed_slice(), AES256,
-                Some(aead_algo))?));
-    }
-
-    tests.push(Box::new(GenerateThenEncryptDecryptRoundtrip::new(
-        "Default key generation, encrypt-decrypt roundtrip",
-        "Default key generation, followed by the consumer using this \
-        key to encrypt and then decrypt a message.",
-        &["Bernadette <b@example.org>"])));
-    tests.push(Box::new(GenerateThenEncryptDecryptRoundtrip::new(
-        "Default key generation, encrypt-decrypt roundtrip, 2 UIDs",
-        "Default key generation with two UserIDs, followed by the consumer \
-        using this key to encrypt and then decrypt a message.",
-        &["Bernadette <b@example.org>", "Soo <s@example.org>"])));
-    tests.push(Box::new(GenerateThenEncryptDecryptRoundtrip::new(
-        "Default key generation, encrypt-decrypt roundtrip, no UIDs",
-        "Default key generation without UserIDs, followed by the consumer \
-        using this key to encrypt and then decrypt a message.",
-        &[])));
-
-    Ok(tests)
+pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
+           -> Result<()> {
+    eprintln!("Running tests:");
+    asymmetric_encryption::run(report, implementations)?;
+    symmetric_encryption::run(report, implementations)?;
+    key_generation::run(report, implementations)?;
+    Ok(())
 }

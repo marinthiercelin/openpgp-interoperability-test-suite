@@ -119,11 +119,8 @@ fn real_main() -> failure::Fallible<()> {
         eprintln!("  - {}", i.version()?);
     }
 
-    eprintln!("Running tests:");
     let mut results = templates::Report::new(&c);
-    for test in tests::all()? {
-        results.add(test.title(), test.slug(), &test.run(&implementations)?)?;
-    }
+    tests::run(&mut results, &implementations)?;
 
     use templates::Renderable;
     println!("{}", results.render()?);

@@ -35,10 +35,10 @@ impl<'a> Report<'a> {
         }
     }
 
-    pub fn add(&mut self, title: String, slug: String, result: &Renderable)
+    pub fn add(&mut self, result: crate::tests::TestMatrix)
                -> Result<()>
     {
-        self.toc.push((title, slug));
+        self.toc.push((result.title(), result.slug()));
         self.body.push_str(&result.render()?);
         Ok(())
     }
