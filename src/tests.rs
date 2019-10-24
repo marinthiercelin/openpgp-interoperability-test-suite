@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
+use openpgp::packet::Features;
 use openpgp::parse::Parse;
 
 use crate::{
@@ -165,6 +166,8 @@ impl EncryptDecryptRoundtrip {
             .set_preferred_symmetric_algorithms(vec![cipher])?;
         if let Some(algo) = aead {
             builder = builder.set_preferred_aead_algorithms(vec![algo])?;
+            builder = builder.set_features(
+                &Features::default().set_mdc(true).set_aead(true))?;
         }
         let mut primary_keypair =
             cert.primary().key().clone().mark_parts_secret().into_keypair()?;
