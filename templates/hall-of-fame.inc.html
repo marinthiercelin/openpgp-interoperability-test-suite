@@ -2,12 +2,34 @@
 <p>
   The OpenPGP interoperability test suite found the following bugs:
 </p>
+<h2>Sequoia</h2>
+<ul>
+  <li><a href="https://gitlab.com/sequoia-pgp/sequoia/issues/347">
+      sq: Impossible to generate key with multiple userids
+  </a></li>
+</ul>
+
 <h2>GPGME</h2>
 <ul>
   <li><a href="https://dev.gnupg.org/T4725">
       Dubious filename in literal data packet when encrypting with GPGME/GnuPGv1.4.23
   </a></li>
 </ul>
+
+<h2>GnuPG</h2>
+<ul>
+  <li><a href="https://dev.gnupg.org/T4727">
+      GnuPG creates keys that it cannot use, likely related to AEAD
+  </a></li>
+</ul>
+
+<h2>RNP</h2>
+<ul>
+  <li><a href="https://github.com/rnpgp/rnp/issues/929">
+      Generating a key with multiple userids silently ignores all but last userid
+  </a></li>
+</ul>
+
 <h2>DKGPG</h2>
 <ul>
   <li><a href="https://savannah.nongnu.org/bugs/index.php?57097">
@@ -21,5 +43,8 @@
   </a></li>
   <li><a href="https://savannah.nongnu.org/bugs/index.php?57108">
       Decryption fails if the size of the session key is not 256 bits
+  </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?57111">
+      Generating a key with multiple userids silently ignores all but first userid
   </a></li>
 </ul>
