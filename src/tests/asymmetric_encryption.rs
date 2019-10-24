@@ -121,6 +121,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
                 .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
 
             let mut ok = false;
+            let mut algos = Vec::new();
             'search: for p in pp.children() {
                 if let openpgp::Packet::PKESK(p) = p {
                     for (_, _, key) in self.cert.keys_all().secret(true)
@@ -133,14 +134,15 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
                                 ok = true;
                                 break 'search;
                             }
+                            algos.push(a);
                         }
                     }
                 }
             }
 
             if ! ok {
-                return Err(failure::format_err!("Producer did not use {:?}",
-                                                cipher));
+                return Err(failure::format_err!(
+                    "Producer did not use {:?}, but {:?}", cipher, algos));
             }
         }
 
@@ -164,6 +166,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
 
 pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
            -> Result<()> {
+    report.add_section("Asymmetric Encryption")?;
     report.add(
         EncryptDecryptRoundtrip::new(
             "Encrypt-Decrypt roundtrip with key 'Alice'",

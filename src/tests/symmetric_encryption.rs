@@ -17,6 +17,8 @@ pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
     use openpgp::constants::SymmetricAlgorithm::*;
     use openpgp::constants::AEADAlgorithm::*;
 
+    report.add_section("Symmetric Encryption")?;
+
     for &cipher in &[IDEA, TripleDES, CAST5, Blowfish, AES128, AES192, AES256,
                      Twofish, Camellia128, Camellia192, Camellia256] {
         report.add(

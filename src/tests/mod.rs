@@ -14,16 +14,6 @@ mod key_generation;
 pub trait Test {
     fn title(&self) -> String;
     fn description(&self) -> String;
-    fn slug(&self) -> String {
-        let mut slug = String::new();
-        for c in self.title().chars() {
-            match c {
-                'a'..='z' | 'A'..='Z' | '0'..='9' | '-' => slug.push(c),
-                _ => slug.push('_'),
-            }
-        }
-        slug
-    }
 }
 
 /// Checks that artifacts produced by one implementation can be used
@@ -96,7 +86,7 @@ pub trait ProducerConsumerTest : Test {
 
         Ok(TestMatrix {
             title: self.title(),
-            slug: self.slug(),
+            slug: crate::templates::slug(&self.title()),
             description: self.description(),
             consumers: implementations.iter().map(|i| i.version().unwrap())
                 .collect(),
@@ -125,10 +115,6 @@ pub struct TestMatrix {
 impl TestMatrix {
     pub fn title(&self) -> String {
         self.title.clone()
-    }
-
-    pub fn slug(&self) -> String {
-        self.slug.clone()
     }
 }
 

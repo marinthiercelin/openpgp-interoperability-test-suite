@@ -83,6 +83,8 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
 
 pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
            -> Result<()> {
+    report.add_section("Key Generation")?;
+
     report.add(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip",

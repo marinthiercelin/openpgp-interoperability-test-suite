@@ -48,8 +48,14 @@
       <li>
 	<a href="#test-results">Test Results</a>
 	<ol>
-	  {% for title_slug in toc %}
-	  <li><a href="#{{title_slug.1}}">{{title_slug.0}}</a></li>
+	  {% for section in toc %}
+	  <li><a href="#{{section.0.slug}}">{{section.0.title}}</a>
+	    <ol>
+	      {% for entry in section.1 %}
+	      <li><a href="#{{entry.slug}}">{{entry.title}}</a></li>
+	      {% endfor %}
+	    </ol>
+	  </li>
 	  {% endfor %}
 	</ol>
       </li>

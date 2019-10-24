@@ -18,9 +18,32 @@ pub struct Report<'a> {
     version: String,
     commit: String,
     title: String,
-    toc: Vec<(String, String)>,
+    toc: Vec<(Entry, Vec<Entry>)>,
     body: String,
     configuration: &'a Config,
+}
+
+/// An entry in the TOC.
+#[derive(Debug, serde::Serialize)]
+pub struct Entry {
+    slug: String,
+    title: String,
+}
+
+impl Entry {
+    fn new(title: &str) -> Entry {
+        Entry { slug: slug(title), title: title.into() }
+    }
+
+    fn render_section(&self) -> Result<String> {
+        use std::error::Error;
+        get().render("section.inc.html", self)
+            .map_err(|e| if let Some(s) = e.source() {
+                failure::format_err!("{}: {}", e, s)
+            } else {
+                failure::format_err!("{}", e)
+            })
+    }
 }
 
 impl<'a> Report<'a> {
@@ -35,12 +58,23 @@ impl<'a> Report<'a> {
         }
     }
 
+    pub fn add_section(&mut self, title: &str) -> Result<()> {
+        let entry = Entry::new(title);
+        self.body.push_str(&entry.render_section()?);
+        self.toc.push((entry, Vec::new()));
+        Ok(())
+    }
+
     pub fn add(&mut self, result: crate::tests::TestMatrix)
                -> Result<()>
     {
-        self.toc.push((result.title(), result.slug()));
-        self.body.push_str(&result.render()?);
-        Ok(())
+        if let Some((_, entries)) = self.toc.iter_mut().last() {
+            entries.push(Entry::new(&result.title()));
+            self.body.push_str(&result.render()?);
+            Ok(())
+        } else {
+            Err(failure::format_err!("No section added"))
+        }
     }
 }
 
@@ -146,4 +180,15 @@ fn bin2string(v: tera::Value,
         }
     }
     Ok(Value::String(res))
+}
+
+pub fn slug(title: &str) -> String {
+    let mut slug = String::new();
+    for c in title.chars() {
+        match c {
+            'a'..='z' | 'A'..='Z' | '0'..='9' | '-' => slug.push(c),
+            _ => slug.push('_'),
+        }
+    }
+    slug
 }
