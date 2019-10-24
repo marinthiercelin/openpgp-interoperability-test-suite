@@ -28,7 +28,6 @@ impl Generic {
               I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr>
     {
         let mut child = process::Command::new(&self.generic)
-            .arg(self.homedir.path())
             .args(args)
             .stdin(process::Stdio::piped())
             .stdout(process::Stdio::piped())

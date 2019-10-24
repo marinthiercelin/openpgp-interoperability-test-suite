@@ -41,12 +41,10 @@ and diagnostic messages must be written to stderr, and input is fed to
 stdin.
 
 ```
-$GLUE STATE-DIRECTORY COMMAND
+$GLUE COMMAND
 ```
 
-where `$GLUE` is your glue code, `STATE-DIRECTORY` is a temporary
-directory that you may freely store any state in, and `COMMAND` is one
-of:
+where `$GLUE` is your glue code, and `COMMAND` is one of:
 
 ### Commands
 
