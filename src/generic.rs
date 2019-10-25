@@ -73,8 +73,10 @@ impl crate::OpenPGP for Generic {
     fn version(&self) -> Result<crate::Version> {
         let o = self.run(&["version"], &[])?;
         let stdout = String::from_utf8_lossy(&o.stdout);
-        let name = stdout.split(' ').nth(0).unwrap_or("unknown").to_string();
-        let version = stdout.split(' ').nth(1).unwrap_or("unknown").to_string();
+        let name =
+            stdout.trim().split(' ').nth(0).unwrap_or("unknown").to_string();
+        let version =
+            stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
         Ok(Version {
             implementation: Implementation::Generic(name),
             version,
