@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# PYTHON_ARGCOMPLETE_OK
 '''Stateless OpenPGP Scaffolding
 
 This implements a pythonic framework for `sop`
@@ -36,27 +37,68 @@ import sys
 import logging
 
 from argparse import ArgumentParser
-from typing import List, Optional
+from typing import List, Optional, Dict
+
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
 
 class SOPNotImplementedError(NotImplementedError):
     pass
     
 class StatelessOpenPGP(object):
-    def __init__(self, prog='sop',
+    '''framework for building implementations of Stateless OpenPGP
+
+This is a generic baseclass for building an implementation of sop, the
+Stateless OpenPGP command-line interface.
+
+To use it sensibly, subclass StatelessOpenPGP and override the following
+functions:
+
+ - generate()
+ - convert()
+ - sign()
+ - verify()
+ - encrypt()
+ - decrypt()
+
+To augment the interface by adding new subcommands, or to add
+arguments to existing subcommands, override extend_parsers().
+
+Instantiate your subclass, and then call dispatch() on it.
+
+A minimal example follows:
+
+----------
+#!/usr/bin/python3
+# PYTHON_ARGCOMPLETE_OK
+
+class FooSop(StatelessOpenPGP):
+    def __init__(self):
+        super().__init__(prog='FooPGP', version='0.17')
+    # overrides go here...
+
+if __name__ = "__main__":
+    foo = FooSop()
+    foo.dispatch()
+
+    '''
+    def __init__(self, prog=None,
                  description='A Stateless OpenPGP implementation',
                  version='0.0.0'):
         '''Set up Stateless OpenPGP command line interface parser'''
         self._version = version
 
-        # FIXME: make parser and subparsers manipulable by subclasses so that
-        # implementers can extend the interface
-        self._parser = ArgumentParser(prog=prog, description=description)
+        self._parser = ArgumentParser(prog=None, description=description)
         self._parser.add_argument('--debug', action='store_true',
                                   help='show debugging data')
-        _subparsers = self._parser.add_subparsers(required=True,
-                                                  metavar='SUBCOMMAND',
-                                                  dest='subcmd')
-        _version = _subparsers.add_parser('version', help='emit version')
+        _cmds = self._parser.add_subparsers(required=True,
+                                            metavar='SUBCOMMAND',
+                                            dest='subcmd')
+        _subs = {}
+        _version = _cmds.add_parser('version', help='emit version')
+        _subs['version'] = _version
 
         def _add_armor_flag(parser):
             g = parser.add_mutually_exclusive_group(required=False)
@@ -66,18 +108,20 @@ class StatelessOpenPGP(object):
                            help='generate binary output')
             parser.set_defaults(armor=True)
         
-        _generate = _subparsers.add_parser('generate',
+        _generate = _cmds.add_parser('generate',
                                            help='generate a secret key to stdout')
         _add_armor_flag(_generate)
         _generate.add_argument('uids', metavar='USERID', nargs='*',
                                help='a User ID (a UTF-8 string)')
+        _subs['generate'] = _generate
 
         _convert_h = 'convert a secret key from stdin to a certificate on stdout'
-        _convert = _subparsers.add_parser('convert',
+        _convert = _cmds.add_parser('convert',
                                           help=_convert_h)
         _add_armor_flag(_convert)
+        _subs['convert'] = _convert
         
-        _sign = _subparsers.add_parser('sign',
+        _sign = _cmds.add_parser('sign',
                                        help='create a detached signature')
         _add_armor_flag(_sign)
         _sign.add_argument('--as', dest='sigtype',
@@ -86,9 +130,9 @@ class StatelessOpenPGP(object):
                            help='sign as binary document or canonical text document')
         _sign.add_argument('signers', metavar='KEY', nargs='+',
                            help='filename containing a secret key')
-        
+        _subs['sign'] = _sign
 
-        _verify = _subparsers.add_parser('verify', help='verify detached signatures')
+        _verify = _cmds.add_parser('verify', help='verify detached signatures')
         _verify.add_argument('--not-before', dest='start', metavar='DATE',
                              help='ignore signatures before (ISO-8601 timestamp)')
         _verify.add_argument('--not-after', dest='end', metavar='DATE',
@@ -97,9 +141,9 @@ class StatelessOpenPGP(object):
                              help='filename containing signature(s)')
         _verify.add_argument('signers', metavar='CERT', nargs='+',
                              help='filename containing certificate of acceptable signer')
+        _subs['verify'] = _verify
         
-        
-        _encrypt = _subparsers.add_parser('encrypt', help='encrypt message')
+        _encrypt = _cmds.add_parser('encrypt', help='encrypt message')
         _add_armor_flag(_encrypt)
         _encrypt.add_argument('--as', dest='literaltype',
                               choices=['binary', 'text', 'mime'],
@@ -118,9 +162,10 @@ class StatelessOpenPGP(object):
                               help='filename containing a secret key to sign with')
         _encrypt.add_argument('recipients', metavar='CERT', nargs='*',
                               help='filename containing certificate')
+        _subs['encrypt'] = _encrypt
 
 
-        _decrypt = _subparsers.add_parser('decrypt', help='decrypt message')
+        _decrypt = _cmds.add_parser('decrypt', help='decrypt message')
         _decrypt.add_argument('--session-key-out', dest='sessionkey', metavar='SESSIONKEY',
                               help='filename to output session key to on successful decryption')
         _decrypt.add_argument('--with-password', dest='passwords',
@@ -136,7 +181,20 @@ class StatelessOpenPGP(object):
                              help='ignore signatures after (ISO-8601 timestamp)')
         _decrypt.add_argument('secretkeys', metavar='KEY', nargs='*',
                               help='filename containing secret key')
+        _subs['decrypt'] = _decrypt
 
+        self.augment_parsers(_cmds, _subs)
+        if argcomplete:
+            argcomplete.autocomplete(self._parser)
+        elif '_ARGCOMPLETE' in os.environ:
+            logger.error('Argument completion requested but the "argcomplete" module is not installed. It can be obtained at https://pypi.python.org/pypi/argcomplete')
+            sys.exit(1)
+
+
+    def extend_parsers(self, subcommands:ArgumentParser,
+                       subparsers:Dict[str,ArgumentParser]) -> None:
+        '''override this function to add options or arguments'''
+        pass
 
     def dispatch(self, args=None):
         '''handle the arguments passed by the user, and invoke the correct subcommand'''
