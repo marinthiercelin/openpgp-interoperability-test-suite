@@ -107,10 +107,7 @@ impl crate::OpenPGP for DKGPG {
                          &["-k",
                            recipient_file.path().to_str().unwrap(),
                            "-r",
-                           &recipient.fingerprint().to_hex()
-                           // XXX: Workaround, see:
-                           // https://savannah.nongnu.org/bugs/index.php?57097
-                           .to_ascii_uppercase(),
+                           &recipient.fingerprint().to_hex(),
                            "-i",
                            plaintext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
