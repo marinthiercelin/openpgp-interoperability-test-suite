@@ -38,6 +38,9 @@ import logging
 from argparse import ArgumentParser
 from typing import List, Optional
 
+class SOPNotImplementedError(NotImplementedError):
+    pass
+    
 class StatelessOpenPGP(object):
     def __init__(self, prog='sop',
                  description='A Stateless OpenPGP implementation',
@@ -149,7 +152,7 @@ class StatelessOpenPGP(object):
         try:
             out = method(sys.stdin.buffer, **subargs)
             sys.stdout.buffer.write(out)
-        except NotImplementedError:
+        except SOPNotImplementedError:
             logging.error(f'subcommand {subcmd} not yet implemented')
             exit(69)
         
@@ -161,19 +164,19 @@ class StatelessOpenPGP(object):
                  inp:io.BufferedReader,
                  armor:bool,
                  uids:List[str]) -> bytes:
-        raise NotImplementedError()
+        raise SOPNotImplementedError()
 
     def convert(self,
                 inp:io.BufferedReader,
                 armor:bool) -> bytes:
-        raise NotImplementedError()
+        raise SOPNotImplementedError()
 
     def sign(self,
              inp:io.BufferedReader,
              armor:bool,
              sigtype:str,
              signers:List[str]) -> bytes:
-        raise NotImplementedError()
+        raise SOPNotImplementedError()
 
     def verify(self,
                inp:io.BufferedReader,
@@ -181,7 +184,7 @@ class StatelessOpenPGP(object):
                end:Optional[str],
                sig:str,
                signers:List[str]) -> bytes:
-        raise NotImplementedError()
+        raise SOPNotImplementedError()
     
     def encrypt(self,
                 inp:io.BufferedReader,
@@ -192,7 +195,7 @@ class StatelessOpenPGP(object):
                 sessionkey:Optional[str],
                 signers:List[str],
                 recipients:List[str]) -> bytes:
-        raise NotImplementedError()
+        raise SOPNotImplementedError()
 
     def decrypt(self,
                 inp:io.BufferedReader,
@@ -203,7 +206,7 @@ class StatelessOpenPGP(object):
                 start:Optional[str],
                 end:Optional[str],
                 secretkeys:List[str]) -> bytes:
-        raise NotImplementedError()
+        raise SOPNotImplementedError()
 
 def main():
     sop = StatelessOpenPGP()
