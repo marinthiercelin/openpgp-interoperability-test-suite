@@ -241,6 +241,27 @@ If unable to decrypt, `sop decrypt` fails with a return code of 29.
 `sop decrypt` only returns cleartext to Standard Output that was
 successfully decrypted.
 
+Adding ASCII Armor
+------------------
+
+    sop armor [--label={sig|key|cert|message}]
+
+ - Standard Input: 8-bit, unarmored OpenPGP material (`SIGNATURE`, `CERT`, `KEY`, or `ENCRYPTED-DATA`)
+ - Standard Output: the same material with ASCII-armoring added
+
+The user can choose to specify the label used in the header and tail
+of the armoring.  If the user does not specify, `sop` inspects the
+input and chooses the label appropriately.  If `sop` cannot select a
+label on the basis of the input, it fails with a return code of 17.
+
+Removing ASCII Armor
+--------------------
+
+    sop dearmor
+
+ - Standard Input: ASCII-armored OpenPGP material (`ENCRYPTED-DATA`, `SIGNATURE`, `CERT`, or `KEY`)
+ - Standard Output: the same material with ASCII-armoring removed
+
 Input String Types
 ==================
 
@@ -397,8 +418,6 @@ emits one or more warning messages on Standard Error.
 Future Work
 ===========
 
- * `dearmor` subcommand (remove ASCII armor)
- * `armor {sig|key|cert|message}` subcommand (add ASCII armor)
  * `split` subcommand (split a clearsigned message into a message and a detached signature)
  * certificate transformation into popular publication forms:
    - WKD

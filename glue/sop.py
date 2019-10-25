@@ -62,6 +62,8 @@ functions:
  - verify()
  - encrypt()
  - decrypt()
+ - armor()
+ - dearmor()
 
 To augment the interface by adding new subcommands, or to add
 arguments to existing subcommands, override extend_parsers().
@@ -183,7 +185,15 @@ if __name__ = "__main__":
                               help='filename containing secret key')
         _subs['decrypt'] = _decrypt
 
-        self.augment_parsers(_cmds, _subs)
+        _armor = _cmds.add_parser('armor', help='add ASCII armor')
+        _armor.add_argument('--label', choices=['sig', 'key', 'cert', 'message'],
+                            help='specify the type of ASCII armoring')
+        _subs['armor'] = _armor
+
+        _dearmor = _cmds.add_parser('dearmor', help='remove ASCII armor')
+        _subs['dearmor'] = _dearmor
+
+        self.extend_parsers(_cmds, _subs)
         if argcomplete:
             argcomplete.autocomplete(self._parser)
         elif '_ARGCOMPLETE' in os.environ:
@@ -264,6 +274,15 @@ if __name__ = "__main__":
                 start:Optional[str],
                 end:Optional[str],
                 secretkeys:List[str]) -> bytes:
+        raise SOPNotImplementedError()
+
+    def armor(self,
+              inp:io.BufferedReader,
+              label:str) -> bytes:
+        raise SOPNotImplementedError()
+
+    def dearmor(self,
+                inp:io.BufferedReader) -> bytes:
         raise SOPNotImplementedError()
 
 def main():
