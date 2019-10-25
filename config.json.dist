@@ -22,7 +22,7 @@
     },
     {
       "driver": "generic",
-      "path": "/path/to/this/repo/glue/pgpy"
+      "path": "glue/sopgpy"
     }
   ]
 }
