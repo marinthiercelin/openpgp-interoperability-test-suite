@@ -19,7 +19,7 @@
     <th>{{row.artifact.producer.implementation}}/{{row.artifact.producer.version}}</th>
     <th>
       {% if row.artifact.data %}
-      <form action="https://dump.sequoia-pgp.org" method="post">
+      <form action="{{dump_url()}}" method="post">
 	<button type="submit" title="Inspect with packet dumper">🔎</button>
 	<input name="data" type="hidden" value="{{row.artifact.data|pgp2string}}" />
       </form>

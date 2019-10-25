@@ -108,6 +108,7 @@ fn get() -> &'static tera::Tera {
             let mut tera = tera::compile_templates!("templates/**/*");
             tera.register_filter("pgp2string", pgp2string);
             tera.register_filter("bin2string", bin2string);
+            tera.register_function("dump_url", Box::new(dump_url));
             tera
         };
     }
@@ -180,6 +181,15 @@ fn bin2string(v: tera::Value,
         }
     }
     Ok(Value::String(res))
+}
+
+fn dump_url(_: std::collections::HashMap<String, tera::Value>)
+            -> tera::Result<tera::Value>
+{
+    Ok(tera::Value::String(std::env::var("DUMP_URL")
+                           .unwrap_or_else(|_| {
+                               "https://dump.sequoia-pgp.org".into()
+                           })))
 }
 
 pub fn slug(title: &str) -> String {
