@@ -33,53 +33,12 @@ different versions at the same time.
 ## Generic
 
 To use the generic backend, you need to write some glue code that
-implements the protocol described below.  The glue code will be called
-with a series of arguments, and it is expected to signal success by
-exiting with status zero, and failure using any non-zero status code
-(see below).  Any artifact produced must be written to stdout, error
-and diagnostic messages must be written to stderr, and input is fed to
-stdin.
-
-```
-$GLUE COMMAND
-```
-
-where `$GLUE` is your glue code, and `COMMAND` is one of:
-
-### Commands
-
-```
-version
-```
-
-Identifies the name of the implementation, followed by a space,
-followed by the version.  This command MUST be implemented.
-
-```
-encrypt CERT-FILE [CERT-FILE...]
-```
-
-Encrypts to the given recipients, reading cleartext on stdin and
-producing the encrypted message on stdout.
-
-```
-decrypt KEY-FILE [KEY-FILE...]
-```
-
-Decrypts using the given key material, reading ciphertext on stdin,
-producing cleartext on stdout.
-
-```
-generate [USERID...]
-```
-
-Generates a TSK with default options, and the given userids (if any),
-writing the result to stdout.
-
-### Exit status codes
-
-- 0: Success
-- 69: Command not implemented by the glue code
+implements the Stateless OpenPGP protocol described in `sop.md`.  The
+glue code will be called with a series of arguments, and it is
+expected to signal success by exiting with status zero, and failure
+using any non-zero status code.  Any artifact produced must be written
+to stdout, error and diagnostic messages must be written to stderr,
+and input is fed to stdin.
 
 # Adding a test
 
