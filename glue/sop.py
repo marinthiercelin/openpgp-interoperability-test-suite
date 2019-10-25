@@ -104,7 +104,7 @@ class StatelessOpenPGP(object):
         _encrypt.add_argument('--as', dest='literaltype',
                               choices=['binary', 'text', 'mime'],
                               default='binary',
-                              help='encrypt as binary, UTF-8, or MIME cleartext')
+                              help='encrypt cleartext as binary, UTF-8, or MIME')
         _encrypt.add_argument('--mode',
                               choices=['any', 'communications', 'storage'],
                               default='any',
