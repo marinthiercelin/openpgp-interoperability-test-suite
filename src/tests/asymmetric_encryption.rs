@@ -1,7 +1,7 @@
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
-use openpgp::packet::Features;
+use openpgp::constants::{Features, KeyFlags};
 use openpgp::parse::Parse;
 
 use crate::{
@@ -46,7 +46,7 @@ impl EncryptDecryptRoundtrip {
                        -> Result<EncryptDecryptRoundtrip>
     {
         // Change the cipher preferences of CERT.
-        let (uidb, sig) = cert.primary_key_signature_full().unwrap();
+        let (uidb, sig, _) = cert.primary_userid_full(None).unwrap();
         let mut builder = openpgp::packet::signature::Builder::from(sig.clone())
             .set_preferred_symmetric_algorithms(vec![cipher])?;
         if let Some(algo) = aead {
@@ -55,8 +55,8 @@ impl EncryptDecryptRoundtrip {
                 &Features::default().set_mdc(true).set_aead(true))?;
         }
         let mut primary_keypair =
-            cert.primary().key().clone().mark_parts_secret().into_keypair()?;
-        let new_sig = uidb.unwrap().userid().bind(
+            cert.primary().clone().mark_parts_secret().into_keypair()?;
+        let new_sig = uidb.userid().bind(
             &mut primary_keypair,
             &cert, builder, None, None)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
@@ -117,7 +117,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             // Check that the producer used CIPHER.
             let pp = openpgp::PacketPile::from_bytes(&artifact)
                 .context("Produced data is malformed")?;
-            let mode = openpgp::packet::KeyFlags::default()
+            let mode = KeyFlags::default()
                 .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
 
             let mut ok = false;
