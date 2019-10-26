@@ -226,7 +226,7 @@ acceptable for signatures over this message.
 If the caller is interested in signature verification, both
 `--verify-out` and at least one `--verify-with` must be supplied.  If
 only one of these arguments is supplied, `sop decrypt` fails with a
-return code of 19.
+return code of 23.
 
 `--verify-not-before` and `--verify-not-after` provide a date range
 for acceptable signatures, by analogy with the options for `sop
@@ -234,7 +234,7 @@ verify`.  They should only be supplied when doing signature
 verification.
 
 If no `KEY` or `--with-password` options are present, `sop decrypt`
-fails with a return code of 23.
+fails with a return code of 19.
 
 If unable to decrypt, `sop decrypt` fails with a return code of 29.
 
@@ -252,7 +252,8 @@ Adding ASCII Armor
 The user can choose to specify the label used in the header and tail
 of the armoring.  If the user does not specify, `sop` inspects the
 input and chooses the label appropriately.  If `sop` cannot select a
-label on the basis of the input, it fails with a return code of 17.
+label on the basis of the input, it treats it as literal data, and
+labels it as a `message`.
 
 Removing ASCII Armor
 --------------------
@@ -298,7 +299,7 @@ output has the special form `@FD:nnn` where `nnn` is a decimal
 integer, then the associated data is read from file descriptor `nnn`.
 
 If any input data does not meet the requirements described below,
-`sop` will fail with a return code of 17.
+`sop` will fail with a return code of 41.
 
 CERT
 ----
@@ -404,7 +405,8 @@ Cleartext, arbitrary data.  This is either a bytestream or `UTF-8`
 text.
 
 It MUST only be `UTF-8` text in the case of input supplied to `sop
-sign --as=text` or `encrypt --as={mime|text}`
+sign --as=text` or `encrypt --as={mime|text}`.  If `sop` receives
+`DATA` containing non-`UTF-8` octets it will fail with return code 53.
 
 
 Failure modes
@@ -412,9 +414,25 @@ Failure modes
 
 When `sop` succeeds, it will return 0 and emit nothing to Standard
 Error.  When `sop` fails, it fails with a non-zero return code, and
-emits one or more warning messages on Standard Error.
+emits one or more warning messages on Standard Error.  Known return
+codes include:
 
+Return | Meaning
+---:|--------------------------------------------------
+ 0 | Success
+ 3 | No acceptable signatures found (`sop verify`)
+19 | Missing required argument
+23 | Incomplete verification instructions (`sop decrypt`)
+29 | Unable to decrypt (`sop decrypt`)
+31 | Non-`UTF-8` password (`sop encrypt`)
+37 | Unsupported option
+41 | Invalid data type (no secret key where `KEY` expected, etc)
+53 | Non-text input where text expected
+69 | Unsupported subcommand
 
+A `sop` implementation MAY return other error codes than those listed
+above.
+ 
 Future Work
 ===========
 

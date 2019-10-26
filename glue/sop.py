@@ -44,8 +44,27 @@ try:
 except ImportError:
     argcomplete = None
 
-class SOPNotImplementedError(NotImplementedError):
-    pass
+
+class SOPException(Exception):
+    exit_code = 2
+class SOPNoSignature(SOPException):
+    exit_code = 3
+class SOPMissingRequiredArgument(SOPException):
+    exit_code = 19
+class SOPIncompleteVerificationInstructions(SOPException):
+    exit_code = 23
+class SOPCouldNotDecrypt(SOPException):
+    exit_code = 29
+class SOPNonUTF8Password(SOPException):
+    exit_code = 31
+class SOPUnsupportedOption(SOPException):
+    exit_code = 37
+class SOPInvalidDataType(SOPException):
+    exit_code = 41
+class SOPNotUTF8Text(SOPException):
+    exit_code = 53
+class SOPUnsupportedSubcommand(SOPException):
+    exit_code = 69
     
 class StatelessOpenPGP(object):
     '''framework for building implementations of Stateless OpenPGP
@@ -220,9 +239,9 @@ if __name__ = "__main__":
         try:
             out = method(sys.stdin.buffer, **subargs)
             sys.stdout.buffer.write(out)
-        except SOPNotImplementedError:
-            logging.error(f'subcommand {subcmd} not yet implemented')
-            exit(69)
+        except SOPException as e:
+            logging.error(f'{type(e).__name__} {e}')
+            exit(e.exit_code)
         
 
     def version(self, inp:io.BufferedReader) -> bytes:
@@ -232,19 +251,19 @@ if __name__ = "__main__":
                  inp:io.BufferedReader,
                  armor:bool,
                  uids:List[str]) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('generate')
 
     def convert(self,
                 inp:io.BufferedReader,
                 armor:bool) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('convert')
 
     def sign(self,
              inp:io.BufferedReader,
              armor:bool,
              sigtype:str,
              signers:List[str]) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('sign')
 
     def verify(self,
                inp:io.BufferedReader,
@@ -252,7 +271,7 @@ if __name__ = "__main__":
                end:Optional[str],
                sig:str,
                signers:List[str]) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('verify')
     
     def encrypt(self,
                 inp:io.BufferedReader,
@@ -263,7 +282,7 @@ if __name__ = "__main__":
                 sessionkey:Optional[str],
                 signers:List[str],
                 recipients:List[str]) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('encrypt')
 
     def decrypt(self,
                 inp:io.BufferedReader,
@@ -274,16 +293,16 @@ if __name__ = "__main__":
                 start:Optional[str],
                 end:Optional[str],
                 secretkeys:List[str]) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('decrypt')
 
     def armor(self,
               inp:io.BufferedReader,
               label:str) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('armor')
 
     def dearmor(self,
                 inp:io.BufferedReader) -> bytes:
-        raise SOPNotImplementedError()
+        raise SOPUnsupportedSubcommand('dearmor')
 
 def main():
     sop = StatelessOpenPGP()
