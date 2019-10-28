@@ -25,16 +25,16 @@
       </form>
       {% endif %}
       {% if row.artifact.error %}
-      <span title="{{row.artifact.error}}">✗</span>
+      <span title="{{row.artifact.error | escape}}">✗</span>
       {% endif %}
     </th>
     {% if row.results %}
     {% for result in row.results %}
     <td>
       {% if result.data %}
-      <span title="{{result.data|bin2string}}">✓</span>
+      <span title="{{result.data | bin2string | escape}}">✓</span>
       {% else %}
-      <span title="{{result.error}}">✗</span>
+      <span title="{{result.error | escape}}">✗</span>
       {% endif %}
     </td>
     {% endfor %}
