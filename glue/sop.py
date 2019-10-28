@@ -41,17 +41,21 @@ keyring is available, indexable by primary key fingerprint:
 The program invocable from the command line should instantiate the
 subclass, and then call dispatch() on it.
 
-A minimal example follows:
+A simple example follows:
 
 ----------
 #!/usr/bin/python3
 # PYTHON_ARGCOMPLETE_OK
 import sop
+import foo
 
 class FooSop(sop.StatelessOpenPGP):
     def __init__(self):
         super().__init__(prog='FooPGP', version='0.17')
     # overrides go here...
+    def convert(self, key:bytes, armor:bool=True, **kwargs:Namespace) -> bytes:
+        self.raise_on_unknown_options(kwargs)
+        return foo.bytes_to_openpgp_key(key).get_certificate(armor=armor)
 
 if __name__ = "__main__":
     foo = FooSop()
@@ -382,9 +386,9 @@ class StatelessOpenPGP(_SOPInputHandler):
 
         To add a new option to an existing subcommand, look up the
         subcommand in `subparsers` and call `add_argument` on it.
-        You'll also need to override `_handle_xxx` (where `xxx` is the
-        name of the modified subcommand) to accomodate the additional
-        option.
+
+        The new option will show up in the **kwargs of the
+        corresponding function.
 
         To add a new subcommand entirely, invoke `add_parser` on
         `subcommands`, and populate it appropriately.  Then implement
@@ -393,6 +397,15 @@ class StatelessOpenPGP(_SOPInputHandler):
 
         '''
         pass
+
+    def raise_on_unknown_options(self, **kwargs:Namespace) -> None:
+        '''if any options are left in the `args` namespace, raise an exception'''
+        if kwargs:
+            missingargs:str = ','.join([f'--{arg}' for arg in kwargs.keys()])
+            s:str = ''
+            if len(kwargs) > 1:
+                s = 's'
+            raise SOPUnsupportedOption(f'Unsupported argument{s} {missingargs}')
 
 
     def parse_timestamp(self, when:Optional[str]) -> Optional[datetime]:
@@ -431,10 +444,11 @@ class StatelessOpenPGP(_SOPInputHandler):
 
     def _handle_generate(self,
                          inp:io.BufferedReader,
-                         armor:bool,
-                         uids:List[str]) -> bytes:
-        return self.generate(armor, uids)
-    def generate(self, armor:bool, uids:List[str]) -> bytes:
+                         armor:bool=True,
+                         uids:List[str]=[],
+                         **kwargs:Namespace) -> bytes:
+        return self.generate(armor=armor, uids=uids, **kwargs)
+    def generate(self, armor:bool=True, uids:List[str]=[], **kwargs:Namespace) -> bytes:
         '''Produce an OpenPGP transferable secret key
 
 `armor`: whether to produce an ASCII-armored form or a binary-encoded form.
@@ -443,9 +457,10 @@ class StatelessOpenPGP(_SOPInputHandler):
 
     def _handle_convert(self,
                         inp:io.BufferedReader,
-                        armor:bool) -> bytes:
-        return self.convert(inp.read(), armor)
-    def convert(self, key:bytes, armor:bool) -> bytes:
+                        armor:bool=True,
+                        **kwargs:Namespace) -> bytes:
+        return self.convert(key=inp.read(), armor=armor, **kwargs)
+    def convert(self, key:bytes, armor:bool=True, **kwargs:Namespace) -> bytes:
         '''Convert an OpenPGP transferable secret key to an OpenPGP certificate
 
         `key`: the OpenPGP secret key (may be in armored or unarmored
@@ -459,13 +474,13 @@ class StatelessOpenPGP(_SOPInputHandler):
 
     def _handle_sign(self,
                      inp:io.BufferedReader,
-                     armor:bool,
-                     sigtype:str,
-                     signers:List[str]) -> bytes:
+                     armor:bool=True,
+                     sigtype:str='binary',
+                     signers:List[str]=[]) -> bytes:
         return self.sign(inp.read(), armor, SOPSigType.__members__[sigtype],
                          dict((signer, self._get_indirect_input(signer)) for signer in signers))
-    def sign(self, data:bytes, armor:bool, sigtype:SOPSigType,
-             signers:MutableMapping[str,bytes]) -> bytes:
+    def sign(self, data:bytes, armor:bool=True, sigtype:SOPSigType=SOPSigType.binary,
+             signers:MutableMapping[str,bytes]={}) -> bytes:
         '''Create a detached OpenPGP signature
 
         `data`: the data to sign.
@@ -485,20 +500,24 @@ class StatelessOpenPGP(_SOPInputHandler):
 
     def _handle_verify(self,
                        inp:io.BufferedReader,
-                       start:Optional[str],
-                       end:Optional[str],
-                       sig:str,
-                       signers:List[str]) -> bytes:
+                       start:Optional[str]=None,
+                       end:Optional[str]=None,
+                       sig:str='',
+                       signers:List[str]=[],
+                       **kwargs:Namespace) -> bytes:
         ret:List[SOPSigResult] = []
         ret =  self.verify(inp.read(),
-                           self.parse_timestamp(start),
-                           self.parse_timestamp(end),
-                           self._get_indirect_input(sig),
-                           dict((signer, self._get_indirect_input(signer)) for signer in signers))
+                           start=self.parse_timestamp(start),
+                           end=self.parse_timestamp(end),
+                           sig=self._get_indirect_input(sig),
+                           signers=dict((signer, self._get_indirect_input(signer)) for signer in signers))
         return ''.join([f'{status}\n' for status in ret]).encode()
     def verify(self, data:bytes,
-               start:Optional[datetime], end:Optional[datetime],
-               sig:bytes, signers:MutableMapping[str,bytes]) -> List[SOPSigResult]:
+               start:Optional[datetime]=None,
+               end:Optional[datetime]=None,
+               sig:bytes=b'',
+               signers:MutableMapping[str,bytes]={},
+               **kwargs:Namespace) -> List[SOPSigResult]:
         '''Verify a detached OpenPGP signature
 
         If an acceptable signature was found, return a list of
@@ -530,26 +549,32 @@ class StatelessOpenPGP(_SOPInputHandler):
                         passwords:List[str],
                         sessionkey:Optional[str],
                         signers:List[str],
-                        recipients:List[str]) -> bytes:
+                        recipients:List[str],
+                        **kwargs:Namespace) -> bytes:
         sess:Optional[SOPSessionKey] = None
         if sessionkey:
             sess = SOPSessionKey(self, sessionkey)
-        return self.encrypt(inp.read(), SOPLiteralDataType.__members__[literaltype],
-                            armor, SOPEncryptMode.__members__[mode],
-                            dict((password, self._get_indirect_input(password))
-                                 for password in passwords) if passwords else dict(),
-                            sess,
-                            dict((signer, self._get_indirect_input(signer))
-                                 for signer in signers) if signers else dict(),
-                            dict((recipient, self._get_indirect_input(recipient))
-                                 for recipient in recipients) if recipients else dict())
+        return self.encrypt(inp.read(),
+                            literaltype=SOPLiteralDataType.__members__[literaltype],
+                            armor=armor,
+                            mode=SOPEncryptMode.__members__[mode],
+                            passwords=dict((password, self._get_indirect_input(password))
+                                           for password in passwords) if passwords else dict(),
+                            sessionkey=sess,
+                            signers=dict((signer, self._get_indirect_input(signer))
+                                         for signer in signers) if signers else dict(),
+                            recipients=dict((recipient, self._get_indirect_input(recipient))
+                                            for recipient in recipients) if recipients else dict(),
+                            **kwargs)
     def encrypt(self, data:bytes,
-                literaltype:SOPLiteralDataType,
-                armor:bool, mode:SOPEncryptMode,
-                passwords:MutableMapping[str,bytes],
-                sessionkey:Optional[SOPSessionKey],
-                signers:MutableMapping[str,bytes],
-                recipients:MutableMapping[str,bytes]) -> bytes:
+                literaltype:SOPLiteralDataType=SOPLiteralDataType.binary,
+                armor:bool=True,
+                mode:SOPEncryptMode=SOPEncryptMode.any,
+                passwords:MutableMapping[str,bytes]={},
+                sessionkey:Optional[SOPSessionKey]=None,
+                signers:MutableMapping[str,bytes]={},
+                recipients:MutableMapping[str,bytes]={},
+                **kwargs:Namespace) -> bytes:
         '''Encrypt a message
 
         Encrypt a message so that only the intended recipients (or
@@ -580,13 +605,14 @@ class StatelessOpenPGP(_SOPInputHandler):
 
     def _handle_decrypt(self,
                         inp:io.BufferedReader,
-                        sessionkey:Optional[str],
-                        passwords:List[str],
-                        verifications:Optional[str],
-                        signers:List[str],
-                        start:Optional[str],
-                        end:Optional[str],
-                        secretkeys:List[str]) -> bytes:
+                        sessionkey:Optional[str]=None,
+                        passwords:List[str]=[],
+                        verifications:Optional[str]=None,
+                        signers:List[str]=[],
+                        start:Optional[str]=None,
+                        end:Optional[str]=None,
+                        secretkeys:List[str]=[],
+                        **kwargs:Namespace) -> bytes:
         if verifications and not signers:
             raise SOPIncompleteVerificationInstructions('When --verify-out is present, at least one '
                                                         '--verify-with argument must also be present')
@@ -597,15 +623,16 @@ class StatelessOpenPGP(_SOPInputHandler):
         verifs:List[SOPSigResult]
         sess:Optional[SOPSessionKey]
         msg,verifs,sess = self.decrypt(inp.read(),
-                                       sessionkey is not None,
-                                       dict((password, self._get_indirect_input(password))
-                                            for password in passwords) if passwords else dict(),
-                                       dict((signer, self._get_indirect_input(signer))
-                                            for signer in signers) if signers else dict(),
-                                       self.parse_timestamp(start),
-                                       self.parse_timestamp(end),
-                                       dict((secretkey, self._get_indirect_input(secretkey))
-                                            for secretkey in secretkeys) if secretkeys else dict())
+                                       wantsessionkey=sessionkey is not None,
+                                       passwords=dict((password, self._get_indirect_input(password))
+                                                      for password in passwords) if passwords else dict(),
+                                       signers=dict((signer, self._get_indirect_input(signer))
+                                                    for signer in signers) if signers else dict(),
+                                       start=self.parse_timestamp(start),
+                                       end=self.parse_timestamp(end),
+                                       secretkeys=dict((secretkey, self._get_indirect_input(secretkey))
+                                                       for secretkey in secretkeys) if secretkeys else dict(),
+                                       **kwargs)
         if verifications:
             self._write_indirect_output(verifications,
                                         ''.join([f'{status}\n' for status in verifs]).encode())
@@ -616,20 +643,22 @@ class StatelessOpenPGP(_SOPInputHandler):
                                 
     def decrypt(self,
                 data:bytes,
-                wantsessionkey:bool,
-                passwords:MutableMapping[str,bytes],
-                signers:MutableMapping[str,bytes],
-                start:Optional[datetime],
-                end:Optional[datetime],
-                secretkeys:MutableMapping[str,bytes]) -> Tuple[bytes, List[SOPSigResult], Optional[SOPSessionKey]]:
+                wantsessionkey:bool=False,
+                passwords:MutableMapping[str,bytes]={},
+                signers:MutableMapping[str,bytes]={},
+                start:Optional[datetime]=None,
+                end:Optional[datetime]=None,
+                secretkeys:MutableMapping[str,bytes]={},
+                **kwargs:Namespace) -> Tuple[bytes, List[SOPSigResult], Optional[SOPSessionKey]]:
         raise SOPUnsupportedSubcommand('decrypt')
 
     def _handle_armor(self,
                       inp:io.BufferedReader,
-                      label:Optional[str]) -> bytes:
-        return self.armor(inp.read(), SOPArmorLabel.__members__[label] if label else None)
-    def armor(self, data:bytes, label:Optional[SOPArmorLabel]) -> bytes:
-
+                      label:Optional[str],
+                      **kwargs:Namespace) -> bytes:
+        return self.armor(inp.read(), label=SOPArmorLabel.__members__[label] if label else None,
+                          **kwargs)
+    def armor(self, data:bytes, label:Optional[SOPArmorLabel], **kwargs:Namespace) -> bytes:
         '''Add OpenPGP ASCII Armor
 
         Return the ASCII-armored form of `data`.
@@ -639,9 +668,10 @@ class StatelessOpenPGP(_SOPInputHandler):
         raise SOPUnsupportedSubcommand('armor')
 
     def _handle_dearmor(self,
-                        inp:io.BufferedReader) -> bytes:
-        return self.dearmor(inp.read())
-    def dearmor(self, data:bytes) -> bytes:
+                        inp:io.BufferedReader,
+                        **kwargs:Namespace) -> bytes:
+        return self.dearmor(inp.read(), **kwargs)
+    def dearmor(self, data:bytes, **kwargs:Namespace) -> bytes:
         '''Remove OpenPGP ASCII Armor
 
         Return the binary-encoded form of `data`, removing any OpenPGP ASCII armor.
