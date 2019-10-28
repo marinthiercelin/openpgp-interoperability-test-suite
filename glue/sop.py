@@ -54,7 +54,7 @@ class FooSop(sop.StatelessOpenPGP):
         super().__init__(prog='FooPGP', version='0.17')
     # overrides go here...
     def convert(self, key:bytes, armor:bool=True, **kwargs:Namespace) -> bytes:
-        self.raise_on_unknown_options(kwargs)
+        self.raise_on_unknown_options(**kwargs)
         return foo.bytes_to_openpgp_key(key).get_certificate(armor=armor)
 
 if __name__ = "__main__":
@@ -145,22 +145,6 @@ class SOPNotUTF8Text(SOPException):
 class SOPUnsupportedSubcommand(SOPException):
     exit_code = 69
 
-class _SOPInputHandler(object):
-    '''Base class for handling indirect input
-
-    This will never be instantiated directly, it is only split out
-    from StatelessOpenPGP as a form of forward declaration to provide
-    typechecking coverage for SOPSessionKey.
-    '''
-    def _get_indirect_input(self, name:str) -> bytes:
-        if name.startswith('@'):
-            method, target = name[1:].split(':', maxsplit=1)
-            finder = getattr(self, f'indirect_input_{method}')
-            return bytes(finder(target))
-        else:
-            with open(name, 'rb') as f:
-                return f.read()
-
 
 class SOPSessionKey(object):
     '''Stateless OpenPGP session key
@@ -175,18 +159,9 @@ class SOPSessionKey(object):
     `key`: bytes of the actual session key
 
     '''
-    def __init__(self, sop:_SOPInputHandler, handle:str):
-        try:
-            data:bytes = sop._get_indirect_input(handle).strip()
-            algob:bytes
-            keyb:bytes
-            algob, keyb = data.split(b':', maxsplit=2)
-            self.algo:int = int(algob)
-            self.key:Optional[bytes] = None
-            if keyb != b'':
-                key = unhexlify(keyb)
-        except Exception as e:
-            raise SOPInvalidDataType(f'Malformed session key {handle} ({e})')
+    def __init__(self, algo:int, key:Optional[bytes]=None):
+        self.algo:int = algo
+        self.key:Optional[bytes] = key
 
     def __str__(self) -> str:
         key:bytes = b''
@@ -215,7 +190,7 @@ class SOPSigResult(object):
         moreinfo:str = self._moreinfo.translate(str.maketrans('\n\r', '  '))
         return f'{when} {fpr} {moreinfo}'
     
-class StatelessOpenPGP(_SOPInputHandler):
+class StatelessOpenPGP(object):
     '''Stateless OpenPGP baseclass
 
     Subclass this object, overriding the methods with code that
@@ -350,6 +325,15 @@ class StatelessOpenPGP(_SOPInputHandler):
                           'It can be obtained at https://pypi.python.org/pypi/argcomplete')
             sys.exit(1)
 
+    def _get_indirect_input(self, name:str) -> bytes:
+        if name.startswith('@'):
+            method, target = name[1:].split(':', maxsplit=1)
+            finder = getattr(self, f'indirect_input_{method}')
+            return bytes(finder(target))
+        else:
+            with open(name, 'rb') as f:
+                return f.read()
+
     def indirect_input_FD(self, name:str) -> bytes:
         '''Retrieve indirect data from an open file descriptor
 
@@ -370,6 +354,21 @@ class StatelessOpenPGP(_SOPInputHandler):
         '''
         return os.environ[name].encode()
 
+
+    def _get_session_key_from_handle(self, handle:str) -> SOPSessionKey:
+        try:
+            data:bytes = self._get_indirect_input(handle).strip()
+            algob:bytes
+            keyb:bytes
+            algob, keyb = data.split(b':', maxsplit=2)
+            algo:int = int(algob)
+            key:Optional[bytes] = None
+            if keyb != b'':
+                key = unhexlify(keyb)
+            return SOPSessionKey(algo,key)
+        except Exception as e:
+            raise SOPInvalidDataType(f'Malformed session key {handle} ({e})')
+    
     def _write_indirect_output(self, name:str, data:bytes) -> None:
         indirectout:BinaryIO
         if name.startswith('@FD:'):
@@ -553,7 +552,7 @@ class StatelessOpenPGP(_SOPInputHandler):
                         **kwargs:Namespace) -> bytes:
         sess:Optional[SOPSessionKey] = None
         if sessionkey:
-            sess = SOPSessionKey(self, sessionkey)
+            sess = self._get_session_key_from_handle(sessionkey)
         return self.encrypt(inp.read(),
                             literaltype=SOPLiteralDataType.__members__[literaltype],
                             armor=armor,
