@@ -42,6 +42,7 @@ impl DKGPG {
         }
     }
 
+    #[allow(dead_code)]
     fn stash<S: Serialize>(&self, o: &S) -> Result<NamedTempFile> {
         let mut f = NamedTempFile::new_in(self.homedir.path())?;
         o.serialize(&mut f)?;
@@ -97,7 +98,10 @@ impl crate::OpenPGP for DKGPG {
 
     fn encrypt(&mut self, recipient: &openpgp::TPK, plaintext: &[u8])
                -> Result<Box<[u8]>> {
-        let recipient_file = self.stash(recipient)?;
+        // XXX: Workaround, see:
+        // https://savannah.nongnu.org/bugs/index.php?57098
+        let recipient_file =
+            self.stash_armored(recipient, openpgp::armor::Kind::PublicKey)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
         let o = self.run("dkg-encrypt",
                          &["-k",
