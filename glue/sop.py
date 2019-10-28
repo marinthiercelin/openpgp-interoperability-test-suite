@@ -320,7 +320,7 @@ class StatelessOpenPGP(_SOPInputHandler):
                               help='filename containing a password for symmetric encryption')
         _decrypt.add_argument('--verify-out', dest='verifications', metavar='VERIFICATIONS',
                              help='filename to output verification status')
-        _decrypt.add_argument('--verify-with', dest='signers', metavar='CERT',
+        _decrypt.add_argument('--verify-with', dest='signers', metavar='CERT', nargs='*',
                              help='filename containing certificate of acceptable signer')
         _decrypt.add_argument('--verify-not-before', dest='start', metavar='DATE',
                              help='ignore signatures before (ISO-8601 timestamp)')
