@@ -196,15 +196,15 @@ class SOPSigResult(object):
 
     This class describes a valid OpenPGP signature.
     '''
-    def __init__(self, when:datetime, fingerprint:str, moreinfo:str):
+    def __init__(self, when:datetime, fingerprint:str, moreinfo:str = ''):
         self._when:datetime = when
         self._fingerprint:str = fingerprint
-        self._moreinfo:str = fingerprint
+        self._moreinfo:str = moreinfo
 
     def __str__(self) -> str:
         # ensure tz=UTC:
         whendt:datetime = datetime.fromtimestamp(self._when.timestamp(), tz=timezone.utc)
-        when:str = whendt.strftime('%Y-%m-%dT%H:%M%S%Z')
+        when:str = whendt.strftime('%Y-%m-%dT%H:%M%SZ')
         # strip all whitespace from fpr
         fpr:str = self._fingerprint.translate(str.maketrans('', '', string.whitespace))
         # strip all newlines from moreinfo
