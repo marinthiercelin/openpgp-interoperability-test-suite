@@ -83,6 +83,22 @@ impl crate::OpenPGP for GnuPG {
         Ok(plaintext.into_boxed_slice())
     }
 
+    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+                     -> Result<Data> {
+        self.import_certificate(signer)?;
+        let mut sig = Vec::new();
+        self.ctx.sign(gpgme::SignMode::Detached, data, &mut sig)?;
+        Ok(sig.into_boxed_slice())
+    }
+
+    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+                       sig: &[u8])
+                       -> Result<Data> {
+        self.import_certificate(signer)?;
+        let sigs = self.ctx.verify_detached(sig, data)?;
+        Ok(format!("{:?}", sigs.signatures()).into_bytes().into_boxed_slice())
+    }
+
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
         if userids.len() == 0 {
             return Err(failure::format_err!(

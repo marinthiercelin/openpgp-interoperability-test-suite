@@ -8,6 +8,8 @@ use crate::{
 
 mod asymmetric_encryption;
 mod symmetric_encryption;
+mod detached_signature;
+mod hashes;
 mod key_generation;
 
 /// Metadata for the tests.
@@ -129,6 +131,8 @@ pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
     eprintln!("Running tests:");
     asymmetric_encryption::run(report, implementations)?;
     symmetric_encryption::run(report, implementations)?;
+    detached_signature::run(report, implementations)?;
+    hashes::run(report, implementations)?;
     key_generation::run(report, implementations)?;
     Ok(())
 }

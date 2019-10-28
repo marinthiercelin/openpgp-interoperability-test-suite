@@ -51,6 +51,12 @@ impl Generic {
         o.serialize(&mut f)?;
         Ok(f)
     }
+
+    fn stash_bytes<B: AsRef<[u8]>>(&self, o: B) -> Result<NamedTempFile> {
+        let mut f = NamedTempFile::new_in(self.homedir.path())?;
+        f.write_all(o.as_ref())?;
+        Ok(f)
+    }
 }
 
 impl Drop for Generic {
@@ -97,6 +103,27 @@ impl crate::OpenPGP for Generic {
         let o = self.run(&["decrypt",
                            recipient_file.path().to_str().unwrap()],
                            ciphertext)?;
+        Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+                     -> Result<Data> {
+        let signer_file = self.stash(&signer.as_tsk())?;
+        let o = self.run(&["sign",
+                           signer_file.path().to_str().unwrap()],
+                         data)?;
+        Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+                       sig: &[u8])
+                       -> Result<Data> {
+        let signer_file = self.stash(signer)?;
+        let sig_file = self.stash_bytes(sig)?;
+        let o = self.run(&["verify",
+                           sig_file.path().to_str().unwrap(),
+                           signer_file.path().to_str().unwrap()],
+                         data)?;
         Ok(o.stdout.clone().into_boxed_slice())
     }
 

@@ -115,6 +115,30 @@ impl crate::OpenPGP for RNP {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
+    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+                     -> Result<Data> {
+        self.import_certificate(signer)?;
+        let data_file = self.stash_bytes(data)?;
+        let o = self.run("rnp",
+                         &["--sign", "--detached",
+                           "--output=-", "--armor",
+                           data_file.path().to_str().unwrap()])?;
+        Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+                       sig: &[u8])
+                       -> Result<Data> {
+        self.import_certificate(signer)?;
+        let data_file = self.stash_bytes(data)?;
+        let sig_file_name =
+            format!("{}.sig", data_file.path().to_str().unwrap());
+        std::fs::write(&sig_file_name, sig)?;
+        let o = self.run("rnp",
+                         &["--verify", &sig_file_name])?;
+        Ok(o.stderr.clone().into_boxed_slice())
+    }
+
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
         if userids.len() == 0 {
             return Err(failure::format_err!(

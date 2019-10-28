@@ -101,6 +101,32 @@ impl crate::OpenPGP for Sq {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
+    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+                     -> Result<Data> {
+        let signer_file = self.stash(&signer.as_tsk())?;
+        let data_file = self.stash_bytes(data)?;
+        let o = self.run(&["sign", "--detached",
+                           "--secret-key-file",
+                           signer_file.path().to_str().unwrap(),
+                           data_file.path().to_str().unwrap()])?;
+        Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+                       sig: &[u8])
+                       -> Result<Data> {
+        let signer_file = self.stash(signer)?;
+        let data_file = self.stash_bytes(data)?;
+        let sig_file = self.stash_bytes(sig)?;
+        let o = self.run(&["verify",
+                           "--detached",
+                           sig_file.path().to_str().unwrap(),
+                           "--public-key-file",
+                           signer_file.path().to_str().unwrap(),
+                           data_file.path().to_str().unwrap()])?;
+        Ok(o.stderr.clone().into_boxed_slice())
+    }
+
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
         let mut args = vec!["key", "generate", "--export", "key"];
         for u in userids {

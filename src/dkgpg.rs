@@ -128,6 +128,41 @@ impl crate::OpenPGP for DKGPG {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
+    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+                     -> Result<Data> {
+        // XXX: Workaround, see:
+        // https://savannah.nongnu.org/bugs/index.php?57098
+        let signer_file =
+            self.stash_armored(&signer.as_tsk(),
+                               openpgp::armor::Kind::SecretKey)?;
+        let data_file = self.stash_bytes(data)?;
+        let o = self.run("dkg-sign",
+                         &["-y",
+                           signer_file.path().to_str().unwrap(),
+                           "-i",
+                           data_file.path().to_str().unwrap()])?;
+        Ok(o.stdout.clone().into_boxed_slice())
+    }
+
+    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+                       sig: &[u8])
+                       -> Result<Data> {
+        // XXX: Workaround, see:
+        // https://savannah.nongnu.org/bugs/index.php?57098
+        let signer_file =
+            self.stash_armored(signer, openpgp::armor::Kind::PublicKey)?;
+        let data_file = self.stash_bytes(data)?;
+        let sig_file = self.stash_bytes(sig)?;
+        let o = self.run("dkg-verify",
+                         &["-i",
+                           data_file.path().to_str().unwrap(),
+                           "-s",
+                           sig_file.path().to_str().unwrap(),
+                           "-k",
+                           signer_file.path().to_str().unwrap()])?;
+        Ok(o.stderr.clone().into_boxed_slice())
+    }
+
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
         if userids.len() == 0 {
             return Err(failure::format_err!(

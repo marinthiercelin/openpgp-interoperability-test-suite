@@ -70,6 +70,15 @@ pub trait OpenPGP {
                -> Result<Data>;
     fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8])
                -> Result<Data>;
+    fn sign_detached(&mut self, _signer: &openpgp::TPK, _data: &[u8])
+                     -> Result<Data> {
+        Err(Error::NotImplemented.into())
+    }
+    fn verify_detached(&mut self, _signer: &openpgp::TPK, _data: &[u8],
+                       _sig: &[u8]) -> Result<Data>
+    {
+        Err(Error::NotImplemented.into())
+    }
     fn generate_key(&mut self, _userids: &[&str]) -> Result<Data> {
         Err(Error::NotImplemented.into())
     }
