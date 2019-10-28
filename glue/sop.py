@@ -90,7 +90,7 @@ from enum import Enum,auto
 from binascii import unhexlify, hexlify
 from datetime import datetime, timezone
 from argparse import ArgumentParser, _SubParsersAction, Namespace
-from typing import List, Optional, Dict, Sequence, MutableMapping, Tuple
+from typing import List, Optional, Dict, Sequence, MutableMapping, Tuple, BinaryIO
 
 __version__:str = '0.1'
 
@@ -366,6 +366,16 @@ class StatelessOpenPGP(_SOPInputHandler):
         '''
         return os.environ[name].encode()
 
+    def _write_indirect_output(self, name:str, data:bytes) -> None:
+        indirectout:BinaryIO
+        if name.startswith('@FD:'):
+            indirectout = open(int(name.split(':',maxsplit=1)[1]), 'wb')
+        else:
+            indirectout = open(name, 'wb')
+        if data:
+            indirectout.write(data)
+        indirectout.close()
+
     def extend_parsers(self, subcommands:_SubParsersAction,
                        subparsers:Dict[str,ArgumentParser]) -> None:
         '''override this function to add options or subcommands
@@ -583,32 +593,35 @@ class StatelessOpenPGP(_SOPInputHandler):
         if signers and not verifications:
             raise SOPIncompleteVerificationInstructions('When --verify-with is present, '
                                                         '--verify-out must also be present')
-        sess:Optional[SOPSessionKey] = None
-        if sessionkey:
-            sess = SOPSessionKey(self, sessionkey)
         msg:bytes
         verifs:List[SOPSigResult]
-        msg,verifs = self.decrypt(inp.read(),
-                                  sess,
-                                  dict((password, self._get_indirect_input(password))
-                                       for password in passwords) if passwords else dict(),
-                                  dict((signer, self._get_indirect_input(signer))
-                                       for signer in signers) if signers else dict(),
-                                  self.parse_timestamp(start),
-                                  self.parse_timestamp(end),
-                                  dict((secretkey, self._get_indirect_input(secretkey))
-                                       for secretkey in secretkeys) if secretkeys else dict())
-        # FIXME: do something with verifs and verifications!
+        sess:Optional[SOPSessionKey]
+        msg,verifs,sess = self.decrypt(inp.read(),
+                                       sessionkey is not None,
+                                       dict((password, self._get_indirect_input(password))
+                                            for password in passwords) if passwords else dict(),
+                                       dict((signer, self._get_indirect_input(signer))
+                                            for signer in signers) if signers else dict(),
+                                       self.parse_timestamp(start),
+                                       self.parse_timestamp(end),
+                                       dict((secretkey, self._get_indirect_input(secretkey))
+                                            for secretkey in secretkeys) if secretkeys else dict())
+        if verifications:
+            self._write_indirect_output(verifications,
+                                        ''.join([f'{status}\n' for status in verifs]).encode())
+        if sessionkey:
+            self._write_indirect_output(sessionkey, str(sess).encode() if sess else b'')
+
         return msg
                                 
     def decrypt(self,
                 data:bytes,
-                sessionkey:Optional[SOPSessionKey],
+                wantsessionkey:bool,
                 passwords:MutableMapping[str,bytes],
                 signers:MutableMapping[str,bytes],
                 start:Optional[datetime],
                 end:Optional[datetime],
-                secretkeys:MutableMapping[str,bytes]) -> Tuple[bytes, List[SOPSigResult]]:
+                secretkeys:MutableMapping[str,bytes]) -> Tuple[bytes, List[SOPSigResult], Optional[SOPSessionKey]]:
         raise SOPUnsupportedSubcommand('decrypt')
 
     def _handle_armor(self,
