@@ -33,8 +33,9 @@ different versions at the same time.
 ## Generic
 
 To use the generic backend, you need to write some glue code that
-implements the Stateless OpenPGP protocol described in `sop.md`.  The
-glue code will be called with a series of arguments, and it is
+implements the [Stateless OpenPGP
+protocol](https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli).
+The glue code will be called with a series of arguments, and it is
 expected to signal success by exiting with status zero, and failure
 using any non-zero status code.  Any artifact produced must be written
 to stdout, error and diagnostic messages must be written to stderr,
