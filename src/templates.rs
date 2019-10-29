@@ -71,12 +71,19 @@ impl<'a> Report<'a> {
     pub fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
                -> Result<Results<'a>>
     {
-        eprintln!("Running tests:");
+        let pb = ProgressBarHandle::new(
+            self.toc.iter().map(|(_, tests)| tests.len() as u64).sum::<u64>());
+
         let results: Vec<(Entry, Vec<Result<TestMatrix>>)> =
             self.toc.par_iter().map(|(section, tests)| {
                 (section.clone(),
                  tests.par_iter().map(
-                     |test| test.run(implementations)).collect())
+                     |test| {
+                         pb.start_test(test.title());
+                         let r = test.run(implementations);
+                         pb.end_test();
+                         r
+                     }).collect())
             }).collect();
 
         let mut toc = Vec::new();
@@ -239,4 +246,47 @@ pub fn slug(title: &str) -> String {
         }
     }
     slug
+}
+
+// Progress bar support
+//
+// This is a bit awkward, we cannot use indicatif's rayon support
+// directly, because we nest par_iter().
+
+use std::sync::Mutex;
+use std::sync::mpsc::{channel, Sender};
+use std::thread;
+
+struct ProgressBarHandle {
+    ch: Mutex<Sender<Option<String>>>,
+}
+
+impl ProgressBarHandle {
+    fn new(length: u64) -> ProgressBarHandle {
+        let pb = indicatif::ProgressBar::new(length);
+        let (sender, receiver) = channel();
+
+        thread::spawn(move || {
+            eprintln!("Running tests:");
+            for msg in receiver.iter() {
+                if let Some(m) = msg {
+                    pb.println(format!("  - {}", m));
+                } else {
+                    pb.inc(1);
+                }
+            }
+        });
+
+        ProgressBarHandle {
+            ch: Mutex::new(sender),
+        }
+    }
+
+    fn start_test(&self, title: String) {
+        self.ch.lock().unwrap().send(Some(title)).unwrap();
+    }
+
+    fn end_test(&self) {
+        self.ch.lock().unwrap().send(None).unwrap();
+    }
 }

@@ -28,7 +28,6 @@ pub trait ProducerConsumerTest : Test {
     fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>
     {
-        eprint!("  - {}: ", self.title());
         let mut test_results = Vec::new();
 
         for producer in implementations.iter() {
@@ -45,7 +44,6 @@ pub trait ProducerConsumerTest : Test {
                     error: e.to_string(),
                 },
             };
-            eprint!("p");
             if artifact.error.len() == 0 {
                 if let Err(e) = self.check_producer(&artifact.data) {
                     artifact.error = e.to_string();
@@ -57,7 +55,6 @@ pub trait ProducerConsumerTest : Test {
                 for consumer in implementations.iter() {
                     let mut c = consumer.new_context()?;
                     let plaintext = self.consume(c.as_mut(), &artifact.data);
-                    eprint!("c");
                     let mut a = match plaintext {
                         Ok(p) =>
                             Artifact {
@@ -85,7 +82,6 @@ pub trait ProducerConsumerTest : Test {
 
             test_results.push(TestResults { artifact, results} );
         }
-        eprintln!(" done.");
 
         Ok(TestMatrix {
             title: self.title(),
