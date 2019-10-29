@@ -176,7 +176,7 @@ fn bin2string(v: tera::Value,
     let mut res = String::new();
     for b in bytes {
         match b {
-            32..=126 => res.push(b as char),
+            32 | 33 | 35..=38 | 40..=126 => res.push(b as char),
             _ => res.push_str(&format!("&#{};", b)),
         }
     }

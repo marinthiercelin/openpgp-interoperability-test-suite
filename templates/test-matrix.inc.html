@@ -32,7 +32,7 @@
     {% for result in row.results %}
     <td>
       {% if result.data %}
-      <span title="{{result.data | bin2string | escape}}">✓</span>
+      <span title="{{result.data | bin2string}}">✓</span>
       {% else %}
       <span title="{{result.error | escape}}">✗</span>
       {% endif %}
