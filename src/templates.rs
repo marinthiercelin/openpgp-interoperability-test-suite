@@ -1,4 +1,5 @@
 use std::io::Write;
+use rayon::prelude::*;
 
 use sequoia_openpgp as openpgp;
 
@@ -72,9 +73,10 @@ impl<'a> Report<'a> {
     {
         eprintln!("Running tests:");
         let results: Vec<(Entry, Vec<Result<TestMatrix>>)> =
-            self.toc.iter().map(|(section, tests)| {
+            self.toc.par_iter().map(|(section, tests)| {
                 (section.clone(),
-                 tests.iter().map(|test| test.run(implementations)).collect())
+                 tests.par_iter().map(
+                     |test| test.run(implementations)).collect())
             }).collect();
 
         let mut toc = Vec::new();
