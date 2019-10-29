@@ -16,7 +16,7 @@ mod sq;
 mod gnupg;
 mod rnp;
 mod dkgpg;
-mod generic;
+mod sop;
 
 /// Backends supported by the test suite.
 #[derive(Debug, Clone)]
@@ -25,13 +25,13 @@ pub enum Implementation {
     GnuPG,
     RNP,
     DKGPG,
-    Generic(String),
+    Sop(String),
 }
 
 impl fmt::Display for Implementation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Implementation::Generic(s) => f.write_str(&s),
+            Implementation::Sop(s) => f.write_str(&s),
             _ => write!(f, "{:?}", self),
         }
     }
@@ -108,7 +108,7 @@ impl Config {
                 "gnupg" => Box::new(gnupg::GnuPG::new(&d.path)?),
                 "rnp" => Box::new(rnp::RNP::new(&d.path)?),
                 "dkgpg" => Box::new(dkgpg::DKGPG::new(&d.path)?),
-                "generic" => Box::new(generic::Generic::new(&d.path, &d.env)?),
+                "sop" => Box::new(sop::Sop::new(&d.path, &d.env)?),
                 _ => return Err(failure::format_err!("Unknown driver {:?}",
                                                      d.driver)),
             });

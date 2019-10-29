@@ -12,19 +12,19 @@ use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
-pub struct Generic {
-    generic: PathBuf,
+pub struct Sop {
+    sop: PathBuf,
     env: HashMap<String, String>,
     homedir: TempDir,
 }
 
-impl Generic {
+impl Sop {
     pub fn new<P: AsRef<Path>>(executable: P,
                                env: &HashMap<String, String>)
-                               -> Result<Generic> {
+                               -> Result<Sop> {
         let homedir = TempDir::new()?;
-        Ok(Generic {
-            generic: executable.as_ref().into(),
+        Ok(Sop {
+            sop: executable.as_ref().into(),
             env: env.clone(),
             homedir,
         })
@@ -34,7 +34,7 @@ impl Generic {
         where D: AsRef<[u8]>,
               I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr>
     {
-        let mut child = process::Command::new(&self.generic)
+        let mut child = process::Command::new(&self.sop)
             .envs(&self.env)
             .args(args)
             .stdin(process::Stdio::piped())
@@ -67,20 +67,20 @@ impl Generic {
     }
 }
 
-impl Drop for Generic {
+impl Drop for Sop {
     fn drop(&mut self) {
         if KEEP_HOMEDIRS {
             let homedir =
                 std::mem::replace(&mut self.homedir, TempDir::new().unwrap());
-            eprintln!("Leaving generic homedir {:?} for inspection",
+            eprintln!("Leaving sop homedir {:?} for inspection",
                       homedir.into_path());
         }
     }
 }
 
-impl crate::OpenPGP for Generic {
+impl crate::OpenPGP for Sop {
     fn new_context(&self) -> Result<Box<dyn crate::OpenPGP>> {
-        Self::new(&self.generic, &self.env)
+        Self::new(&self.sop, &self.env)
             .map(|i| -> Box<dyn crate::OpenPGP> { Box::new(i) })
     }
 
@@ -92,7 +92,7 @@ impl crate::OpenPGP for Generic {
         let version =
             stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
         Ok(Version {
-            implementation: Implementation::Generic(name),
+            implementation: Implementation::Sop(name),
             version,
         })
     }

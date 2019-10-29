@@ -21,7 +21,7 @@
       "path": "/path/to/dkgpg/distribution"
     },
     {
-      "driver": "generic",
+      "driver": "sop",
       "path": "glue/sopgpy"
     }
   ]
