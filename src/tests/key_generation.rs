@@ -10,6 +10,7 @@ use crate::{
     templates::Report,
     tests::{
         Test,
+        TestMatrix,
         ProducerConsumerTest,
     },
 };
@@ -38,6 +39,10 @@ impl Test for GenerateThenEncryptDecryptRoundtrip {
 
     fn description(&self) -> String {
         self.description.clone()
+    }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix> {
+        ProducerConsumerTest::run(self, implementations)
     }
 }
 
@@ -81,30 +86,26 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
     }
 }
 
-pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
-           -> Result<()> {
-    report.add_section("Key Generation")?;
+pub fn schedule(report: &mut Report) -> Result<()> {
+    report.add_section("Key Generation");
 
-    report.add(
+    report.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip",
             "Default key generation, followed by the consumer using this \
              key to encrypt and then decrypt a message.",
-            &["Bernadette <b@example.org>"])
-            .run(implementations)?)?;
-    report.add(
+            &["Bernadette <b@example.org>"])));
+    report.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip, 2 UIDs",
             "Default key generation with two UserIDs, followed by the consumer \
              using this key to encrypt and then decrypt a message.",
-            &["Bernadette <b@example.org>", "Soo <s@example.org>"])
-            .run(implementations)?)?;
-    report.add(
+            &["Bernadette <b@example.org>", "Soo <s@example.org>"])));
+    report.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip, no UIDs",
             "Default key generation without UserIDs, followed by the consumer \
              using this key to encrypt and then decrypt a message.",
-            &[])
-            .run(implementations)?)?;
+            &[])));
     Ok(())
 }

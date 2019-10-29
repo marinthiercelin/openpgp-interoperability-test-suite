@@ -12,6 +12,7 @@ use crate::{
     templates::Report,
     tests::{
         Test,
+        TestMatrix,
         ProducerConsumerTest,
     },
 };
@@ -79,6 +80,10 @@ impl Test for EncryptDecryptRoundtrip {
 
     fn description(&self) -> String {
         self.description.clone()
+    }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix> {
+        ProducerConsumerTest::run(self, implementations)
     }
 }
 
@@ -164,24 +169,21 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
     }
 }
 
-pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
-           -> Result<()> {
-    report.add_section("Asymmetric Encryption")?;
-    report.add(
+pub fn schedule(report: &mut Report) -> Result<()> {
+    report.add_section("Asymmetric Encryption");
+    report.add(Box::new(
         EncryptDecryptRoundtrip::new(
             "Encrypt-Decrypt roundtrip with key 'Alice'",
             "Encrypt-Decrypt roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("alice-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())
-            .run(implementations)?)?;
-    report.add(
+            b"Hello, world!".to_vec().into_boxed_slice())));
+    report.add(Box::new(
         EncryptDecryptRoundtrip::new(
             "Encrypt-Decrypt roundtrip with key 'Bob'",
             "Encrypt-Decrypt roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())
-            .run(implementations)?)?;
+            b"Hello, world!".to_vec().into_boxed_slice())));
     Ok(())
 }

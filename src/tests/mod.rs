@@ -16,6 +16,7 @@ mod key_generation;
 pub trait Test {
     fn title(&self) -> String;
     fn description(&self) -> String;
+    fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix>;
 }
 
 /// Checks that artifacts produced by one implementation can be used
@@ -126,13 +127,11 @@ struct TestResults {
     results: Vec<Artifact>,
 }
 
-pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
-           -> Result<()> {
-    eprintln!("Running tests:");
-    asymmetric_encryption::run(report, implementations)?;
-    symmetric_encryption::run(report, implementations)?;
-    detached_signature::run(report, implementations)?;
-    hashes::run(report, implementations)?;
-    key_generation::run(report, implementations)?;
+pub fn schedule(report: &mut Report) -> Result<()> {
+    asymmetric_encryption::schedule(report)?;
+    symmetric_encryption::schedule(report)?;
+    detached_signature::schedule(report)?;
+    hashes::schedule(report)?;
+    key_generation::schedule(report)?;
     Ok(())
 }

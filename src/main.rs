@@ -128,11 +128,11 @@ fn real_main() -> failure::Fallible<()> {
         eprintln!("  - {}", i.version()?);
     }
 
-    let mut results = templates::Report::new(&c);
-    tests::run(&mut results, &implementations)?;
+    let mut report = templates::Report::new(&c);
+    tests::schedule(&mut report)?;
 
     use templates::Renderable;
-    println!("{}", results.render()?);
+    println!("{}", report.run(&implementations[..])?.render()?);
     Ok(())
 }
 

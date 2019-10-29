@@ -4,7 +4,12 @@ use sequoia_openpgp as openpgp;
 
 use crate::{
     Config,
+    OpenPGP,
     Result,
+    tests::{
+        Test,
+        TestMatrix,
+    },
 };
 
 /// Something renderable.
@@ -12,19 +17,8 @@ pub trait Renderable {
     fn render(&self) -> Result<String>;
 }
 
-/// The test report.
-#[derive(Debug, serde::Serialize)]
-pub struct Report<'a> {
-    version: String,
-    commit: String,
-    title: String,
-    toc: Vec<(Entry, Vec<Entry>)>,
-    body: String,
-    configuration: &'a Config,
-}
-
 /// An entry in the TOC.
-#[derive(Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize)]
 pub struct Entry {
     slug: String,
     title: String,
@@ -46,39 +40,81 @@ impl Entry {
     }
 }
 
+/// The test report.
+pub struct Report<'a> {
+    toc: Vec<(Entry, Vec<Box<Test>>)>,
+    configuration: &'a Config,
+}
+
 impl<'a> Report<'a> {
     pub fn new(configuration: &'a Config) -> Report<'a> {
         Report {
-            version: env!("VERGEN_SEMVER").to_string(),
-            commit: env!("VERGEN_SHA_SHORT").to_string(),
-            title: format!("OpenPGP interoperability test suite"),
             toc: Default::default(),
-            body: Default::default(),
             configuration,
         }
     }
 
-    pub fn add_section(&mut self, title: &str) -> Result<()> {
+    pub fn add_section(&mut self, title: &str) {
         let entry = Entry::new(title);
-        self.body.push_str(&entry.render_section()?);
         self.toc.push((entry, Vec::new()));
-        Ok(())
     }
 
-    pub fn add(&mut self, result: crate::tests::TestMatrix)
-               -> Result<()>
-    {
+    pub fn add(&mut self, test: Box<Test>) {
         if let Some((_, entries)) = self.toc.iter_mut().last() {
-            entries.push(Entry::new(&result.title()));
-            self.body.push_str(&result.render()?);
-            Ok(())
+            entries.push(test);
         } else {
-            Err(failure::format_err!("No section added"))
+            panic!("No section added")
         }
+    }
+
+    pub fn run(&self, implementations: &[Box<dyn OpenPGP>])
+               -> Result<Results<'a>>
+    {
+        eprintln!("Running tests:");
+        let results: Vec<(Entry, Vec<Result<TestMatrix>>)> =
+            self.toc.iter().map(|(section, tests)| {
+                (section.clone(),
+                 tests.iter().map(|test| test.run(implementations)).collect())
+            }).collect();
+
+        let mut toc = Vec::new();
+        let mut body = String::new();
+        for (section, section_results) in results {
+            body.push_str(&section.render_section()?);
+
+            let mut toc_section = Vec::new();
+            for maybe_result in section_results {
+                let r = maybe_result?;
+                toc_section.push(Entry::new(&r.title()));
+                body.push_str(&r.render()?);
+            }
+            toc.push((section, toc_section));
+        }
+
+        Ok(Results {
+            version: env!("VERGEN_SEMVER").to_string(),
+            commit: env!("VERGEN_SHA_SHORT").to_string(),
+            title: format!("OpenPGP interoperability test suite"),
+            toc,
+            body,
+            configuration: self.configuration,
+        })
     }
 }
 
-impl<'a> Renderable for Report<'a> {
+/// The test results.
+#[derive(Debug, serde::Serialize)]
+pub struct Results<'a> {
+    version: String,
+    commit: String,
+    title: String,
+    toc: Vec<(Entry, Vec<Entry>)>,
+    body: String,
+    configuration: &'a Config,
+}
+
+
+impl<'a> Renderable for Results<'a> {
     fn render(&self) -> Result<String> {
         use std::error::Error;
         get().render("results.html", self)

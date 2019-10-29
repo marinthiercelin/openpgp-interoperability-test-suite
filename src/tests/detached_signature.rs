@@ -12,6 +12,7 @@ use crate::{
     templates::Report,
     tests::{
         Test,
+        TestMatrix,
         ProducerConsumerTest,
     },
 };
@@ -71,6 +72,10 @@ impl Test for DetachedSignVerifyRoundtrip {
     fn description(&self) -> String {
         self.description.clone()
     }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix> {
+        ProducerConsumerTest::run(self, implementations)
+    }
 }
 
 impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
@@ -113,24 +118,21 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
     }
 }
 
-pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
-           -> Result<()> {
-    report.add_section("Detached Signatures")?;
-    report.add(
+pub fn schedule(report: &mut Report) -> Result<()> {
+    report.add_section("Detached Signatures");
+    report.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Alice'",
             "Detached Sign-Verify roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("alice-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())
-            .run(implementations)?)?;
-    report.add(
+            b"Hello, world!".to_vec().into_boxed_slice())));
+    report.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Bob'",
             "Detached Sign-Verify roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())
-            .run(implementations)?)?;
+            b"Hello, world!".to_vec().into_boxed_slice())));
     Ok(())
 }

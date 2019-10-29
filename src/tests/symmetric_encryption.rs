@@ -2,26 +2,23 @@ use sequoia_openpgp as openpgp;
 use openpgp::parse::Parse;
 
 use crate::{
-    OpenPGP,
     Result,
     data,
     templates::Report,
     tests::{
-        ProducerConsumerTest,
         asymmetric_encryption::EncryptDecryptRoundtrip,
     },
 };
 
-pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
-           -> Result<()> {
+pub fn schedule(report: &mut Report) -> Result<()> {
     use openpgp::constants::SymmetricAlgorithm::*;
     use openpgp::constants::AEADAlgorithm::*;
 
-    report.add_section("Symmetric Encryption")?;
+    report.add_section("Symmetric Encryption");
 
     for &cipher in &[IDEA, TripleDES, CAST5, Blowfish, AES128, AES192, AES256,
                      Twofish, Camellia128, Camellia192, Camellia256] {
-        report.add(
+        report.add(Box::new(
             EncryptDecryptRoundtrip::with_cipher(
                 &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
                          cipher),
@@ -29,12 +26,11 @@ pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
                           draft-bre-openpgp-samples-00, modified with the \
                           symmetric algorithm preference [{:?}].", cipher),
                 openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into_boxed_slice(), cipher, None)?
-            .run(implementations)?)?;
+                b"Hello, world!".to_vec().into_boxed_slice(), cipher, None)?));
     }
 
     for &aead_algo in &[EAX, OCB] {
-        report.add(
+        report.add(Box::new(
             EncryptDecryptRoundtrip::with_cipher(
                 &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
                          aead_algo),
@@ -44,8 +40,7 @@ pub fn run(report: &mut Report, implementations: &[Box<dyn OpenPGP>])
                           AEAD algorithm preference [{:?}].", aead_algo),
                 openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
                 b"Hello, world!".to_vec().into_boxed_slice(), AES256,
-                Some(aead_algo))?
-            .run(implementations)?)?;
+                Some(aead_algo))?));
     }
 
     Ok(())
