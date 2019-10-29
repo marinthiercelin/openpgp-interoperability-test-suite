@@ -6,43 +6,43 @@
   <tr style="border: none">
     <th></th>
     <th class="rotate"><div><span>Consumer</span></div></th>
-    {% for impl in consumers %}
+    {%- for impl in consumers -%}
     <th class="rotate"><div><span>{{impl.implementation}}/{{impl.version}}</span></div></th>
-    {% endfor %}
+    {%- endfor -%}
   </tr>
   <tr>
     <th>Producer</th>
     <th>Artifact</th>
   </tr>
-  {% for row in results %}
+  {%- for row in results -%}
   <tr>
     <th>{{row.artifact.producer.implementation}}/{{row.artifact.producer.version}}</th>
     <th>
-      {% if row.artifact.data %}
+      {%- if row.artifact.data -%}
       <form action="{{dump_url()}}" method="post">
 	<button type="submit" title="Inspect with packet dumper">🔎</button>
 	<input name="data" type="hidden" value="{{row.artifact.data|pgp2string}}" />
       </form>
-      {% endif %}
-      {% if row.artifact.error %}
+      {%- endif -%}
+      {%- if row.artifact.error -%}
       <span title="{{row.artifact.error | escape}}">✗</span>
-      {% endif %}
+      {%- endif -%}
     </th>
-    {% if row.results %}
-    {% for result in row.results %}
+    {%- if row.results -%}
+    {%- for result in row.results -%}
     <td>
-      {% if result.data %}
+      {%- if result.data -%}
       <span title="{{result.data | bin2string}}">✓</span>
-      {% else %}
+      {%- else -%}
       <span title="{{result.error | escape}}">✗</span>
-      {% endif %}
+      {%- endif -%}
     </td>
-    {% endfor %}
-    {% else %}
-    {% for _ in consumers %}
+    {%- endfor -%}
+    {%- else -%}
+    {%- for _ in consumers -%}
     <td></td>
-    {% endfor %}
-    {% endif %}
+    {%- endfor -%}
+    {%- endif -%}
   </tr>
-  {% endfor %}
+  {%- endfor -%}
 </table>

@@ -48,15 +48,15 @@
       <li>
 	<a href="#test-results">Test Results</a>
 	<ol>
-	  {% for section in toc %}
+	  {%- for section in toc -%}
 	  <li><a href="#{{section.0.slug}}">{{section.0.title}}</a>
 	    <ol>
-	      {% for entry in section.1 %}
+	      {%- for entry in section.1 -%}
 	      <li><a href="#{{entry.slug}}">{{entry.title}}</a></li>
-	      {% endfor %}
+	      {%- endfor -%}
 	    </ol>
 	  </li>
-	  {% endfor %}
+	  {%- endfor -%}
 	</ol>
       </li>
       <li><a href="#hall-of-fame">Hall of Fame</a></li>
