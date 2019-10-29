@@ -12,8 +12,6 @@ const KEEP_HOMEDIRS: bool = false;
 
 pub struct GnuPG {
     engine: PathBuf,
-    ctx: Context,
-    #[allow(dead_code)]
     homedir: TempDir,
 }
 
@@ -24,19 +22,26 @@ impl GnuPG {
         //               "batch\n\
         //                ")?;
         // XXX
+        Ok(GnuPG {
+            engine: engine.as_ref().into(),
+            homedir,
+        })
+    }
+
+    fn ctx(&self) -> Result<Context> {
         let mut ctx = Context::from_protocol(Protocol::OpenPgp)?;
         ctx.set_armor(true);
         ctx.set_engine_path(
-            String::from(engine.as_ref().to_string_lossy()))?;
+            String::from(self.engine.to_str().unwrap()))?;
         ctx.set_engine_home_dir(
-            String::from(homedir.path().to_string_lossy()))?;
-        Ok(GnuPG { engine: engine.as_ref().into(), ctx, homedir })
+            String::from(self.homedir.path().to_string_lossy()))?;
+        Ok(ctx)
     }
 
     fn import_certificate(&mut self, c: &openpgp::TPK) -> Result<()> {
         let mut buf = Vec::new();
         c.as_tsk().serialize(&mut buf)?;
-        self.ctx.import(buf)?;
+        self.ctx()?.import(buf)?;
         Ok(())
     }
 }
@@ -59,19 +64,18 @@ impl crate::OpenPGP for GnuPG {
     }
 
     fn version(&self) -> Result<crate::Version> {
-        let version = self.ctx.engine_info();
         Ok(Version {
             implementation: Implementation::GnuPG,
-            version: version.version().unwrap().into(),
+            version: self.ctx()?.engine_info().version().unwrap().into(),
         })
     }
 
     fn encrypt(&mut self, recipient: &openpgp::TPK, plaintext: &[u8])
                -> Result<Box<[u8]>> {
         self.import_certificate(recipient)?;
-        let key = self.ctx.get_key(recipient.fingerprint().to_string())?;
+        let key = self.ctx()?.get_key(recipient.fingerprint().to_string())?;
         let mut ciphertext = Vec::new();
-        self.ctx.encrypt_with_flags(Some(&key), plaintext, &mut ciphertext,
+        self.ctx()?.encrypt_with_flags(Some(&key), plaintext, &mut ciphertext,
                                     EncryptFlags::ALWAYS_TRUST)?;
         Ok(ciphertext.into_boxed_slice())
     }
@@ -79,7 +83,7 @@ impl crate::OpenPGP for GnuPG {
     fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8]) -> Result<Box<[u8]>> {
         self.import_certificate(recipient)?;
         let mut plaintext = Vec::new();
-        self.ctx.decrypt(ciphertext, &mut plaintext)?;
+        self.ctx()?.decrypt(ciphertext, &mut plaintext)?;
         Ok(plaintext.into_boxed_slice())
     }
 
@@ -87,7 +91,7 @@ impl crate::OpenPGP for GnuPG {
                      -> Result<Data> {
         self.import_certificate(signer)?;
         let mut sig = Vec::new();
-        self.ctx.sign(gpgme::SignMode::Detached, data, &mut sig)?;
+        self.ctx()?.sign(gpgme::SignMode::Detached, data, &mut sig)?;
         Ok(sig.into_boxed_slice())
     }
 
@@ -95,7 +99,7 @@ impl crate::OpenPGP for GnuPG {
                        sig: &[u8])
                        -> Result<Data> {
         self.import_certificate(signer)?;
-        let sigs = self.ctx.verify_detached(sig, data)?;
+        let sigs = self.ctx()?.verify_detached(sig, data)?;
         Ok(format!("{:?}", sigs.signatures()).into_bytes().into_boxed_slice())
     }
 
@@ -106,15 +110,15 @@ impl crate::OpenPGP for GnuPG {
         }
 
         use gpgme::CreateKeyFlags;
-        let r = self.ctx.create_key_with_flags(userids[0], "default", None,
+        let r = self.ctx()?.create_key_with_flags(userids[0], "default", None,
                                                CreateKeyFlags::NOPASSWD)?;
         let fp = r.fingerprint().unwrap();
-        let key = self.ctx.get_key(fp)?;
+        let key = self.ctx()?.get_key(fp)?;
         for &u in &userids[1..] {
-            self.ctx.add_uid(&key, u)?;
+            self.ctx()?.add_uid(&key, u)?;
         }
         let mut r = Vec::new();
-        self.ctx.export_keys(&[key], gpgme::ExportMode::SECRET, &mut r)?;
+        self.ctx()?.export_keys(&[key], gpgme::ExportMode::SECRET, &mut r)?;
         Ok(r.into_boxed_slice())
     }
 }
