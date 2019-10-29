@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::process;
 use std::io::Write;
 
@@ -13,14 +14,20 @@ const KEEP_HOMEDIRS: bool = false;
 
 pub struct Generic {
     generic: PathBuf,
-    #[allow(dead_code)]
+    env: HashMap<String, String>,
     homedir: TempDir,
 }
 
 impl Generic {
-    pub fn new<P: AsRef<Path>>(executable: P) -> Result<Generic> {
+    pub fn new<P: AsRef<Path>>(executable: P,
+                               env: &HashMap<String, String>)
+                               -> Result<Generic> {
         let homedir = TempDir::new()?;
-        Ok(Generic { generic: executable.as_ref().into(), homedir })
+        Ok(Generic {
+            generic: executable.as_ref().into(),
+            env: env.clone(),
+            homedir,
+        })
     }
 
     fn run<D, I, S>(&self, args: I, input: D) -> Result<process::Output>
@@ -28,6 +35,7 @@ impl Generic {
               I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr>
     {
         let mut child = process::Command::new(&self.generic)
+            .envs(&self.env)
             .args(args)
             .stdin(process::Stdio::piped())
             .stdout(process::Stdio::piped())
@@ -72,7 +80,7 @@ impl Drop for Generic {
 
 impl crate::OpenPGP for Generic {
     fn new_context(&self) -> Result<Box<dyn crate::OpenPGP>> {
-        Self::new(&self.generic)
+        Self::new(&self.generic, &self.env)
             .map(|i| -> Box<dyn crate::OpenPGP> { Box::new(i) })
     }
 

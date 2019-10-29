@@ -95,6 +95,8 @@ pub struct Config {
 struct Driver {
     driver: String,
     path: String,
+    #[serde(default)]
+    env: std::collections::HashMap<String, String>,
 }
 
 impl Config {
@@ -106,7 +108,7 @@ impl Config {
                 "gnupg" => Box::new(gnupg::GnuPG::new(&d.path)?),
                 "rnp" => Box::new(rnp::RNP::new(&d.path)?),
                 "dkgpg" => Box::new(dkgpg::DKGPG::new(&d.path)?),
-                "generic" => Box::new(generic::Generic::new(&d.path)?),
+                "generic" => Box::new(generic::Generic::new(&d.path, &d.env)?),
                 _ => return Err(failure::format_err!("Unknown driver {:?}",
                                                      d.driver)),
             });
