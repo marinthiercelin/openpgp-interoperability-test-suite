@@ -98,8 +98,8 @@ struct Driver {
 }
 
 impl Config {
-    fn implementations(&self) -> Result<Vec<Box<dyn OpenPGP>>> {
-        let mut r: Vec<Box<dyn OpenPGP>> = Vec::new();
+    fn implementations(&self) -> Result<Vec<Box<dyn OpenPGP + Sync>>> {
+        let mut r: Vec<Box<dyn OpenPGP + Sync>> = Vec::new();
         for d in self.drivers.iter() {
             r.push(match d.driver.as_str() {
                 "sq" => Box::new(sq::Sq::new(&d.path)?),

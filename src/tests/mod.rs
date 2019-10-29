@@ -16,7 +16,7 @@ mod key_generation;
 pub trait Test {
     fn title(&self) -> String;
     fn description(&self) -> String;
-    fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix>;
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>;
 }
 
 /// Checks that artifacts produced by one implementation can be used
@@ -26,7 +26,7 @@ pub trait ProducerConsumerTest : Test {
     fn check_producer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8]) -> Result<Data>;
     fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
-    fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix>
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>
     {
         eprint!("  - {}: ", self.title());
         let mut test_results = Vec::new();

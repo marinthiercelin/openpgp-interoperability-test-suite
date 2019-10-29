@@ -41,7 +41,7 @@ impl Test for GenerateThenEncryptDecryptRoundtrip {
         self.description.clone()
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP>]) -> Result<TestMatrix> {
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix> {
         ProducerConsumerTest::run(self, implementations)
     }
 }

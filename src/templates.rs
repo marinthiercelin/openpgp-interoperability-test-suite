@@ -42,7 +42,7 @@ impl Entry {
 
 /// The test report.
 pub struct Report<'a> {
-    toc: Vec<(Entry, Vec<Box<Test>>)>,
+    toc: Vec<(Entry, Vec<Box<Test + Sync>>)>,
     configuration: &'a Config,
 }
 
@@ -59,7 +59,7 @@ impl<'a> Report<'a> {
         self.toc.push((entry, Vec::new()));
     }
 
-    pub fn add(&mut self, test: Box<Test>) {
+    pub fn add(&mut self, test: Box<Test + Sync>) {
         if let Some((_, entries)) = self.toc.iter_mut().last() {
             entries.push(test);
         } else {
@@ -67,7 +67,7 @@ impl<'a> Report<'a> {
         }
     }
 
-    pub fn run(&self, implementations: &[Box<dyn OpenPGP>])
+    pub fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
                -> Result<Results<'a>>
     {
         eprintln!("Running tests:");
