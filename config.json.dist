@@ -5,12 +5,18 @@
       "path": "/path/to/sq"
     },
     {
-      "driver": "gnupg",
-      "path": "/usr/bin/gpg"
+      "driver": "sop",
+      "env": {
+        "GNUPG_BIN": "/usr/bin/gpg"
+      },
+      "path": "glue/gpg"
     },
     {
-      "driver": "gnupg",
-      "path": "/usr/bin/gpg1"
+      "driver": "sop",
+      "env": {
+        "GNUPG_BIN": "/usr/bin/gpg1"
+      },
+      "path": "glue/gpg"
     },
     {
       "driver": "rnp",
