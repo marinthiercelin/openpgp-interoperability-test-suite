@@ -14,6 +14,9 @@
   <li><a href="https://dev.gnupg.org/T4725">
       Dubious filename in literal data packet when encrypting with GPGME/GnuPGv1.4.23
   </a></li>
+  <li>
+    GPGME gets FDs confused in high concurrency settings, deadlocks on select
+  </li>
 </ul>
 
 <h2>GnuPG</h2>
@@ -46,5 +49,14 @@
   </a></li>
   <li><a href="https://savannah.nongnu.org/bugs/index.php?57111">
       Generating a key with multiple userids silently ignores all but first userid
+  </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?57131">
+      dkg-encrypt prefers OCB over the recipients preference for EAX
+  </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?57134">
+      dkg-sign adds spurious newline to armored output
+  </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?57135">
+      dkg-verify fails to verify signatures with leading zeros
   </a></li>
 </ul>
