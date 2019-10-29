@@ -37,7 +37,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-gpgargs=(--batch --quiet --homedir="$homedir" --pinentry-mode=loopback --passphrase '' --trust-model=always --no-tty)
+if $GPG --dump-options | grep -q pinentry-mode; then
+    gpgargs=(--batch --quiet --homedir="$homedir" --pinentry-mode=loopback --passphrase '' --trust-model=always --no-tty)
+else
+    gpgargs=(--batch --quiet --homedir="$homedir" --passphrase '' --trust-model=always --no-tty)
+fi
 
 gpgx() {
     "$GPG" "${gpgargs[@]}" "$@"
@@ -84,11 +88,12 @@ verify() {
 }
 
 encrypt() {
-    local certs=()
-    for cert in "$@"; do
-        certs+=(--recipient-file "$cert")
+    gpgx --import "$@"
+    local recipients=()
+    for keyid in $(gpgx -k --with-colons | awk -F: '/^pub/{ print $5 }'); do
+        recipients+=(--recipient "$keyid")
     done
-    gpgx "${certs[@]}" --armor --encrypt
+    gpgx "${recipients[@]}" --armor --encrypt
 }
 
 decrypt() {
