@@ -48,7 +48,7 @@ gpgx() {
 }
 
 version() {
-    gpgx --version | awk '/^gpg /{ print $1 " " $3; exit 0; } //{ exit 1 }'
+    gpgx --version | awk '/^gpg /{ print "GnuPG " $3; exit 0; } //{ exit 1 }'
 }
 
 generate() {
