@@ -3,6 +3,7 @@ use failure::ResultExt;
 use sequoia_openpgp as openpgp;
 use openpgp::constants::HashAlgorithm;
 use openpgp::parse::Parse;
+use openpgp::serialize::SerializeInto;
 
 use crate::{
     Data,
@@ -21,21 +22,23 @@ use crate::{
 pub struct DetachedSignVerifyRoundtrip {
     title: String,
     description: String,
-    cert: openpgp::TPK,
+    cert: Vec<u8>,
+    key: Vec<u8>,
     hash: Option<HashAlgorithm>,
     message: Data,
 }
 
 impl DetachedSignVerifyRoundtrip {
     pub fn new(title: &str, description: &str, cert: openpgp::TPK,
-               message: Data) -> DetachedSignVerifyRoundtrip {
-        DetachedSignVerifyRoundtrip {
+               message: Data) -> Result<DetachedSignVerifyRoundtrip> {
+        Ok(DetachedSignVerifyRoundtrip {
             title: title.into(),
             description: description.into(),
-            cert,
+            cert: cert.to_vec()?,
+            key: cert.as_tsk().to_vec()?,
             hash: None,
             message,
-        }
+        })
     }
 
     pub fn with_hash(title: &str, description: &str, cert: openpgp::TPK,
@@ -53,11 +56,14 @@ impl DetachedSignVerifyRoundtrip {
             &mut primary_keypair,
             &cert, builder, None, None)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
+        let key = cert.as_tsk().to_vec()?;
+        let cert = cert.to_vec()?;
 
         Ok(DetachedSignVerifyRoundtrip {
             title: title.into(),
             description: description.into(),
             cert,
+            key,
             hash: Some(hash),
             message,
         })
@@ -81,7 +87,7 @@ impl Test for DetachedSignVerifyRoundtrip {
 impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
     fn produce(&self, pgp: &mut OpenPGP)
                -> Result<Data> {
-        pgp.sign_detached(&self.cert, &self.message)
+        pgp.sign_detached(&self.key, &self.message)
     }
 
     fn check_producer(&self, artifact: &[u8]) -> Result<()> {
@@ -126,13 +132,13 @@ pub fn schedule(report: &mut Report) -> Result<()> {
             "Detached Sign-Verify roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("alice-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())));
+            b"Hello, world!".to_vec().into_boxed_slice())?));
     report.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Bob'",
             "Detached Sign-Verify roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())));
+            b"Hello, world!".to_vec().into_boxed_slice())?));
     Ok(())
 }

@@ -5,9 +5,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use tempfile::{TempDir, NamedTempFile};
 
-use sequoia_openpgp as openpgp;
-use openpgp::serialize::Serialize;
-
 use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
@@ -54,12 +51,6 @@ impl Sop {
         }
     }
 
-    fn stash<S: Serialize>(&self, o: &S) -> Result<NamedTempFile> {
-        let mut f = NamedTempFile::new_in(self.homedir.path())?;
-        o.serialize(&mut f)?;
-        Ok(f)
-    }
-
     fn stash_bytes<B: AsRef<[u8]>>(&self, o: B) -> Result<NamedTempFile> {
         let mut f = NamedTempFile::new_in(self.homedir.path())?;
         f.write_all(o.as_ref())?;
@@ -97,36 +88,36 @@ impl crate::OpenPGP for Sop {
         })
     }
 
-    fn encrypt(&mut self, recipient: &openpgp::TPK, plaintext: &[u8])
+    fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
-        let recipient_file = self.stash(recipient)?;
+        let recipient_file = self.stash_bytes(recipient)?;
         let o = self.run(&["encrypt",
                            recipient_file.path().to_str().unwrap()],
                            plaintext)?;
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8]) -> Result<Box<[u8]>> {
-        let recipient_file = self.stash(&recipient.as_tsk())?;
+    fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8]) -> Result<Box<[u8]>> {
+        let recipient_file = self.stash_bytes(recipient)?;
         let o = self.run(&["decrypt",
                            recipient_file.path().to_str().unwrap()],
                            ciphertext)?;
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+    fn sign_detached(&mut self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
-        let signer_file = self.stash(&signer.as_tsk())?;
+        let signer_file = self.stash_bytes(signer)?;
         let o = self.run(&["sign",
                            signer_file.path().to_str().unwrap()],
                          data)?;
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+    fn verify_detached(&mut self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
-        let signer_file = self.stash(signer)?;
+        let signer_file = self.stash_bytes(signer)?;
         let sig_file = self.stash_bytes(sig)?;
         let o = self.run(&["verify",
                            sig_file.path().to_str().unwrap(),

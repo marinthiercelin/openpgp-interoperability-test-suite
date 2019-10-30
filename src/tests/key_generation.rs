@@ -80,10 +80,15 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
 
     fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        let key = openpgp::TPK::from_bytes(artifact)?;
-        let ciphertext = pgp.encrypt(&key, b"Hello, World!")?;
-        pgp.decrypt(&key, &ciphertext)
+        let ciphertext = pgp.encrypt(&extract_cert(artifact)?,
+                                     b"Hello, World!")?;
+        pgp.decrypt(artifact, &ciphertext)
     }
+}
+
+fn extract_cert(key: &[u8]) -> Result<Data> {
+    use openpgp::serialize::SerializeInto;
+    Ok(openpgp::TPK::from_bytes(key)?.to_vec()?.into_boxed_slice())
 }
 
 pub fn schedule(report: &mut Report) -> Result<()> {

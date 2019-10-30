@@ -4,7 +4,7 @@ use std::io::Write;
 use tempfile::{TempDir, NamedTempFile};
 
 use sequoia_openpgp as openpgp;
-use openpgp::serialize::Serialize;
+use openpgp::parse::Parse;
 
 use crate::{Data, Implementation, Version, Error, Result};
 
@@ -41,20 +41,14 @@ impl RNP {
         }
     }
 
-    fn stash<S: Serialize>(&self, o: &S) -> Result<NamedTempFile> {
-        let mut f = NamedTempFile::new_in(self.homedir.path())?;
-        o.serialize(&mut f)?;
-        Ok(f)
-    }
-
     fn stash_bytes<B: AsRef<[u8]>>(&self, o: B) -> Result<NamedTempFile> {
         let mut f = NamedTempFile::new_in(self.homedir.path())?;
         f.write_all(o.as_ref())?;
         Ok(f)
     }
 
-    fn import_certificate(&mut self, c: &openpgp::TPK) -> Result<()> {
-        let cert = self.stash(&c.as_tsk())?;
+    fn import_certificate(&mut self, c: &[u8]) -> Result<()> {
+        let cert = self.stash_bytes(c)?;
         self.run("rnpkeys",
                  &["--import-key", cert.path().to_str().unwrap()])?;
         Ok(())
@@ -90,21 +84,22 @@ impl crate::OpenPGP for RNP {
         })
     }
 
-    fn encrypt(&mut self, recipient: &openpgp::TPK, plaintext: &[u8])
+    fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
+        let recipient_fp = openpgp::TPK::from_bytes(recipient)?.fingerprint();
         self.import_certificate(recipient)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
         let o = self.run("rnp",
                          &["--encrypt",
                            "--recipient",
-                           &recipient.fingerprint().to_string(),
+                           &recipient_fp.to_string(),
                            "--armor",
                            "--output=-",
                            plaintext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8])
+    fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8])
                -> Result<Box<[u8]>> {
         self.import_certificate(recipient)?;
         let ciphertext_file = self.stash_bytes(ciphertext)?;
@@ -115,7 +110,7 @@ impl crate::OpenPGP for RNP {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+    fn sign_detached(&mut self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
         self.import_certificate(signer)?;
         let data_file = self.stash_bytes(data)?;
@@ -126,7 +121,7 @@ impl crate::OpenPGP for RNP {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+    fn verify_detached(&mut self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
         self.import_certificate(signer)?;

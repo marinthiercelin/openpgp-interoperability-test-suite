@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
 use sequoia_openpgp as openpgp;
-use openpgp::serialize::Serialize;
+use openpgp::parse::Parse;
 
 use gpgme::{Context, EncryptFlags, Protocol};
 
@@ -38,10 +38,8 @@ impl GnuPG {
         Ok(ctx)
     }
 
-    fn import_certificate(&mut self, c: &openpgp::TPK) -> Result<()> {
-        let mut buf = Vec::new();
-        c.as_tsk().serialize(&mut buf)?;
-        self.ctx()?.import(buf)?;
+    fn import_certificate(&mut self, c: &[u8]) -> Result<()> {
+        self.ctx()?.import(c)?;
         Ok(())
     }
 }
@@ -70,24 +68,25 @@ impl crate::OpenPGP for GnuPG {
         })
     }
 
-    fn encrypt(&mut self, recipient: &openpgp::TPK, plaintext: &[u8])
+    fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
+        let recipient_fp = openpgp::TPK::from_bytes(recipient)?.fingerprint();
         self.import_certificate(recipient)?;
-        let key = self.ctx()?.get_key(recipient.fingerprint().to_string())?;
+        let key = self.ctx()?.get_key(recipient_fp.to_string())?;
         let mut ciphertext = Vec::new();
         self.ctx()?.encrypt_with_flags(Some(&key), plaintext, &mut ciphertext,
                                     EncryptFlags::ALWAYS_TRUST)?;
         Ok(ciphertext.into_boxed_slice())
     }
 
-    fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8]) -> Result<Box<[u8]>> {
+    fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8]) -> Result<Box<[u8]>> {
         self.import_certificate(recipient)?;
         let mut plaintext = Vec::new();
         self.ctx()?.decrypt(ciphertext, &mut plaintext)?;
         Ok(plaintext.into_boxed_slice())
     }
 
-    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+    fn sign_detached(&mut self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
         self.import_certificate(signer)?;
         let mut sig = Vec::new();
@@ -95,7 +94,7 @@ impl crate::OpenPGP for GnuPG {
         Ok(sig.into_boxed_slice())
     }
 
-    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+    fn verify_detached(&mut self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
         self.import_certificate(signer)?;

@@ -3,6 +3,7 @@ use failure::ResultExt;
 use sequoia_openpgp as openpgp;
 use openpgp::constants::{Features, KeyFlags};
 use openpgp::parse::Parse;
+use openpgp::serialize::SerializeInto;
 
 use crate::{
     Data,
@@ -21,7 +22,8 @@ use crate::{
 pub struct EncryptDecryptRoundtrip {
     title: String,
     description: String,
-    cert: openpgp::TPK,
+    cert: Vec<u8>,
+    key: Vec<u8>,
     cipher: Option<openpgp::constants::SymmetricAlgorithm>,
     aead: Option<openpgp::constants::AEADAlgorithm>,
     message: Data,
@@ -29,15 +31,16 @@ pub struct EncryptDecryptRoundtrip {
 
 impl EncryptDecryptRoundtrip {
     pub fn new(title: &str, description: &str, cert: openpgp::TPK,
-               message: Data) -> EncryptDecryptRoundtrip {
-        EncryptDecryptRoundtrip {
+               message: Data) -> Result<EncryptDecryptRoundtrip> {
+        Ok(EncryptDecryptRoundtrip {
             title: title.into(),
             description: description.into(),
-            cert,
+            cert: cert.to_vec()?,
+            key: cert.as_tsk().to_vec()?,
             cipher: None,
             aead: None,
             message,
-        }
+        })
     }
 
     pub fn with_cipher(title: &str, description: &str, cert: openpgp::TPK,
@@ -61,11 +64,14 @@ impl EncryptDecryptRoundtrip {
             &mut primary_keypair,
             &cert, builder, None, None)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
+        let key = cert.as_tsk().to_vec()?;
+        let cert = cert.to_vec()?;
 
         Ok(EncryptDecryptRoundtrip {
             title: title.into(),
             description: description.into(),
             cert,
+            key,
             cipher: Some(cipher),
             aead,
             message,
@@ -120,6 +126,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             }
         } else if let Some(cipher) = self.cipher {
             // Check that the producer used CIPHER.
+            let cert = openpgp::TPK::from_bytes(&self.key)?;
             let pp = openpgp::PacketPile::from_bytes(&artifact)
                 .context("Produced data is malformed")?;
             let mode = KeyFlags::default()
@@ -129,7 +136,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             let mut algos = Vec::new();
             'search: for p in pp.children() {
                 if let openpgp::Packet::PKESK(p) = p {
-                    for (_, _, key) in self.cert.keys_all().secret(true)
+                    for (_, _, key) in cert.keys_all().secret(true)
                         .key_flags(mode.clone())
                     {
                         let mut keypair =
@@ -156,7 +163,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
 
     fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        pgp.decrypt(&self.cert, &artifact)
+        pgp.decrypt(&self.key, &artifact)
     }
 
     fn check_consumer(&self, artifact: &[u8]) -> Result<()> {
@@ -177,13 +184,13 @@ pub fn schedule(report: &mut Report) -> Result<()> {
             "Encrypt-Decrypt roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("alice-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())));
+            b"Hello, world!".to_vec().into_boxed_slice())?));
     report.add(Box::new(
         EncryptDecryptRoundtrip::new(
             "Encrypt-Decrypt roundtrip with key 'Bob'",
             "Encrypt-Decrypt roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())));
+            b"Hello, world!".to_vec().into_boxed_slice())?));
     Ok(())
 }

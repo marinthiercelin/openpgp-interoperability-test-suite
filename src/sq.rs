@@ -4,9 +4,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use tempfile::{TempDir, NamedTempFile};
 
-use sequoia_openpgp as openpgp;
-use openpgp::serialize::Serialize;
-
 use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
@@ -38,12 +35,6 @@ impl Sq {
                 o.status, String::from_utf8_lossy(&o.stderr).to_string())
                 .into())
         }
-    }
-
-    fn stash<S: Serialize>(&self, o: &S) -> Result<NamedTempFile> {
-        let mut f = NamedTempFile::new_in(self.homedir.path())?;
-        o.serialize(&mut f)?;
-        Ok(f)
     }
 
     fn stash_bytes<B: AsRef<[u8]>>(&self, o: B) -> Result<NamedTempFile> {
@@ -80,9 +71,9 @@ impl crate::OpenPGP for Sq {
         })
     }
 
-    fn encrypt(&mut self, recipient: &openpgp::TPK, plaintext: &[u8])
+    fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
-        let recipient_file = self.stash(recipient)?;
+        let recipient_file = self.stash_bytes(recipient)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
         let o = self.run(&["encrypt",
                            "--recipient-key-file",
@@ -91,8 +82,8 @@ impl crate::OpenPGP for Sq {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8]) -> Result<Box<[u8]>> {
-        let recipient_file = self.stash(&recipient.as_tsk())?;
+    fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8]) -> Result<Box<[u8]>> {
+        let recipient_file = self.stash_bytes(recipient)?;
         let ciphertext_file = self.stash_bytes(ciphertext)?;
         let o = self.run(&["decrypt",
                            "--secret-key-file",
@@ -101,9 +92,9 @@ impl crate::OpenPGP for Sq {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+    fn sign_detached(&mut self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
-        let signer_file = self.stash(&signer.as_tsk())?;
+        let signer_file = self.stash_bytes(signer)?;
         let data_file = self.stash_bytes(data)?;
         let o = self.run(&["sign", "--detached",
                            "--secret-key-file",
@@ -112,10 +103,10 @@ impl crate::OpenPGP for Sq {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+    fn verify_detached(&mut self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
-        let signer_file = self.stash(signer)?;
+        let signer_file = self.stash_bytes(signer)?;
         let data_file = self.stash_bytes(data)?;
         let sig_file = self.stash_bytes(sig)?;
         let o = self.run(&["verify",

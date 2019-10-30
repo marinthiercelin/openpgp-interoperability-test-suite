@@ -4,7 +4,7 @@ use std::io::Write;
 use tempfile::{TempDir, NamedTempFile};
 
 use sequoia_openpgp as openpgp;
-use openpgp::serialize::Serialize;
+use openpgp::parse::Parse;
 
 use crate::{Data, Implementation, Version, Error, Result};
 
@@ -42,22 +42,18 @@ impl DKGPG {
         }
     }
 
-    #[allow(dead_code)]
-    fn stash<S: Serialize>(&self, o: &S) -> Result<NamedTempFile> {
-        let mut f = NamedTempFile::new_in(self.homedir.path())?;
-        o.serialize(&mut f)?;
-        Ok(f)
-    }
-
     // XXX: Workaround, see:
     // https://savannah.nongnu.org/bugs/index.php?57098
-    fn stash_armored<S: Serialize>(&self, o: &S, kind: openpgp::armor::Kind)
-                                   -> Result<NamedTempFile>
+    fn stash_armored<B: AsRef<[u8]>>(&self, o: B, kind: openpgp::armor::Kind)
+                                     -> Result<NamedTempFile>
     {
         let mut f = NamedTempFile::new_in(self.homedir.path())?;
-        {
+        if o.as_ref().get(0) == Some(&('-' as u8)) {
+            // Already armored.
+            f.write_all(o.as_ref())?;
+        } else {
             let mut sink = openpgp::armor::Writer::new(&mut f, kind, &[])?;
-            o.serialize(&mut sink)?;
+            sink.write_all(o.as_ref())?;
         }
         Ok(f)
     }
@@ -96,10 +92,11 @@ impl crate::OpenPGP for DKGPG {
         })
     }
 
-    fn encrypt(&mut self, recipient: &openpgp::TPK, plaintext: &[u8])
+    fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
         // XXX: Workaround, see:
         // https://savannah.nongnu.org/bugs/index.php?57098
+        let recipient_fp = openpgp::TPK::from_bytes(recipient)?.fingerprint();
         let recipient_file =
             self.stash_armored(recipient, openpgp::armor::Kind::PublicKey)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
@@ -107,18 +104,18 @@ impl crate::OpenPGP for DKGPG {
                          &["-k",
                            recipient_file.path().to_str().unwrap(),
                            "-r",
-                           &recipient.fingerprint().to_hex(),
+                           &recipient_fp.to_hex(),
                            "-i",
                            plaintext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn decrypt(&mut self, recipient: &openpgp::TPK, ciphertext: &[u8])
+    fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8])
                -> Result<Box<[u8]>> {
         // XXX: Workaround, see:
         // https://savannah.nongnu.org/bugs/index.php?57098
         let recipient_file =
-            self.stash_armored(&recipient.as_tsk(), openpgp::armor::Kind::SecretKey)?;
+            self.stash_armored(recipient, openpgp::armor::Kind::SecretKey)?;
         let ciphertext_file = self.stash_bytes(ciphertext)?;
         let o = self.run("dkg-decrypt",
                          &["-y",
@@ -128,12 +125,12 @@ impl crate::OpenPGP for DKGPG {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn sign_detached(&mut self, signer: &openpgp::TPK, data: &[u8])
+    fn sign_detached(&mut self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
         // XXX: Workaround, see:
         // https://savannah.nongnu.org/bugs/index.php?57098
         let signer_file =
-            self.stash_armored(&signer.as_tsk(),
+            self.stash_armored(signer,
                                openpgp::armor::Kind::SecretKey)?;
         let data_file = self.stash_bytes(data)?;
         let o = self.run("dkg-sign",
@@ -144,7 +141,7 @@ impl crate::OpenPGP for DKGPG {
         Ok(o.stdout.clone().into_boxed_slice())
     }
 
-    fn verify_detached(&mut self, signer: &openpgp::TPK, data: &[u8],
+    fn verify_detached(&mut self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
         // XXX: Workaround, see:
