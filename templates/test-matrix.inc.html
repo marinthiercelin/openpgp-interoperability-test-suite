@@ -16,7 +16,7 @@
   </tr>
   {%- for row in results -%}
   <tr>
-    <th>{{row.artifact.producer.implementation}}/{{row.artifact.producer.version}}</th>
+    <th>{{row.artifact.producer}}</th>
     <th>
       {%- if row.artifact.data -%}
       <form action="{{dump_url()}}" method="post">

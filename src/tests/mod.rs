@@ -34,12 +34,12 @@ pub trait ProducerConsumerTest : Test {
             let mut p = producer.new_context()?;
             let mut artifact = match self.produce(p.as_mut()) {
                 Ok(d) => Artifact {
-                    producer: p.version()?,
+                    producer: p.version()?.to_string(),
                     data: d,
                     error: "".into(),
                 },
                 Err(e) => Artifact {
-                    producer: p.version()?,
+                    producer: p.version()?.to_string(),
                     data: Default::default(),
                     error: e.to_string(),
                 },
@@ -58,13 +58,13 @@ pub trait ProducerConsumerTest : Test {
                     let mut a = match plaintext {
                         Ok(p) =>
                             Artifact {
-                                producer: c.version()?,
+                                producer: c.version()?.to_string(),
                                 data: p,
                                 error: "".into(),
                             },
                         Err(e) =>
                             Artifact {
-                                producer: c.version()?,
+                                producer: c.version()?.to_string(),
                                 data: Default::default(),
                                 error: e.to_string(),
                             },
@@ -97,7 +97,7 @@ pub trait ProducerConsumerTest : Test {
 /// Artifacts produced by producers.
 #[derive(Debug, serde::Serialize)]
 struct Artifact {
-    producer: Version,
+    producer: String,
     data: Data,
     error: String,
 }
