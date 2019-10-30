@@ -25,7 +25,7 @@
       </form>
       {%- endif -%}
       {%- if row.artifact.error -%}
-      <span title="{{row.artifact.error | escape}}">✗</span>
+      <span title="{{row.artifact.error | addslashes}}">✗</span>
       {%- endif -%}
     </th>
     {%- if row.results -%}
@@ -34,7 +34,7 @@
       {%- if result.data -%}
       <span title="{{result.data | bin2string}}">✓</span>
       {%- else -%}
-      <span title="{{result.error | escape}}">✗</span>
+      <span title="{{result.error | addslashes}}">✗</span>
       {%- endif -%}
     </td>
     {%- endfor -%}
