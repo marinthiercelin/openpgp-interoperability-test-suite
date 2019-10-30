@@ -30,5 +30,8 @@
       "driver": "sop",
       "path": "glue/sopgpy"
     }
-  ]
+  ],
+  "rlimits": {
+    "DATA": 1073741824
+  }
 }

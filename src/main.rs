@@ -85,6 +85,8 @@ pub trait OpenPGP {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     drivers: Vec<Driver>,
+    #[serde(default)]
+    rlimits: std::collections::HashMap<String, u64>,
 }
 
 /// A driver configuration.
@@ -97,6 +99,17 @@ struct Driver {
 }
 
 impl Config {
+    fn set_rlimits(&self) -> Result<()> {
+        for (key, &value) in self.rlimits.iter() {
+            match key.as_str() {
+                "DATA" => rlimit::RLimit::DATA.set(value, value)?,
+                _ => return
+                    Err(failure::format_err!("Unknown limit {:?}", key)),
+            }
+        }
+        Ok(())
+    }
+
     fn implementations(&self) -> Result<Vec<Box<dyn OpenPGP + Sync>>> {
         let mut r: Vec<Box<dyn OpenPGP + Sync>> = Vec::new();
         for d in self.drivers.iter() {
@@ -119,6 +132,7 @@ fn real_main() -> failure::Fallible<()> {
         serde_json::from_reader(
             fs::File::open("config.json").context("Opening config file")?
         ).context("Reading config file")?;
+    c.set_rlimits().context("Setting resource limits")?;
     let implementations = c.implementations()
         .context("Reading config file")?;
 
