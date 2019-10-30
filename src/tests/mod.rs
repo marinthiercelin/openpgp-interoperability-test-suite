@@ -19,6 +19,64 @@ pub trait Test {
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>;
 }
 
+/// Checks that artifacts can be used by all implementations.
+pub trait ConsumerTest : Test {
+    fn produce(&self) -> Result<Vec<(String, Data)>>;
+    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8]) -> Result<Data>;
+    fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>
+    {
+        let mut test_results = Vec::new();
+
+        for (description, data) in self.produce()? {
+            let artifact = Artifact {
+                producer: description,
+                data: data,
+                error: "".into(),
+            };
+
+            let mut results = Vec::new();
+            for consumer in implementations.iter() {
+                let mut c = consumer.new_context()?;
+                let plaintext = self.consume(c.as_mut(), &artifact.data);
+                let mut a = match plaintext {
+                    Ok(p) =>
+                        Artifact {
+                            producer: c.version()?.to_string(),
+                            data: p,
+                            error: "".into(),
+                        },
+                    Err(e) =>
+                        Artifact {
+                            producer: c.version()?.to_string(),
+                            data: Default::default(),
+                            error: e.to_string(),
+                        },
+                };
+
+                if a.error.len() == 0 {
+                    if let Err(e) = self.check_consumer(&a.data) {
+                        a.error = e.to_string();
+                    }
+                }
+
+                results.push(a);
+            }
+
+            test_results.push(TestResults { artifact, results} );
+        }
+
+        Ok(TestMatrix {
+            title: self.title(),
+            slug: crate::templates::slug(&self.title()),
+            description: self.description(),
+            consumers: implementations.iter().map(|i| i.version().unwrap())
+                .collect(),
+            results: test_results,
+        })
+    }
+}
+
 /// Checks that artifacts produced by one implementation can be used
 /// by another.
 pub trait ProducerConsumerTest : Test {
