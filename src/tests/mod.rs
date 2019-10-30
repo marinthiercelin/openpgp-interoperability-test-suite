@@ -12,6 +12,7 @@ mod detached_signature;
 mod hashes;
 mod key_generation;
 mod certificates;
+mod ecc;
 
 /// Metadata for the tests.
 pub trait Test {
@@ -189,5 +190,6 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     hashes::schedule(report)?;
     key_generation::schedule(report)?;
     certificates::schedule(report)?;
+    ecc::schedule(report)?;
     Ok(())
 }
