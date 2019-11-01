@@ -1,23 +1,128 @@
+use std::io::Write;
+
 use sequoia_openpgp as openpgp;
 use openpgp::parse::Parse;
+use openpgp::constants::{KeyFlags, SymmetricAlgorithm};
 
 use crate::{
+    OpenPGP,
+    Data,
     Result,
     data,
     templates::Report,
     tests::{
+        Test,
+        TestMatrix,
+        ConsumerTest,
         asymmetric_encryption::EncryptDecryptRoundtrip,
     },
 };
+
+const CIPHERS: &[SymmetricAlgorithm] = {
+    use openpgp::constants::SymmetricAlgorithm::*;
+    &[
+        IDEA, TripleDES, CAST5, Blowfish,
+        AES128, AES192, AES256,
+        Twofish,
+        Camellia128, Camellia192, Camellia256,
+    ]
+};
+
+/// Tests support for symmetric encryption algorithms.
+struct SymmetricEncryptionSupport {
+}
+
+impl SymmetricEncryptionSupport {
+    pub fn new() -> Result<SymmetricEncryptionSupport> {
+        Ok(SymmetricEncryptionSupport {
+        })
+    }
+
+    fn fallback(recipient: &openpgp::serialize::stream::Recipient,
+                cipher: SymmetricAlgorithm, msg: Data)
+                -> Result<(String, Data)>
+    {
+        let _ = (recipient, msg);
+        Err(failure::format_err!(
+            "Unsupported symmetric algorithm: {:?}", cipher))
+    }
+}
+
+impl Test for SymmetricEncryptionSupport {
+    fn title(&self) -> String {
+        "Symmetric Encryption Algorithm support".into()
+    }
+
+    fn description(&self) -> String {
+        "This tests support for the different symmetric encryption algorithms \
+         using Sequoia to generate the artifacts.".into()
+    }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+           -> Result<TestMatrix> {
+        ConsumerTest::run(self, implementations)
+    }
+}
+
+impl ConsumerTest for SymmetricEncryptionSupport {
+    fn produce(&self) -> Result<Vec<(String, Data)>> {
+        use openpgp::serialize::stream::*;
+
+        let cert =
+            openpgp::TPK::from_bytes(data::certificate("bob.pgp"))?;
+        let mode = KeyFlags::default()
+            .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
+        let recipient: Recipient =
+            cert.keys_all().key_flags(mode)
+            .nth(0).map(|(_, _, k)| k).unwrap().into();
+        let mut t = Vec::new();
+
+        for &cipher in CIPHERS {
+            let mut b = Vec::new();
+
+            {
+                let msg = format!("Encrypted using {:?}.", cipher)
+                    .into_bytes().into_boxed_slice();
+                let stack = Message::new(&mut b);
+                let stack = match
+                    Encryptor::new(stack, &[], vec![&recipient], cipher, None)
+                {
+                    Ok(stack) => stack,
+                    Err(_) => {
+                        // Cipher is not supported by Sequoia, look
+                        // for a fallback.
+                        match Self::fallback(&recipient, cipher, msg) {
+                            Ok(r) => t.push(r),
+                            Err(e) => eprintln!("\r{}", e),
+                        }
+                        continue;
+                    },
+                };
+                let mut stack = LiteralWriter::new(stack, None, None, None)?;
+                stack.write_all(&msg)?;
+                stack.finalize()?;
+            }
+
+            t.push((format!("{:?}", cipher), b.into_boxed_slice()));
+        }
+
+        Ok(t)
+    }
+
+    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+               -> Result<Data> {
+        pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
+    }
+}
 
 pub fn schedule(report: &mut Report) -> Result<()> {
     use openpgp::constants::SymmetricAlgorithm::*;
     use openpgp::constants::AEADAlgorithm::*;
 
     report.add_section("Symmetric Encryption");
+    report.add(Box::new(SymmetricEncryptionSupport::new()?));
 
-    for &cipher in &[IDEA, TripleDES, CAST5, Blowfish, AES128, AES192, AES256,
-                     Twofish, Camellia128, Camellia192, Camellia256] {
+    for &cipher in CIPHERS {
         report.add(Box::new(
             EncryptDecryptRoundtrip::with_cipher(
                 &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
