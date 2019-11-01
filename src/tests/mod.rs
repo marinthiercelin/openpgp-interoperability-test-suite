@@ -13,6 +13,7 @@ mod hashes;
 mod compression;
 mod key_generation;
 mod certificates;
+mod messages;
 mod ecc;
 
 /// Metadata for the tests.
@@ -192,6 +193,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     compression::schedule(report)?;
     key_generation::schedule(report)?;
     certificates::schedule(report)?;
+    messages::schedule(report)?;
     ecc::schedule(report)?;
     Ok(())
 }
