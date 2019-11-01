@@ -116,7 +116,8 @@ impl crate::OpenPGP for DKGPG {
         // https://savannah.nongnu.org/bugs/index.php?57098
         let recipient_file =
             self.stash_armored(recipient, openpgp::armor::Kind::SecretKey)?;
-        let ciphertext_file = self.stash_bytes(ciphertext)?;
+        let ciphertext_file =
+            self.stash_armored(ciphertext, openpgp::armor::Kind::Message)?;
         let o = self.run("dkg-decrypt",
                          &["-y",
                            recipient_file.path().to_str().unwrap(),
