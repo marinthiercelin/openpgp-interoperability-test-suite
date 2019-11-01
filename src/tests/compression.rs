@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-/// Tests maximum recursion depth of the consumer's parser.
+/// Tests support for compression algorithms.
 struct CompressionSupport {
 }
 
@@ -34,7 +34,8 @@ impl Test for CompressionSupport {
     }
 
     fn description(&self) -> String {
-        "This test support for the different compression algorithms.".into()
+        "This tests support for the different compression algorithms \
+         using Sequoia to generate the artifacts.".into()
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
