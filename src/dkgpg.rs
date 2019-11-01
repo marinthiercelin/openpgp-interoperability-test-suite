@@ -149,7 +149,8 @@ impl crate::OpenPGP for DKGPG {
         let signer_file =
             self.stash_armored(signer, openpgp::armor::Kind::PublicKey)?;
         let data_file = self.stash_bytes(data)?;
-        let sig_file = self.stash_bytes(sig)?;
+        let sig_file =
+            self.stash_armored(sig, openpgp::armor::Kind::Signature)?;
         let o = self.run("dkg-verify",
                          &["-i",
                            data_file.path().to_str().unwrap(),
