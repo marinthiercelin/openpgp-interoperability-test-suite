@@ -10,6 +10,7 @@ mod asymmetric_encryption;
 mod symmetric_encryption;
 mod detached_signature;
 mod hashes;
+mod compression;
 mod key_generation;
 mod certificates;
 mod ecc;
@@ -188,6 +189,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     symmetric_encryption::schedule(report)?;
     detached_signature::schedule(report)?;
     hashes::schedule(report)?;
+    compression::schedule(report)?;
     key_generation::schedule(report)?;
     certificates::schedule(report)?;
     ecc::schedule(report)?;
