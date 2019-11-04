@@ -33,3 +33,8 @@ pub fn file(name: &str) -> &'static [u8] {
 pub fn certificate(name: &str) -> &'static [u8] {
     file(&format!("certificates/{}", name))
 }
+
+/// Returns the content of the given file below `data/messages`.
+pub fn message(name: &str) -> &'static [u8] {
+    file(&format!("messages/{}", name))
+}

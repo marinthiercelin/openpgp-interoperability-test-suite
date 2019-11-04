@@ -42,9 +42,14 @@ impl SymmetricEncryptionSupport {
                 cipher: SymmetricAlgorithm, msg: Data)
                 -> Result<(String, Data)>
     {
-        let _ = (recipient, msg);
-        Err(failure::format_err!(
-            "Unsupported symmetric algorithm: {:?}", cipher))
+        match (&recipient.keyid().to_hex()[..], cipher, msg) {
+            ("7C2FAA4DF93C37B2", SymmetricAlgorithm::IDEA, _) =>
+                Ok((cipher.to_string(),
+                    data::message("7C2FAA4DF93C37B2.IDEA.pgp").into())),
+            _ =>
+                Err(failure::format_err!(
+                    "Unsupported symmetric algorithm: {:?}", cipher))
+        }
     }
 }
 
