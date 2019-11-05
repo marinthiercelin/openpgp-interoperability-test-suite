@@ -85,7 +85,7 @@ impl ConsumerTest for EdDSASignatureEncoding {
 }
 
 pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("Certificates");
+    report.add_section("Elliptic Curve Cryptography");
     report.add(Box::new(EdDSASignatureEncoding::new()?));
     Ok(())
 }
