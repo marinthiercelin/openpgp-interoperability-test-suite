@@ -51,7 +51,7 @@ version() {
     gpgx --version | awk '/^gpg /{ print "GnuPG " $3; exit 0; } //{ exit 1 }'
 }
 
-generate() {
+generate-key() {
     local uid1="$1"
     shift
     gpgx --status-file "$homedir/keygen.status" --quick-gen-key "$uid1"
@@ -63,7 +63,7 @@ generate() {
     gpgx --armor --export-secret-key "0x$fpr"
 }
 
-convert() {
+extract-cert() {
     gpgx --import
     gpgx --armor --export
 }
@@ -82,9 +82,7 @@ verify() {
     done
 
     gpgx --status-file "$homedir/verify.status" --verify "$signature" -
-    for timestamp in $(awk '{ if ($2 == "VALIDSIG") { print $5 } }' < "$homedir/verify.status"); do
-        date -u -d "@$timestamp" '+%Y-%m-%dT%H:%M:%SZ'
-    done
+    TZ=UTC awk '{ if ($2 == "VALIDSIG") { print strftime("%Y-%m-%dT%H:%M:%SZ", $5) " " $3 " " $12 } }' < "$homedir/verify.status"
 }
 
 encrypt() {
@@ -104,7 +102,7 @@ decrypt() {
 }
 
 case "$cmd" in
-    version|encrypt|decrypt|generate|convert|sign|verify)
+    version|encrypt|decrypt|generate-key|extract-cert|sign|verify)
         "$cmd" "$@"
         ;;
     *)
