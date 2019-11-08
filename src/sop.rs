@@ -127,7 +127,7 @@ impl crate::OpenPGP for Sop {
     }
 
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
-        let mut args = vec!["generate"];
+        let mut args = vec!["generate-key"];
         for u in userids {
             args.push(u);
         }
