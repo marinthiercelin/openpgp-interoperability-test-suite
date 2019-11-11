@@ -42,6 +42,28 @@
       (<a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/commit/{{
       commit }}">{{commit}}</a>).
     </p>
+    <p>
+      Note: These results are not opinionated, i.e. they merely
+      reflect what implementations do, without judging whether this is
+      the correct thing or not.  Therefore, these results must be
+      carefully interpreted.
+    </p>
+    <p>
+      This test suite has been <a href="#hall-of-fame">very
+      successful</a> in identifying problems in many OpenPGP
+      implementations.  If you want to see your implementation
+      included in these results, please implement the
+      <a href="https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli-01">
+	Stateless OpenPGP Command Line Interface
+      </a>
+      and open an issue in our
+      <a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/issues">
+	tracker
+      </a>.  Note: The implementation doesn't have to be complete to
+      be useful.  Currently, the test suite only uses "generate-key",
+      "encrypt", "decrypt", "sign", and "verify", each without any
+      arguments.
+    </p>
     <hr />
     <h1>Table of Contents</h1>
     <ol>
