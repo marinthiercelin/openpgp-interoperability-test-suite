@@ -1,8 +1,10 @@
 use std::io::Write;
 
 use sequoia_openpgp as openpgp;
+use openpgp::armor;
 use openpgp::constants::{CompressionAlgorithm, KeyFlags};
 use openpgp::parse::Parse;
+use openpgp::serialize::Serialize;
 
 use crate::{
     Data,
@@ -16,6 +18,18 @@ use crate::{
         ConsumerTest,
     },
 };
+
+fn make<B: AsRef<[u8]>>(test: &str, b: B, kind: armor::Kind)
+                        -> Result<(String, Data)>
+{
+    let mut buf = Vec::new();
+    {
+        let mut w = armor::Writer::new(&mut buf, kind, &[])?;
+        w.write_all(b.as_ref())?;
+        w.finalize()?;
+    }
+    Ok((test.into(), buf.into()))
+}
 
 /// Tests various conforming, but unusual message structures.
 struct MessageStructure {
@@ -195,9 +209,102 @@ impl ConsumerTest for RecursionDepth {
     }
 }
 
+/// Tests support for the Marker Packet.
+struct MarkerPacket {
+}
+
+impl MarkerPacket {
+    pub fn new() -> Result<MarkerPacket> {
+        Ok(MarkerPacket {
+        })
+    }
+}
+
+impl Test for MarkerPacket {
+    fn title(&self) -> String {
+        "Marker Packet".into()
+    }
+
+    fn description(&self) -> String {
+        "Tests whether the Marker Packet is correctly ignored."
+            .into()
+    }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+           -> Result<TestMatrix> {
+        ConsumerTest::run(self, implementations)
+    }
+}
+
+impl ConsumerTest for MarkerPacket {
+    fn produce(&self) -> Result<Vec<(String, Data)>> {
+        use openpgp::serialize::stream::*;
+
+        let cert =
+            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
+        let mode = KeyFlags::default()
+            .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
+        let r: Recipient =
+            cert.keys_all().key_flags(mode)
+            .nth(0).map(|(_, _, k)| k).unwrap().into();
+        let mut signer =
+            cert.keys_all().signing_capable().secret(true)
+                .nth(0).map(|(_, _, k)| k).unwrap().clone()
+                .mark_parts_secret().into_keypair().unwrap();
+        let marker = openpgp::Packet::Marker(Default::default());
+
+        Ok(vec![{
+            let test = "Marker + Signed Message";
+            let mut b = Vec::new();
+            marker.serialize(&mut b)?;
+            {
+                let mut stack = Message::new(&mut b);
+                stack = Signer::new(stack, vec![&mut signer], None)?;
+                stack = LiteralWriter::new(stack, None, None, None)?;
+                stack.write_all(test.as_bytes())?;
+                stack.finalize()?;
+            }
+            make(test, b, armor::Kind::Message)?
+        }, {
+            let test = "Marker + Encrypted Message";
+            let mut b = Vec::new();
+            marker.serialize(&mut b)?;
+            {
+                let mut stack = Message::new(&mut b);
+                stack = Encryptor::new(stack, &[], vec![&r], None, None)?;
+                stack = Signer::new(stack, vec![&mut signer], None)?;
+                stack = LiteralWriter::new(stack, None, None, None)?;
+                stack.write_all(test.as_bytes())?;
+                stack.finalize()?;
+            }
+            make(test, b, armor::Kind::Message)?
+        }, {
+            let test = "Marker + Certificate";
+            let mut b = Vec::new();
+            marker.serialize(&mut b)?;
+            cert.serialize(&mut b)?;
+            make(test, b, armor::Kind::PublicKey)?
+        }])
+    }
+
+    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+               -> Result<Data> {
+        // Peek at the data to decide what to do.
+        let pp = openpgp::PacketPile::from_bytes(artifact)?;
+        if let Some(openpgp::Packet::PublicKey(_)) = pp.children().nth(1) {
+            // A certificate.
+            let ciphertext = pgp.encrypt(artifact, b"Marker + Certificate")?;
+            pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
+        } else {
+            pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
+        }
+    }
+}
+
 pub fn schedule(report: &mut Report) -> Result<()> {
     report.add_section("Message structure");
     report.add(Box::new(MessageStructure::new()?));
     report.add(Box::new(RecursionDepth::new(7)?));
+    report.add(Box::new(MarkerPacket::new()?));
     Ok(())
 }
