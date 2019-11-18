@@ -1,3 +1,5 @@
+use sequoia_openpgp as openpgp;
+
 use crate::{
     Data,
     OpenPGP,
@@ -183,6 +185,13 @@ impl TestMatrix {
 struct TestResults {
     artifact: Artifact,
     results: Vec<Artifact>,
+}
+
+/// Extracts the public certificate from the given key.
+pub fn extract_cert(key: &[u8]) -> Result<Data> {
+    use openpgp::parse::Parse;
+    use openpgp::serialize::SerializeInto;
+    Ok(openpgp::TPK::from_bytes(key)?.to_vec()?.into_boxed_slice())
 }
 
 pub fn schedule(report: &mut Report) -> Result<()> {
