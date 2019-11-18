@@ -1,5 +1,11 @@
 use sequoia_openpgp as openpgp;
-use openpgp::constants::{SignatureType, KeyFlags};
+use openpgp::constants::{
+    Features,
+    HashAlgorithm,
+    KeyFlags,
+    SignatureType,
+    SymmetricAlgorithm,
+};
 use openpgp::packet::key;
 use openpgp::packet::signature::Builder;
 use openpgp::parse::Parse;
@@ -16,6 +22,20 @@ use crate::{
         TestMatrix,
         ConsumerTest,
     },
+};
+
+fn make_test(test: &str, packets: Vec<openpgp::Packet>)
+             -> Result<(String, Data)> {
+    use openpgp::serialize::Serialize;
+    let mut buf = Vec::new();
+    {
+        use openpgp::armor;
+        let mut w =
+            armor::Writer::new(&mut buf, armor::Kind::SecretKey, &[])?;
+        openpgp::PacketPile::from(packets).serialize(&mut w)?;
+        w.finalize()?;
+    }
+    Ok((test.into(), buf.into()))
 };
 
 /// Tests how implementation interpret encryption keyflags.
@@ -266,8 +286,247 @@ impl ConsumerTest for EncryptionKeyFlags {
     }
 }
 
+/// Tests how implementation interpret encryption keyflags.
+struct PrimaryKeyFlags {
+}
+
+impl PrimaryKeyFlags {
+    pub fn new() -> Result<PrimaryKeyFlags> {
+        Ok(PrimaryKeyFlags {
+        })
+    }
+}
+
+impl Test for PrimaryKeyFlags {
+    fn title(&self) -> String {
+        "Interpretation of primary key flags".into()
+    }
+
+    fn description(&self) -> String {
+        "This tests various ways of specifying the primary key's \
+         flags.  Key flags can be provided using direct key signatures, \
+         as well as binding signatures on userids.  \
+         Notation: p[flags-on-direct-key-sig] u[flags-on-uid-binding] \
+         s[flags-on-binding], where CSEA refer to certification, signing, \
+         encryption, and authentication capabilities, and 0 refers to an \
+         explicit empty set (the subpacket is present, but empty).  \
+         The key is then used to do an encrypt-decrypt roundtrip."
+            .into()
+    }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+           -> Result<TestMatrix> {
+        ConsumerTest::run(self, implementations)
+    }
+}
+
+impl ConsumerTest for PrimaryKeyFlags {
+    fn produce(&self) -> Result<Vec<(String, Data)>> {
+        let cert =
+            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
+        let primary = cert.primary().clone().mark_parts_secret();
+        let mut primary_signer = primary.clone().into_keypair()?;
+        let userid = cert.userids().nth(0).unwrap().userid().clone();
+        let subkey = cert.subkeys().nth(0).unwrap().key().clone();
+
+        Ok(vec![
+            make_test("p uC sE (basecase)", vec![
+                primary.clone().into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_certify(true))?
+                    .set_features(&Features::default().set_mdc(true))?
+                    .set_preferred_symmetric_algorithms(
+                        vec![SymmetricAlgorithm::AES256])?,
+                    None, None)?.into(),
+                subkey.clone().mark_parts_secret().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::SubkeyBinding)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_encrypt_for_transport(true)
+                                       .set_encrypt_at_rest(true))?,
+                    None, None)?.into(),
+            ])?,
+
+            make_test("pC uC sE", vec![
+                primary.clone().into(),
+                Builder::new(SignatureType::DirectKey)
+                    .set_key_flags(&KeyFlags::default()
+                                   .set_certify(true))?
+                .set_features(&Features::default().set_mdc(true))?
+                .set_preferred_symmetric_algorithms(
+                    vec![SymmetricAlgorithm::AES256])?
+                .sign_primary_key_binding(&mut primary_signer,
+                                          HashAlgorithm::SHA512)?
+                .into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_certify(true))?
+                    .set_features(&Features::default().set_mdc(true))?
+                    .set_preferred_symmetric_algorithms(
+                        vec![SymmetricAlgorithm::AES256])?,
+                    None, None)?.into(),
+                subkey.clone().mark_parts_secret().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::SubkeyBinding)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_encrypt_for_transport(true)
+                                       .set_encrypt_at_rest(true))?,
+                    None, None)?.into(),
+            ])?,
+
+            make_test("pC u sE", vec![
+                primary.clone().into(),
+                Builder::new(SignatureType::DirectKey)
+                    .set_key_flags(&KeyFlags::default()
+                                   .set_certify(true))?
+                .set_features(&Features::default().set_mdc(true))?
+                .set_preferred_symmetric_algorithms(
+                    vec![SymmetricAlgorithm::AES256])?
+                .sign_primary_key_binding(&mut primary_signer,
+                                          HashAlgorithm::SHA512)?
+                .into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate),
+                    None, None)?.into(),
+                subkey.clone().mark_parts_secret().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::SubkeyBinding)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_encrypt_for_transport(true)
+                                       .set_encrypt_at_rest(true))?,
+                    None, None)?.into(),
+            ])?,
+
+            make_test("pC uS sE", vec![
+                primary.clone().into(),
+                Builder::new(SignatureType::DirectKey)
+                    .set_key_flags(&KeyFlags::default()
+                                   .set_certify(true))?
+                .set_features(&Features::default().set_mdc(true))?
+                .set_preferred_symmetric_algorithms(
+                    vec![SymmetricAlgorithm::AES256])?
+                .sign_primary_key_binding(&mut primary_signer,
+                                          HashAlgorithm::SHA512)?
+                .into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_sign(true))?
+                    .set_features(&Features::default().set_mdc(true))?
+                    .set_preferred_symmetric_algorithms(
+                        vec![SymmetricAlgorithm::AES256])?,
+                    None, None)?.into(),
+                subkey.clone().mark_parts_secret().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::SubkeyBinding)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_encrypt_for_transport(true)
+                                       .set_encrypt_at_rest(true))?,
+                    None, None)?.into(),
+            ])?,
+
+            make_test("pC u0 sE", vec![
+                primary.clone().into(),
+                Builder::new(SignatureType::DirectKey)
+                    .set_key_flags(&KeyFlags::default()
+                                   .set_certify(true))?
+                .set_features(&Features::default().set_mdc(true))?
+                .set_preferred_symmetric_algorithms(
+                    vec![SymmetricAlgorithm::AES256])?
+                .sign_primary_key_binding(&mut primary_signer,
+                                          HashAlgorithm::SHA512)?
+                .into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate)
+                        .set_key_flags(&KeyFlags::default())?,
+                    None, None)?.into(),
+                subkey.clone().mark_parts_secret().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::SubkeyBinding)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_encrypt_for_transport(true)
+                                       .set_encrypt_at_rest(true))?,
+                    None, None)?.into(),
+            ])?,
+
+            make_test("p uS sE", vec![
+                primary.clone().into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_sign(true))?
+                    .set_features(&Features::default().set_mdc(true))?
+                    .set_preferred_symmetric_algorithms(
+                        vec![SymmetricAlgorithm::AES256])?,
+                    None, None)?.into(),
+                subkey.clone().mark_parts_secret().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::SubkeyBinding)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_encrypt_for_transport(true)
+                                       .set_encrypt_at_rest(true))?,
+                    None, None)?.into(),
+            ])?,
+
+            make_test("p u sE", vec![
+                primary.clone().into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate),
+                    None, None)?.into(),
+                subkey.clone().mark_parts_secret().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::SubkeyBinding)
+                        .set_key_flags(&KeyFlags::default()
+                                       .set_encrypt_for_transport(true)
+                                       .set_encrypt_at_rest(true))?,
+                    None, None)?.into(),
+            ])?,
+
+            make_test("p u", vec![
+                primary.clone().into(),
+                userid.clone().into(),
+                userid.bind(
+                    &mut primary_signer, &cert,
+                    Builder::new(SignatureType::PositiveCertificate),
+                    None, None)?.into(),
+            ])?,
+        ])
+    }
+
+    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+               -> Result<Data> {
+        let ciphertext = pgp.encrypt(&super::extract_cert(artifact)?, b"Hello World!")?;
+        pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
+    }
+}
+
 pub fn schedule(report: &mut Report) -> Result<()> {
     report.add_section("Certificates");
     report.add(Box::new(EncryptionKeyFlags::new()?));
+    report.add(Box::new(PrimaryKeyFlags::new()?));
     Ok(())
 }
