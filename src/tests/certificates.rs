@@ -9,7 +9,6 @@ use openpgp::constants::{
 use openpgp::packet::key;
 use openpgp::packet::signature::Builder;
 use openpgp::parse::Parse;
-use openpgp::serialize::SerializeInto;
 
 use crate::{
     Data,
@@ -36,7 +35,7 @@ fn make_test(test: &str, packets: Vec<openpgp::Packet>)
         w.finalize()?;
     }
     Ok((test.into(), buf.into()))
-};
+}
 
 /// Tests how implementation interpret encryption keyflags.
 struct EncryptionKeyFlags {
@@ -98,8 +97,7 @@ impl ConsumerTest for EncryptionKeyFlags {
         let key_b = &self.aesk;
 
         Ok(vec![
-            ("A 0x04".into(),
-             openpgp::PacketPile::from({
+            make_test("A 0x04", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -110,9 +108,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_for_transport(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
-            ("A 0x08".into(),
-             openpgp::PacketPile::from({
+            })?,
+            make_test("A 0x08", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -123,9 +120,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_at_rest(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
-            ("A 0x0c, B 0x0c".into(),
-             openpgp::PacketPile::from({
+            })?,
+            make_test("A 0x0c, B 0x0c", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -146,9 +142,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_at_rest(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
-            ("B 0x0c, A 0x0c".into(),
-             openpgp::PacketPile::from({
+            })?,
+            make_test("B 0x0c, A 0x0c", {
                  let mut p = cert_stem.clone();
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
@@ -169,9 +164,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_at_rest(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
-            ("A 0x04, B 0x08".into(),
-             openpgp::PacketPile::from({
+            })?,
+            make_test("A 0x04, B 0x08", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -190,9 +184,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_at_rest(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
-            ("A 0x08, B 0x04".into(),
-             openpgp::PacketPile::from({
+            })?,
+            make_test("A 0x08, B 0x04", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -211,9 +204,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_for_transport(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
-            ("B 0x04, A 0x08".into(),
-             openpgp::PacketPile::from({
+            })?,
+            make_test("B 0x04, A 0x08", {
                  let mut p = cert_stem.clone();
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
@@ -232,9 +224,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_at_rest(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
-            ("B 0x08, A 0x04".into(),
-             openpgp::PacketPile::from({
+            })?,
+            make_test("B 0x08, A 0x04", {
                  let mut p = cert_stem.clone();
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
@@ -253,7 +244,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_encrypt_for_transport(true))?,
                      None, None)?.into());
                  p
-             }).to_vec()?.into_boxed_slice()),
+             })?,
         ])
     }
 
