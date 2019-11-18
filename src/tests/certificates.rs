@@ -111,7 +111,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      None, None)?.into());
                  p
              }).to_vec()?.into_boxed_slice()),
-            ("A 0x04".into(),
+            ("A 0x08".into(),
              openpgp::PacketPile::from({
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
