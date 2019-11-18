@@ -13,7 +13,6 @@ mod tests;
 mod templates;
 
 mod sq;
-mod gnupg;
 mod rnp;
 mod dkgpg;
 mod sop;
@@ -22,7 +21,6 @@ mod sop;
 #[derive(Debug, Clone)]
 pub enum Implementation {
     Sequoia,
-    GnuPG,
     RNP,
     DKGPG,
     Sop(String),
@@ -115,7 +113,6 @@ impl Config {
         for d in self.drivers.iter() {
             r.push(match d.driver.as_str() {
                 "sq" => Box::new(sq::Sq::new(&d.path)?),
-                "gnupg" => Box::new(gnupg::GnuPG::new(&d.path)?),
                 "rnp" => Box::new(rnp::RNP::new(&d.path)?),
                 "dkgpg" => Box::new(dkgpg::DKGPG::new(&d.path)?),
                 "sop" => Box::new(sop::Sop::new(&d.path, &d.env)?),

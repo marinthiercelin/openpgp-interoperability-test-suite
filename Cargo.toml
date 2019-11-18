@@ -16,7 +16,6 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 failure = "0.1"
-gpgme = "0.9"
 indicatif = { version = "0.12", features = ["with_rayon"] }
 lazy_static = "1.4"
 rayon = "1.2"
