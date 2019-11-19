@@ -94,11 +94,8 @@ impl crate::OpenPGP for DKGPG {
 
     fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
-        // XXX: Workaround, see:
-        // https://savannah.nongnu.org/bugs/index.php?57098
         let recipient_fp = openpgp::TPK::from_bytes(recipient)?.fingerprint();
-        let recipient_file =
-            self.stash_armored(recipient, openpgp::armor::Kind::PublicKey)?;
+        let recipient_file = self.stash_bytes(recipient)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
         let o = self.run("dkg-encrypt",
                          &["-k",
@@ -116,8 +113,7 @@ impl crate::OpenPGP for DKGPG {
         // https://savannah.nongnu.org/bugs/index.php?57098
         let recipient_file =
             self.stash_armored(recipient, openpgp::armor::Kind::SecretKey)?;
-        let ciphertext_file =
-            self.stash_armored(ciphertext, openpgp::armor::Kind::Message)?;
+        let ciphertext_file = self.stash_bytes(ciphertext)?;
         let o = self.run("dkg-decrypt",
                          &["-y",
                            recipient_file.path().to_str().unwrap(),
@@ -145,10 +141,7 @@ impl crate::OpenPGP for DKGPG {
     fn verify_detached(&mut self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
-        // XXX: Workaround, see:
-        // https://savannah.nongnu.org/bugs/index.php?57098
-        let signer_file =
-            self.stash_armored(signer, openpgp::armor::Kind::PublicKey)?;
+        let signer_file = self.stash_bytes(signer)?;
         let data_file = self.stash_bytes(data)?;
         let sig_file =
             self.stash_armored(sig, openpgp::armor::Kind::Signature)?;
