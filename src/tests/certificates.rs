@@ -25,12 +25,25 @@ use crate::{
 
 fn make_test(test: &str, packets: Vec<openpgp::Packet>)
              -> Result<(String, Data)> {
+    use openpgp::Packet;
     use openpgp::serialize::Serialize;
+
+    let has_secrets = packets.iter().any(|p| match p {
+        Packet::SecretKey(_) | Packet::SecretSubkey(_) => true,
+        _ => false,
+    });
+
     let mut buf = Vec::new();
     {
         use openpgp::armor;
         let mut w =
-            armor::Writer::new(&mut buf, armor::Kind::SecretKey, &[])?;
+            armor::Writer::new(&mut buf,
+                               if has_secrets {
+                                   armor::Kind::SecretKey
+                               } else {
+                                   armor::Kind::PublicKey
+                               },
+                               &[])?;
         openpgp::PacketPile::from(packets).serialize(&mut w)?;
         w.finalize()?;
     }
