@@ -103,6 +103,7 @@ impl<'a> Report<'a> {
         Ok(Results {
             version: env!("VERGEN_SEMVER").to_string(),
             commit: env!("VERGEN_SHA_SHORT").to_string(),
+            timestamp: chrono::offset::Utc::now(),
             title: format!("OpenPGP interoperability test suite"),
             toc,
             body,
@@ -116,6 +117,7 @@ impl<'a> Report<'a> {
 pub struct Results<'a> {
     version: String,
     commit: String,
+    timestamp: chrono::DateTime<chrono::offset::Utc>,
     title: String,
     toc: Vec<(Entry, Vec<Entry>)>,
     body: String,
