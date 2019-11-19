@@ -189,9 +189,27 @@ struct TestResults {
 
 /// Extracts the public certificate from the given key.
 pub fn extract_cert(key: &[u8]) -> Result<Data> {
-    use openpgp::parse::Parse;
-    use openpgp::serialize::SerializeInto;
-    Ok(openpgp::TPK::from_bytes(key)?.to_vec()?.into_boxed_slice())
+    use openpgp::Packet;
+    use openpgp::parse::{Parse, PacketParser, PacketParserResult};
+    use openpgp::serialize::Serialize;
+    let mut cert = Vec::new();
+
+    let mut ppr = PacketParser::from_bytes(key)?;
+    while let PacketParserResult::Some(pp) = ppr {
+        let (packet, ppr_) = pp.next()?;
+        ppr = ppr_;
+        match packet {
+            Packet::SecretKey(k) =>
+                Packet::PublicKey(k.mark_parts_public())
+                    .serialize(&mut cert)?,
+            Packet::SecretSubkey(k) =>
+                Packet::PublicSubkey(k.mark_parts_public())
+                    .serialize(&mut cert)?,
+            p => p.serialize(&mut cert)?,
+        }
+    }
+
+    Ok(cert.into_boxed_slice())
 }
 
 pub fn schedule(report: &mut Report) -> Result<()> {
