@@ -2,7 +2,7 @@ use std::io::Write;
 
 use sequoia_openpgp as openpgp;
 use openpgp::armor;
-use openpgp::constants::{CompressionAlgorithm, KeyFlags};
+use openpgp::types::CompressionAlgorithm;
 use openpgp::parse::Parse;
 use openpgp::serialize::Serialize;
 
@@ -65,11 +65,6 @@ impl ConsumerTest for MessageStructure {
 
         let cert =
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
-        let mode = KeyFlags::default()
-            .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
-        let r: Recipient =
-            cert.keys_all().key_flags(mode)
-            .nth(0).map(|(_, _, k)| k).unwrap().into();
         let mut t = Vec::new();
 
         for &structure in &[
@@ -93,33 +88,32 @@ impl ConsumerTest for MessageStructure {
                 for layer in structure.chars() {
                     match layer {
                         'e' => {
+                            let r: Recipient =
+                                cert.keys_all()
+                                .encrypting_capable_for_transport()
+                                .nth(0).map(|(_, _, k)| k).unwrap().into();
                             stack =
-                                Encryptor::new(stack, &[], vec![&r], None,
-                                               None)?;
+                                Encryptor::for_recipient(stack, r).build()?;
                             layers.push("encrypt");
                         },
                         'c' => {
                             stack =
-                                Compressor::new(stack, Zip, None)?;
+                                Compressor::new(stack).algo(Zip).build()?;
                             layers.push("compress");
                         },
                         's' => {
-                            // XXX: Due to the design of Signer, we
-                            // currently have to leak the signing
-                            // keypair here.
-                            let signer = Box::new(
-                                cert.keys_all().signing_capable().secret(true)
+                            let signer =
+                                cert.keys_all().signing_capable().secret()
                                 .nth(0).map(|(_, _, k)| k).unwrap().clone()
-                                .mark_parts_secret().into_keypair().unwrap());
+                                .into_keypair().unwrap();
                             stack =
-                                Signer::new(stack, vec![Box::leak(signer)],
-                                            None)?;
+                                Signer::new(stack, signer).build()?;
                             layers.push("sign");
                         },
                         _ => unreachable!("invalid layer code"),
                     }
                 }
-                stack = LiteralWriter::new(stack, None, None, None)?;
+                stack = LiteralWriter::new(stack).build()?;
                 test = layers.join(" ∘ ");
                 stack.write_all(test.as_bytes())?;
                 stack.finalize()?;
@@ -172,27 +166,26 @@ impl ConsumerTest for RecursionDepth {
 
         let cert =
             openpgp::TPK::from_bytes(data::certificate("bob.pgp"))?;
-        let mode = KeyFlags::default()
-            .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
-        let r: Recipient =
-            cert.keys_all().key_flags(mode)
-            .nth(0).map(|(_, _, k)| k).unwrap().into();
         let mut t = Vec::new();
 
         for n in (0..self.max).map(|n| 2_usize.pow(n)) {
             let mut b = Vec::new();
 
             {
+                let r: Recipient =
+                    cert.keys_all().encrypting_capable_for_transport()
+                    .nth(0).map(|(_, _, k)| k).unwrap().into();
+
                 let stack = Message::new(&mut b);
                 let mut stack =
-                    Encryptor::new(stack, &[], vec![&r], None, None)?;
+                    Encryptor::for_recipient(stack, r).build()?;
 
                 for _ in 0..(n - 1) {
-                    stack = Compressor::new(
-                        stack, CompressionAlgorithm::Zip, None)?;
+                    stack = Compressor::new(stack)
+                        .algo(CompressionAlgorithm::Zip).build()?;
                 }
 
-                let mut stack = LiteralWriter::new(stack, None, None, None)?;
+                let mut stack = LiteralWriter::new(stack).build()?;
                 write!(stack, "Literal data at depth {}.", n)?;
                 stack.finalize()?;
             }
@@ -242,15 +235,6 @@ impl ConsumerTest for MarkerPacket {
 
         let cert =
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
-        let mode = KeyFlags::default()
-            .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
-        let r: Recipient =
-            cert.keys_all().key_flags(mode)
-            .nth(0).map(|(_, _, k)| k).unwrap().into();
-        let mut signer =
-            cert.keys_all().signing_capable().secret(true)
-                .nth(0).map(|(_, _, k)| k).unwrap().clone()
-                .mark_parts_secret().into_keypair().unwrap();
         let marker = openpgp::Packet::Marker(Default::default());
 
         Ok(vec![{
@@ -258,22 +242,33 @@ impl ConsumerTest for MarkerPacket {
             let mut b = Vec::new();
             marker.serialize(&mut b)?;
             {
+                let signer =
+                    cert.keys_all().signing_capable().secret()
+                    .nth(0).map(|(_, _, k)| k).unwrap().clone()
+                    .into_keypair().unwrap();
                 let mut stack = Message::new(&mut b);
-                stack = Signer::new(stack, vec![&mut signer], None)?;
-                stack = LiteralWriter::new(stack, None, None, None)?;
+                stack = Signer::new(stack, signer).build()?;
+                stack = LiteralWriter::new(stack).build()?;
                 stack.write_all(test.as_bytes())?;
                 stack.finalize()?;
             }
             make(test, b, armor::Kind::Message)?
         }, {
             let test = "Marker + Encrypted Message";
+            let r: Recipient =
+                cert.keys_all().encrypting_capable_for_transport()
+                .nth(0).map(|(_, _, k)| k).unwrap().into();
+            let signer =
+                cert.keys_all().signing_capable().secret()
+                .nth(0).map(|(_, _, k)| k).unwrap().clone()
+                .into_keypair().unwrap();
             let mut b = Vec::new();
             marker.serialize(&mut b)?;
             {
                 let mut stack = Message::new(&mut b);
-                stack = Encryptor::new(stack, &[], vec![&r], None, None)?;
-                stack = Signer::new(stack, vec![&mut signer], None)?;
-                stack = LiteralWriter::new(stack, None, None, None)?;
+                stack = Encryptor::for_recipient(stack, r).build()?;
+                stack = Signer::new(stack, signer).build()?;
+                stack = LiteralWriter::new(stack).build()?;
                 stack.write_all(test.as_bytes())?;
                 stack.finalize()?;
             }

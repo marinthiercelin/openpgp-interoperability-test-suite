@@ -2,7 +2,7 @@ use std::io::Write;
 
 use sequoia_openpgp as openpgp;
 use openpgp::parse::Parse;
-use openpgp::constants::{KeyFlags, SymmetricAlgorithm};
+use openpgp::types::SymmetricAlgorithm;
 
 use crate::{
     OpenPGP,
@@ -19,7 +19,7 @@ use crate::{
 };
 
 const CIPHERS: &[SymmetricAlgorithm] = {
-    use openpgp::constants::SymmetricAlgorithm::*;
+    use openpgp::types::SymmetricAlgorithm::*;
     &[
         IDEA, TripleDES, CAST5, Blowfish,
         AES128, AES192, AES256,
@@ -75,25 +75,27 @@ impl ConsumerTest for SymmetricEncryptionSupport {
 
         let cert =
             openpgp::TPK::from_bytes(data::certificate("bob.pgp"))?;
-        let mode = KeyFlags::default()
-            .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
-        let recipient: Recipient =
-            cert.keys_all().key_flags(mode)
-            .nth(0).map(|(_, _, k)| k).unwrap().into();
         let mut t = Vec::new();
 
         for &cipher in CIPHERS {
             let mut b = Vec::new();
 
             {
+                let recipient: Recipient =
+                    cert.keys_all().encrypting_capable_for_transport()
+                    .nth(0).map(|(_, _, k)| k).unwrap().into();
                 let msg = format!("Encrypted using {:?}.", cipher)
                     .into_bytes().into_boxed_slice();
                 let stack = Message::new(&mut b);
                 let stack = match
-                    Encryptor::new(stack, &[], vec![&recipient], cipher, None)
+                    Encryptor::for_recipient(stack, recipient).sym_algo(cipher)
+                        .build()
                 {
                     Ok(stack) => stack,
                     Err(_) => {
+                        let recipient: Recipient =
+                            cert.keys_all().encrypting_capable_for_transport()
+                            .nth(0).map(|(_, _, k)| k).unwrap().into();
                         // Cipher is not supported by Sequoia, look
                         // for a fallback.
                         match Self::fallback(&recipient, cipher, msg) {
@@ -103,7 +105,7 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                         continue;
                     },
                 };
-                let mut stack = LiteralWriter::new(stack, None, None, None)?;
+                let mut stack = LiteralWriter::new(stack).build()?;
                 stack.write_all(&msg)?;
                 stack.finalize()?;
             }
@@ -121,8 +123,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
 }
 
 pub fn schedule(report: &mut Report) -> Result<()> {
-    use openpgp::constants::SymmetricAlgorithm::*;
-    use openpgp::constants::AEADAlgorithm::*;
+    use openpgp::types::SymmetricAlgorithm::*;
+    use openpgp::types::AEADAlgorithm::*;
 
     report.add_section("Symmetric Encryption");
     report.add(Box::new(SymmetricEncryptionSupport::new()?));

@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub fn schedule(report: &mut Report) -> Result<()> {
-    use openpgp::constants::HashAlgorithm::*;
+    use openpgp::types::HashAlgorithm::*;
 
     report.add_section("Hash Algorithms");
 

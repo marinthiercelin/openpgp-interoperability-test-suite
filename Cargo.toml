@@ -21,7 +21,7 @@ indicatif = { version = "0.12", features = ["with_rayon"] }
 lazy_static = "1.4"
 rayon = "1.2"
 rlimit = "0.2.1"
-sequoia-openpgp = { git = "https://gitlab.com/sequoia-pgp/sequoia" }
+sequoia-openpgp = { version = "0.12" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.1"

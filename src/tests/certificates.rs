@@ -1,7 +1,6 @@
 use sequoia_openpgp as openpgp;
-use openpgp::constants::{
+use openpgp::types::{
     Features,
-    HashAlgorithm,
     KeyFlags,
     SignatureType,
     SymmetricAlgorithm,
@@ -64,7 +63,8 @@ impl EncryptionKeyFlags {
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
         let keyid_a = cert.subkeys().nth(0).unwrap().key().keyid();
         let aesk: openpgp::packet::Key<key::PublicParts, key::SubordinateRole> =
-            openpgp::packet::key::Key4::generate_rsa(2048)?.into();
+            openpgp::packet::key::Key4::generate_rsa(2048)?
+                .mark_parts_public().into();
         let keyid_b = aesk.keyid();
         Ok(EncryptionKeyFlags {
             cert, aesk, keyid_a, keyid_b,
@@ -99,7 +99,7 @@ impl Test for EncryptionKeyFlags {
 impl ConsumerTest for EncryptionKeyFlags {
     fn produce(&self) -> Result<Vec<(String, Data)>> {
         let mut primary_signer =
-            self.cert.primary().clone().mark_parts_secret().into_keypair()?;
+            self.cert.primary().clone().mark_parts_secret()?.into_keypair()?;
         let cert_stem: Vec<openpgp::Packet> = vec![
             self.cert.primary().clone().into(),
             self.cert.userids().nth(0).unwrap().userid().clone().into(),
@@ -119,7 +119,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
             })?,
             make_test("A 0x08", {
@@ -131,7 +131,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
             })?,
             make_test("A 0x0c, B 0x0c", {
@@ -144,7 +144,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true)
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
                      &mut primary_signer,
@@ -153,7 +153,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true)
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
             })?,
             make_test("B 0x0c, A 0x0c", {
@@ -166,7 +166,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true)
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
                      &mut primary_signer,
@@ -175,7 +175,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true)
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
             })?,
             make_test("A 0x04, B 0x08", {
@@ -187,7 +187,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
                      &mut primary_signer,
@@ -195,7 +195,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
             })?,
             make_test("A 0x08, B 0x04", {
@@ -207,7 +207,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
                      &mut primary_signer,
@@ -215,7 +215,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
             })?,
             make_test("B 0x04, A 0x08", {
@@ -227,7 +227,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
                      &mut primary_signer,
@@ -235,7 +235,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
             })?,
             make_test("B 0x08, A 0x04", {
@@ -247,7 +247,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_at_rest(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
                      &mut primary_signer,
@@ -255,7 +255,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      Builder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
                                         .set_encrypt_for_transport(true))?,
-                     None, None)?.into());
+                     None)?.into());
                  p
              })?,
         ])
@@ -328,7 +328,7 @@ impl ConsumerTest for PrimaryKeyFlags {
     fn produce(&self) -> Result<Vec<(String, Data)>> {
         let cert =
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
-        let primary = cert.primary().clone().mark_parts_secret();
+        let primary = cert.primary().clone().mark_parts_secret()?;
         let mut primary_signer = primary.clone().into_keypair()?;
         let userid = cert.userids().nth(0).unwrap().userid().clone();
         let subkey = cert.subkeys().nth(0).unwrap().key().clone();
@@ -345,15 +345,15 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_features(&Features::default().set_mdc(true))?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?,
-                    None, None)?.into(),
-                subkey.clone().mark_parts_secret().into(),
+                    None)?.into(),
+                subkey.clone().mark_parts_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
                                        .set_encrypt_for_transport(true)
                                        .set_encrypt_at_rest(true))?,
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
 
             make_test("pC uC sE", vec![
@@ -364,8 +364,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                 .set_features(&Features::default().set_mdc(true))?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_primary_key_binding(&mut primary_signer,
-                                          HashAlgorithm::SHA512)?
+                .sign_primary_key_binding(&mut primary_signer)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
@@ -376,15 +375,15 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_features(&Features::default().set_mdc(true))?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?,
-                    None, None)?.into(),
-                subkey.clone().mark_parts_secret().into(),
+                    None)?.into(),
+                subkey.clone().mark_parts_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
                                        .set_encrypt_for_transport(true)
                                        .set_encrypt_at_rest(true))?,
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
 
             make_test("pC u sE", vec![
@@ -395,22 +394,21 @@ impl ConsumerTest for PrimaryKeyFlags {
                 .set_features(&Features::default().set_mdc(true))?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_primary_key_binding(&mut primary_signer,
-                                          HashAlgorithm::SHA512)?
+                .sign_primary_key_binding(&mut primary_signer)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::PositiveCertificate),
-                    None, None)?.into(),
-                subkey.clone().mark_parts_secret().into(),
+                    None)?.into(),
+                subkey.clone().mark_parts_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
                                        .set_encrypt_for_transport(true)
                                        .set_encrypt_at_rest(true))?,
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
 
             make_test("pC uS sE", vec![
@@ -421,8 +419,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                 .set_features(&Features::default().set_mdc(true))?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_primary_key_binding(&mut primary_signer,
-                                          HashAlgorithm::SHA512)?
+                .sign_primary_key_binding(&mut primary_signer)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
@@ -433,15 +430,15 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_features(&Features::default().set_mdc(true))?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?,
-                    None, None)?.into(),
-                subkey.clone().mark_parts_secret().into(),
+                    None)?.into(),
+                subkey.clone().mark_parts_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
                                        .set_encrypt_for_transport(true)
                                        .set_encrypt_at_rest(true))?,
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
 
             make_test("pC u0 sE", vec![
@@ -452,23 +449,22 @@ impl ConsumerTest for PrimaryKeyFlags {
                 .set_features(&Features::default().set_mdc(true))?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_primary_key_binding(&mut primary_signer,
-                                          HashAlgorithm::SHA512)?
+                .sign_primary_key_binding(&mut primary_signer)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::PositiveCertificate)
                         .set_key_flags(&KeyFlags::default())?,
-                    None, None)?.into(),
-                subkey.clone().mark_parts_secret().into(),
+                    None)?.into(),
+                subkey.clone().mark_parts_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
                                        .set_encrypt_for_transport(true)
                                        .set_encrypt_at_rest(true))?,
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
 
             make_test("p uS sE", vec![
@@ -482,15 +478,15 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_features(&Features::default().set_mdc(true))?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?,
-                    None, None)?.into(),
-                subkey.clone().mark_parts_secret().into(),
+                    None)?.into(),
+                subkey.clone().mark_parts_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
                                        .set_encrypt_for_transport(true)
                                        .set_encrypt_at_rest(true))?,
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
 
             make_test("p u sE", vec![
@@ -499,15 +495,15 @@ impl ConsumerTest for PrimaryKeyFlags {
                 userid.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::PositiveCertificate),
-                    None, None)?.into(),
-                subkey.clone().mark_parts_secret().into(),
+                    None)?.into(),
+                subkey.clone().mark_parts_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
                                        .set_encrypt_for_transport(true)
                                        .set_encrypt_at_rest(true))?,
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
 
             make_test("p u", vec![
@@ -516,7 +512,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                 userid.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::PositiveCertificate),
-                    None, None)?.into(),
+                    None)?.into(),
             ])?,
         ])
     }

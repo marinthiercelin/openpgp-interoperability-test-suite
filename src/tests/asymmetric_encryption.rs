@@ -1,7 +1,7 @@
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
-use openpgp::constants::{Features, KeyFlags};
+use openpgp::types::{Features, KeyFlags};
 use openpgp::parse::Parse;
 use openpgp::serialize::SerializeInto;
 
@@ -24,8 +24,8 @@ pub struct EncryptDecryptRoundtrip {
     description: String,
     cert: Vec<u8>,
     key: Vec<u8>,
-    cipher: Option<openpgp::constants::SymmetricAlgorithm>,
-    aead: Option<openpgp::constants::AEADAlgorithm>,
+    cipher: Option<openpgp::types::SymmetricAlgorithm>,
+    aead: Option<openpgp::types::AEADAlgorithm>,
     message: Data,
 }
 
@@ -45,8 +45,8 @@ impl EncryptDecryptRoundtrip {
 
     pub fn with_cipher(title: &str, description: &str, cert: openpgp::TPK,
                        message: Data,
-                       cipher: openpgp::constants::SymmetricAlgorithm,
-                       aead: Option<openpgp::constants::AEADAlgorithm>)
+                       cipher: openpgp::types::SymmetricAlgorithm,
+                       aead: Option<openpgp::types::AEADAlgorithm>)
                        -> Result<EncryptDecryptRoundtrip>
     {
         // Change the cipher preferences of CERT.
@@ -59,10 +59,9 @@ impl EncryptDecryptRoundtrip {
                 &Features::default().set_mdc(true).set_aead(true))?;
         }
         let mut primary_keypair =
-            cert.primary().clone().mark_parts_secret().into_keypair()?;
+            cert.primary().clone().mark_parts_secret()?.into_keypair()?;
         let new_sig = uidb.userid().bind(
-            &mut primary_keypair,
-            &cert, builder, None, None)?;
+            &mut primary_keypair, &cert, builder, None)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
         let key = cert.as_tsk().to_vec()?;
         let cert = cert.to_vec()?;
@@ -136,11 +135,10 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             let mut algos = Vec::new();
             'search: for p in pp.children() {
                 if let openpgp::Packet::PKESK(p) = p {
-                    for (_, _, key) in cert.keys_all().secret(true)
+                    for (_, _, key) in cert.keys_all().secret()
                         .key_flags(mode.clone())
                     {
-                        let mut keypair =
-                            key.clone().mark_parts_secret().into_keypair()?;
+                        let mut keypair = key.clone().into_keypair()?;
                         if let Ok((a, _)) = p.decrypt(&mut keypair) {
                             if a == cipher {
                                 ok = true;

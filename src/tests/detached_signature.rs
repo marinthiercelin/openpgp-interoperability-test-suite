@@ -1,7 +1,7 @@
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
-use openpgp::constants::{HashAlgorithm, SignatureType};
+use openpgp::types::{HashAlgorithm, SignatureType};
 use openpgp::parse::Parse;
 use openpgp::serialize::{Serialize, SerializeInto};
 
@@ -57,7 +57,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
         let cert =
             openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
         let mut primary_keypair =
-            cert.primary().clone().mark_parts_secret().into_keypair()?;
+            cert.primary().clone().mark_parts_secret()?.into_keypair()?;
         let issuer_fp = primary_keypair.public().fingerprint();
         let issuer = issuer_fp.to_keyid();
 
@@ -82,7 +82,9 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             Ok((test.into(), buf.into()))
         };
 
-        let now = time::now();
+        let now = std::time::SystemTime::now();
+        let one_day = std::time::Duration::new(1 * 24 * 60 * 60, 0);
+        let one_week = 7 * one_day;
 
         Ok(vec![
             {
@@ -194,7 +196,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 let mut builder = Builder::new(SignatureType::Binary);
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + time::Duration::days(1)), false)?)?;
+                        now + one_day), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -208,10 +210,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 let mut builder = Builder::new(SignatureType::Binary);
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + time::Duration::days(1)), false)?)?;
+                        now + one_day), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + time::Duration::weeks(1)), false)?)?;
+                        now + one_week), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -225,7 +227,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 let mut builder = Builder::new(SignatureType::Binary);
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + time::Duration::weeks(1)), false)?)?;
+                        now + one_week), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -428,10 +430,9 @@ impl DetachedSignVerifyRoundtrip {
         let builder = openpgp::packet::signature::Builder::from(sig.clone())
             .set_preferred_hash_algorithms(vec![hash])?;
         let mut primary_keypair =
-            cert.primary().clone().mark_parts_secret().into_keypair()?;
+            cert.primary().clone().mark_parts_secret()?.into_keypair()?;
         let new_sig = uidb.userid().bind(
-            &mut primary_keypair,
-            &cert, builder, None, None)?;
+            &mut primary_keypair, &cert, builder, None)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
         let key = cert.as_tsk().to_vec()?;
         let cert = cert.to_vec()?;
