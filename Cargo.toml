@@ -17,7 +17,7 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 failure = "0.1"
-indicatif = { version = "0.12", features = ["with_rayon"] }
+indicatif = { version = "0.12" }
 lazy_static = "1.4"
 rayon = "1.2"
 rlimit = "0.2.1"
