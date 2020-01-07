@@ -1,4 +1,6 @@
+use std::cmp::Ordering;
 use std::process;
+use std::str::FromStr;
 use std::io::Write;
 
 use std::path::{Path, PathBuf};
@@ -8,16 +10,63 @@ use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
+#[derive(Debug, PartialEq, Eq)]
+struct SqVersion {
+    major: usize,
+    minor: usize,
+    patch: usize,
+}
+
+impl Ord for SqVersion {
+    fn cmp(&self, other: &SqVersion) -> Ordering {
+        self.major.cmp(&other.major)
+            .then(self.minor.cmp(&other.minor))
+            .then(self.patch.cmp(&other.patch))
+    }
+}
+
+impl PartialOrd for SqVersion {
+    fn partial_cmp(&self, other: &SqVersion) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl FromStr for SqVersion {
+    type Err = failure::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let mut v = s.split(".");
+        Ok(Self {
+            major: v.next().unwrap().parse()?,
+            minor: v.next().unwrap().parse()?,
+            patch: v.next().unwrap().parse()?,
+        })
+    }
+}
+
+impl SqVersion {
+    fn detect(p: &Path) -> Result<Self> {
+        let o = process::Command::new(p)
+            .arg("--version")
+            .output()?;
+        std::str::from_utf8(&o.stdout)?.trim()
+            .split(' ').nth(1).unwrap()
+            .parse()
+    }
+}
+
 pub struct Sq {
     sq: PathBuf,
     #[allow(dead_code)]
     homedir: TempDir,
+    version: SqVersion,
 }
 
 impl Sq {
     pub fn new<P: AsRef<Path>>(executable: P) -> Result<Sq> {
         let homedir = TempDir::new()?;
-        Ok(Sq { sq: executable.as_ref().into(), homedir })
+        let version = SqVersion::detect(executable.as_ref())?;
+        Ok(Sq { sq: executable.as_ref().into(), homedir, version })
     }
 
     fn run<I, S>(&self, args: I) -> Result<process::Output>
@@ -112,7 +161,11 @@ impl crate::OpenPGP for Sq {
         let o = self.run(&["verify",
                            "--detached",
                            sig_file.path().to_str().unwrap(),
-                           "--public-key-file",
+                           if self.version < "0.13.0".parse().unwrap() {
+                               "--public-key-file"
+                           } else {
+                               "--sender-cert-file"
+                           },
                            signer_file.path().to_str().unwrap(),
                            data_file.path().to_str().unwrap()])?;
         Ok(o.stderr.clone().into_boxed_slice())

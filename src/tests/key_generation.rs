@@ -54,7 +54,7 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
     }
 
     fn check_producer(&self, artifact: &[u8]) -> Result<()> {
-        let tpk = openpgp::TPK::from_bytes(artifact)?;
+        let tpk = openpgp::Cert::from_bytes(artifact)?;
         let userids: HashSet<String> = tpk.userids()
             .map(|uidb| {
                 String::from_utf8_lossy(uidb.userid().value()).to_string()

@@ -23,7 +23,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
                 &format!("Detached Sign-Verify roundtrip using the 'Bob' key \
                           from draft-bre-openpgp-samples-00, modified with the \
                           hash algorithm preference [{:?}].", hash),
-                openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
+                openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
                 b"Hello, world!".to_vec().into_boxed_slice(), hash)?));
     }
 

@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
@@ -51,20 +53,22 @@ impl ConsumerTest for DetachedSignatureSubpacket {
     fn produce(&self) -> Result<Vec<(String, Data)>> {
         use openpgp::packet::signature::Builder;
         use openpgp::packet::signature::subpacket::{
-            Subpacket, SubpacketTag, SubpacketValue, NotationData,
+            Subpacket,
+            SubpacketTag,
+            SubpacketValue, NotationData,
         };
 
         let cert =
-            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
+            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let mut primary_keypair =
             cert.primary().clone().mark_parts_secret()?.into_keypair()?;
         let issuer_fp = primary_keypair.public().fingerprint();
-        let issuer = issuer_fp.to_keyid();
+        let issuer: openpgp::KeyID = issuer_fp.clone().into();
 
         let hash_algo = HashAlgorithm::SHA256;
         let hash_ctx =
-            openpgp::crypto::hash_file(std::io::Cursor::new(&self.message),
-                                       &[hash_algo])?.pop().unwrap().1;
+            openpgp::crypto::hash_reader(std::io::Cursor::new(&self.message),
+                                         &[hash_algo])?.pop().unwrap();
 
         let mut make =
             move |test: &str, builder: Builder| -> Result<(String, Data)>
@@ -75,7 +79,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 let mut w =
                     armor::Writer::new(&mut buf, armor::Kind::Signature, &[])?;
                 openpgp::Packet::Signature(builder.sign_hash(
-                    &mut primary_keypair, hash_algo,
+                    &mut primary_keypair,
                     hash_ctx.clone())?).serialize(&mut w)?;
                 w.finalize()?;
             }
@@ -90,9 +94,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Base case";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -106,9 +111,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "No issuer fingerprint";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
@@ -117,9 +123,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "No issuer fingerprint, hashed issuer";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
@@ -128,9 +135,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "No issuer";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -139,9 +147,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "No issuer, unhashed issuer fingerprint";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -152,9 +161,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Unhashed creation time";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.unhashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -166,6 +176,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "No creation time";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -177,12 +188,13 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Creation time given twice";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -194,9 +206,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Future creation time";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + one_day), false)?)?;
+                        (now + one_day).try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -208,12 +221,13 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Future creation time given twice";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + one_day), false)?)?;
+                        (now + one_day).try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + one_week), false)?)?;
+                        (now + one_week).try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -225,9 +239,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Future creation time, backdated";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
-                        now + one_week), false)?)?;
+                        (now + one_week).try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -235,8 +250,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
                 builder.unhashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 make(test, builder)?
             },
 
@@ -244,9 +259,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Unknown subpacket";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -254,17 +270,19 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
                 builder.hashed_area_mut().add(
-                    Subpacket::with_tag(SubpacketTag::Unknown(127),
-                                        SubpacketValue::Unknown(b"value"),
-                                        false))?;
+                    Subpacket::new(SubpacketValue::Unknown {
+                        tag: SubpacketTag::Unknown(127),
+                        body: b"value".to_vec(),
+                    }, false)?)?;
                 make(test, builder)?
             },
             {
                 let test = "Critical unknown subpacket";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -272,17 +290,19 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
                 builder.hashed_area_mut().add(
-                    Subpacket::with_tag(SubpacketTag::Unknown(127),
-                                        SubpacketValue::Unknown(b"value"),
-                                        true))?;
+                    Subpacket::new(SubpacketValue::Unknown {
+                        tag: SubpacketTag::Unknown(127),
+                        body: b"value".to_vec(),
+                    }, true)?)?;
                 make(test, builder)?
             },
             {
                 let test = "Unknown subpacket, unhashed";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -290,17 +310,19 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
                 builder.unhashed_area_mut().add(
-                    Subpacket::with_tag(SubpacketTag::Unknown(127),
-                                        SubpacketValue::Unknown(b"value"),
-                                        false))?;
+                    Subpacket::new(SubpacketValue::Unknown {
+                        tag: SubpacketTag::Unknown(127),
+                        body: b"value".to_vec(),
+                    }, false)?)?;
                 make(test, builder)?
             },
             {
                 let test = "Critical unknown subpacket, unhashed";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -308,9 +330,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
                 builder.unhashed_area_mut().add(
-                    Subpacket::with_tag(SubpacketTag::Unknown(127),
-                                        SubpacketValue::Unknown(b"value"),
-                                        true))?;
+                    Subpacket::new(SubpacketValue::Unknown {
+                        tag: SubpacketTag::Unknown(127),
+                        body: b"value".to_vec(),
+                    }, true)?)?;
                 make(test, builder)?
             },
 
@@ -318,9 +341,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Unknown notation";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -336,9 +360,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Critical unknown notation";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -354,9 +379,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Unknown notation, unhashed";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -372,9 +398,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Critical unknown notation, unhashed";
                 let mut builder = Builder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
-                    Subpacket::new(SubpacketValue::SignatureCreationTime(now),
-                                   false)?)?;
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
@@ -408,7 +435,7 @@ pub struct DetachedSignVerifyRoundtrip {
 }
 
 impl DetachedSignVerifyRoundtrip {
-    pub fn new(title: &str, description: &str, cert: openpgp::TPK,
+    pub fn new(title: &str, description: &str, cert: openpgp::Cert,
                message: Data) -> Result<DetachedSignVerifyRoundtrip> {
         Ok(DetachedSignVerifyRoundtrip {
             title: title.into(),
@@ -420,7 +447,7 @@ impl DetachedSignVerifyRoundtrip {
         })
     }
 
-    pub fn with_hash(title: &str, description: &str, cert: openpgp::TPK,
+    pub fn with_hash(title: &str, description: &str, cert: openpgp::Cert,
                      message: Data,
                      hash: HashAlgorithm)
                      -> Result<DetachedSignVerifyRoundtrip>
@@ -509,14 +536,14 @@ pub fn schedule(report: &mut Report) -> Result<()> {
             "Detached Sign-Verify roundtrip with key 'Alice'",
             "Detached Sign-Verify roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
-            openpgp::TPK::from_bytes(data::certificate("alice-secret.pgp"))?,
+            openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
     report.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Bob'",
             "Detached Sign-Verify roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
-            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
+            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
     report.add(Box::new(DetachedSignatureSubpacket::new()?));
     Ok(())

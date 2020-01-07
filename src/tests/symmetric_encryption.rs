@@ -74,7 +74,7 @@ impl ConsumerTest for SymmetricEncryptionSupport {
         use openpgp::serialize::stream::*;
 
         let cert =
-            openpgp::TPK::from_bytes(data::certificate("bob.pgp"))?;
+            openpgp::Cert::from_bytes(data::certificate("bob.pgp"))?;
         let mut t = Vec::new();
 
         for &cipher in CIPHERS {
@@ -82,8 +82,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
 
             {
                 let recipient: Recipient =
-                    cert.keys_all().encrypting_capable_for_transport()
-                    .nth(0).map(|(_, _, k)| k).unwrap().into();
+                    cert.keys().policy(None).for_transport_encryption()
+                    .nth(0).unwrap().key().into();
                 let msg = format!("Encrypted using {:?}.", cipher)
                     .into_bytes().into_boxed_slice();
                 let stack = Message::new(&mut b);
@@ -94,8 +94,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                     Ok(stack) => stack,
                     Err(_) => {
                         let recipient: Recipient =
-                            cert.keys_all().encrypting_capable_for_transport()
-                            .nth(0).map(|(_, _, k)| k).unwrap().into();
+                            cert.keys().policy(None).for_transport_encryption()
+                            .nth(0).unwrap().key().into();
                         // Cipher is not supported by Sequoia, look
                         // for a fallback.
                         match Self::fallback(&recipient, cipher, msg) {
@@ -137,7 +137,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
                 &format!("Encrypt-Decrypt roundtrip using the 'Bob' key from \
                           draft-bre-openpgp-samples-00, modified with the \
                           symmetric algorithm preference [{:?}].", cipher),
-                openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
+                openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
                 b"Hello, world!".to_vec().into_boxed_slice(), cipher, None)?));
     }
 
@@ -150,7 +150,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
                           draft-bre-openpgp-samples-00, modified with the \
                           symmetric algorithm preference [AES256], \
                           AEAD algorithm preference [{:?}].", aead_algo),
-                openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
+                openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
                 b"Hello, world!".to_vec().into_boxed_slice(), AES256,
                 Some(aead_algo))?));
     }

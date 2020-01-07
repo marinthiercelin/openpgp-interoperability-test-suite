@@ -49,14 +49,14 @@ impl ConsumerTest for CompressionSupport {
         use openpgp::serialize::stream::*;
 
         let cert =
-            openpgp::TPK::from_bytes(data::certificate("bob.pgp"))?;
+            openpgp::Cert::from_bytes(data::certificate("bob.pgp"))?;
         let mut t = Vec::new();
 
         use CompressionAlgorithm::*;
         for &c in &[Uncompressed, Zip, Zlib, BZip2] {
             let recipient: Recipient =
-                cert.keys_all().encrypting_capable_for_transport()
-                .nth(0).map(|(_, _, k)| k).unwrap().into();
+                cert.keys().policy(None).for_transport_encryption()
+                .nth(0).unwrap().key().into();
 
             let mut b = Vec::new();
 

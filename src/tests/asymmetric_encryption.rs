@@ -30,7 +30,7 @@ pub struct EncryptDecryptRoundtrip {
 }
 
 impl EncryptDecryptRoundtrip {
-    pub fn new(title: &str, description: &str, cert: openpgp::TPK,
+    pub fn new(title: &str, description: &str, cert: openpgp::Cert,
                message: Data) -> Result<EncryptDecryptRoundtrip> {
         Ok(EncryptDecryptRoundtrip {
             title: title.into(),
@@ -43,7 +43,7 @@ impl EncryptDecryptRoundtrip {
         })
     }
 
-    pub fn with_cipher(title: &str, description: &str, cert: openpgp::TPK,
+    pub fn with_cipher(title: &str, description: &str, cert: openpgp::Cert,
                        message: Data,
                        cipher: openpgp::types::SymmetricAlgorithm,
                        aead: Option<openpgp::types::AEADAlgorithm>)
@@ -125,20 +125,20 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             }
         } else if let Some(cipher) = self.cipher {
             // Check that the producer used CIPHER.
-            let cert = openpgp::TPK::from_bytes(&self.key)?;
+            let cert = openpgp::Cert::from_bytes(&self.key)?;
             let pp = openpgp::PacketPile::from_bytes(&artifact)
                 .context("Produced data is malformed")?;
             let mode = KeyFlags::default()
-                .set_encrypt_at_rest(true).set_encrypt_for_transport(true);
+                .set_storage_encryption(true).set_transport_encryption(true);
 
             let mut ok = false;
             let mut algos = Vec::new();
             'search: for p in pp.children() {
                 if let openpgp::Packet::PKESK(p) = p {
-                    for (_, _, key) in cert.keys_all().secret()
+                    for ka in cert.keys().policy(None).secret()
                         .key_flags(mode.clone())
                     {
-                        let mut keypair = key.clone().into_keypair()?;
+                        let mut keypair = ka.key().clone().into_keypair()?;
                         if let Ok((a, _)) = p.decrypt(&mut keypair) {
                             if a == cipher {
                                 ok = true;
@@ -181,14 +181,14 @@ pub fn schedule(report: &mut Report) -> Result<()> {
             "Encrypt-Decrypt roundtrip with key 'Alice'",
             "Encrypt-Decrypt roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
-            openpgp::TPK::from_bytes(data::certificate("alice-secret.pgp"))?,
+            openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
     report.add(Box::new(
         EncryptDecryptRoundtrip::new(
             "Encrypt-Decrypt roundtrip with key 'Bob'",
             "Encrypt-Decrypt roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
-            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?,
+            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
     Ok(())
 }

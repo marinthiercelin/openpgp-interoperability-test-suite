@@ -64,7 +64,7 @@ impl ConsumerTest for MessageStructure {
         use CompressionAlgorithm::Zip;
 
         let cert =
-            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
+            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let mut t = Vec::new();
 
         for &structure in &[
@@ -89,9 +89,9 @@ impl ConsumerTest for MessageStructure {
                     match layer {
                         'e' => {
                             let r: Recipient =
-                                cert.keys_all()
-                                .encrypting_capable_for_transport()
-                                .nth(0).map(|(_, _, k)| k).unwrap().into();
+                                cert.keys().policy(None)
+                                .for_transport_encryption()
+                                .nth(0).unwrap().key().into();
                             stack =
                                 Encryptor::for_recipient(stack, r).build()?;
                             layers.push("encrypt");
@@ -103,8 +103,8 @@ impl ConsumerTest for MessageStructure {
                         },
                         's' => {
                             let signer =
-                                cert.keys_all().signing_capable().secret()
-                                .nth(0).map(|(_, _, k)| k).unwrap().clone()
+                                cert.keys().policy(None).for_signing().secret()
+                                .nth(0).unwrap().key().clone()
                                 .into_keypair().unwrap();
                             stack =
                                 Signer::new(stack, signer).build()?;
@@ -165,7 +165,7 @@ impl ConsumerTest for RecursionDepth {
         use openpgp::serialize::stream::*;
 
         let cert =
-            openpgp::TPK::from_bytes(data::certificate("bob.pgp"))?;
+            openpgp::Cert::from_bytes(data::certificate("bob.pgp"))?;
         let mut t = Vec::new();
 
         for n in (0..self.max).map(|n| 2_usize.pow(n)) {
@@ -173,8 +173,8 @@ impl ConsumerTest for RecursionDepth {
 
             {
                 let r: Recipient =
-                    cert.keys_all().encrypting_capable_for_transport()
-                    .nth(0).map(|(_, _, k)| k).unwrap().into();
+                    cert.keys().policy(None).for_transport_encryption()
+                    .nth(0).unwrap().key().into();
 
                 let stack = Message::new(&mut b);
                 let mut stack =
@@ -234,7 +234,7 @@ impl ConsumerTest for MarkerPacket {
         use openpgp::serialize::stream::*;
 
         let cert =
-            openpgp::TPK::from_bytes(data::certificate("bob-secret.pgp"))?;
+            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let marker = openpgp::Packet::Marker(Default::default());
 
         Ok(vec![{
@@ -243,8 +243,8 @@ impl ConsumerTest for MarkerPacket {
             marker.serialize(&mut b)?;
             {
                 let signer =
-                    cert.keys_all().signing_capable().secret()
-                    .nth(0).map(|(_, _, k)| k).unwrap().clone()
+                    cert.keys().policy(None).for_signing().secret()
+                    .nth(0).unwrap().key().clone()
                     .into_keypair().unwrap();
                 let mut stack = Message::new(&mut b);
                 stack = Signer::new(stack, signer).build()?;
@@ -256,11 +256,11 @@ impl ConsumerTest for MarkerPacket {
         }, {
             let test = "Marker + Encrypted Message";
             let r: Recipient =
-                cert.keys_all().encrypting_capable_for_transport()
-                .nth(0).map(|(_, _, k)| k).unwrap().into();
+                cert.keys().policy(None).for_transport_encryption()
+                .nth(0).unwrap().key().into();
             let signer =
-                cert.keys_all().signing_capable().secret()
-                .nth(0).map(|(_, _, k)| k).unwrap().clone()
+                cert.keys().policy(None).for_signing().secret()
+                .nth(0).unwrap().key().clone()
                 .into_keypair().unwrap();
             let mut b = Vec::new();
             marker.serialize(&mut b)?;

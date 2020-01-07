@@ -86,7 +86,7 @@ impl crate::OpenPGP for RNP {
 
     fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
-        let recipient_fp = openpgp::TPK::from_bytes(recipient)?.fingerprint();
+        let recipient_fp = openpgp::Cert::from_bytes(recipient)?.fingerprint();
         self.import_certificate(recipient)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
         let o = self.run("rnp",
