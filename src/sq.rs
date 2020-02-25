@@ -15,6 +15,7 @@ struct SqVersion {
     major: usize,
     minor: usize,
     patch: usize,
+    pre_release: Option<String>,
 }
 
 impl Ord for SqVersion {
@@ -22,6 +23,7 @@ impl Ord for SqVersion {
         self.major.cmp(&other.major)
             .then(self.minor.cmp(&other.minor))
             .then(self.patch.cmp(&other.patch))
+            .then(self.pre_release.cmp(&other.pre_release))
     }
 }
 
@@ -35,11 +37,15 @@ impl FromStr for SqVersion {
     type Err = failure::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let mut v = s.split(".");
+        let mut v_pre = s.split("-");
+        let mut v =
+            v_pre.next().ok_or(failure::err_msg("No version string found"))?
+            .split(".");
         Ok(Self {
             major: v.next().unwrap().parse()?,
             minor: v.next().unwrap().parse()?,
             patch: v.next().unwrap().parse()?,
+            pre_release: v_pre.next().map(|p| p.into()),
         })
     }
 }
