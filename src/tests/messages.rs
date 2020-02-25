@@ -89,7 +89,7 @@ impl ConsumerTest for MessageStructure {
                     match layer {
                         'e' => {
                             let r: Recipient =
-                                cert.keys().policy(None)
+                                cert.keys().with_policy(super::p(), None)
                                 .for_transport_encryption()
                                 .nth(0).unwrap().key().into();
                             stack =
@@ -103,7 +103,7 @@ impl ConsumerTest for MessageStructure {
                         },
                         's' => {
                             let signer =
-                                cert.keys().policy(None).for_signing().secret()
+                                cert.keys().with_policy(super::p(), None).for_signing().secret()
                                 .nth(0).unwrap().key().clone()
                                 .into_keypair().unwrap();
                             stack =
@@ -173,7 +173,7 @@ impl ConsumerTest for RecursionDepth {
 
             {
                 let r: Recipient =
-                    cert.keys().policy(None).for_transport_encryption()
+                    cert.keys().with_policy(super::p(), None).for_transport_encryption()
                     .nth(0).unwrap().key().into();
 
                 let stack = Message::new(&mut b);
@@ -243,7 +243,8 @@ impl ConsumerTest for MarkerPacket {
             marker.serialize(&mut b)?;
             {
                 let signer =
-                    cert.keys().policy(None).for_signing().secret()
+                    cert.keys().with_policy(super::p(), None)
+                    .for_signing().secret()
                     .nth(0).unwrap().key().clone()
                     .into_keypair().unwrap();
                 let mut stack = Message::new(&mut b);
@@ -256,10 +257,12 @@ impl ConsumerTest for MarkerPacket {
         }, {
             let test = "Marker + Encrypted Message";
             let r: Recipient =
-                cert.keys().policy(None).for_transport_encryption()
+                cert.keys().with_policy(super::p(), None)
+                .for_transport_encryption()
                 .nth(0).unwrap().key().into();
             let signer =
-                cert.keys().policy(None).for_signing().secret()
+                cert.keys().with_policy(super::p(), None)
+                .for_signing().secret()
                 .nth(0).unwrap().key().clone()
                 .into_keypair().unwrap();
             let mut b = Vec::new();

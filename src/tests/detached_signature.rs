@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
+use openpgp::cert::components::Amalgamation;
 use openpgp::types::{HashAlgorithm, SignatureType};
 use openpgp::parse::Parse;
 use openpgp::serialize::{Serialize, SerializeInto};
@@ -61,7 +62,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
         let cert =
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let mut primary_keypair =
-            cert.primary().clone().mark_parts_secret()?.into_keypair()?;
+            cert.primary_key()
+            .key().clone().mark_parts_secret()?.into_keypair()?;
         let issuer_fp = primary_keypair.public().fingerprint();
         let issuer: openpgp::KeyID = issuer_fp.clone().into();
 
@@ -453,13 +455,15 @@ impl DetachedSignVerifyRoundtrip {
                      -> Result<DetachedSignVerifyRoundtrip>
     {
         // Change the hash algorithm preferences of CERT.
-        let (uidb, sig, _) = cert.primary_userid_full(None).unwrap();
-        let builder = openpgp::packet::signature::Builder::from(sig.clone())
+        let uid = cert.primary_userid(super::p(), None).unwrap();
+        let builder = openpgp::packet::signature::Builder::from(
+            uid.binding_signature().clone())
             .set_preferred_hash_algorithms(vec![hash])?;
         let mut primary_keypair =
-            cert.primary().clone().mark_parts_secret()?.into_keypair()?;
-        let new_sig = uidb.userid().bind(
-            &mut primary_keypair, &cert, builder, None)?;
+            cert.primary_key()
+            .key().clone().mark_parts_secret()?.into_keypair()?;
+        let new_sig = uid.bind(
+            &mut primary_keypair, &cert, builder)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
         let key = cert.as_tsk().to_vec()?;
         let cert = cert.to_vec()?;

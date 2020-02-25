@@ -1,6 +1,7 @@
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
+use openpgp::cert::components::Amalgamation;
 use openpgp::types::{Features, KeyFlags};
 use openpgp::parse::Parse;
 use openpgp::serialize::SerializeInto;
@@ -50,8 +51,9 @@ impl EncryptDecryptRoundtrip {
                        -> Result<EncryptDecryptRoundtrip>
     {
         // Change the cipher preferences of CERT.
-        let (uidb, sig, _) = cert.primary_userid_full(None).unwrap();
-        let mut builder = openpgp::packet::signature::Builder::from(sig.clone())
+        let uid = cert.primary_userid(super::p(), None).unwrap();
+        let mut builder = openpgp::packet::signature::Builder::from(
+            uid.binding_signature().clone())
             .set_preferred_symmetric_algorithms(vec![cipher])?;
         if let Some(algo) = aead {
             builder = builder.set_preferred_aead_algorithms(vec![algo])?;
@@ -59,9 +61,9 @@ impl EncryptDecryptRoundtrip {
                 &Features::default().set_mdc(true).set_aead(true))?;
         }
         let mut primary_keypair =
-            cert.primary().clone().mark_parts_secret()?.into_keypair()?;
-        let new_sig = uidb.userid().bind(
-            &mut primary_keypair, &cert, builder, None)?;
+            cert.primary_key()
+            .key().clone().mark_parts_secret()?.into_keypair()?;
+        let new_sig = uid.bind(&mut primary_keypair, &cert, builder)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
         let key = cert.as_tsk().to_vec()?;
         let cert = cert.to_vec()?;
@@ -135,7 +137,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             let mut algos = Vec::new();
             'search: for p in pp.children() {
                 if let openpgp::Packet::PKESK(p) = p {
-                    for ka in cert.keys().policy(None).secret()
+                    for ka in cert.keys().with_policy(super::p(), None).secret()
                         .key_flags(mode.clone())
                     {
                         let mut keypair = ka.key().clone().into_keypair()?;

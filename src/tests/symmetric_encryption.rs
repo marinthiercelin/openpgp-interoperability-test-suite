@@ -82,7 +82,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
 
             {
                 let recipient: Recipient =
-                    cert.keys().policy(None).for_transport_encryption()
+                    cert.keys().with_policy(super::p(), None)
+                    .for_transport_encryption()
                     .nth(0).unwrap().key().into();
                 let msg = format!("Encrypted using {:?}.", cipher)
                     .into_bytes().into_boxed_slice();
@@ -94,7 +95,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                     Ok(stack) => stack,
                     Err(_) => {
                         let recipient: Recipient =
-                            cert.keys().policy(None).for_transport_encryption()
+                            cert.keys().with_policy(super::p(), None)
+                            .for_transport_encryption()
                             .nth(0).unwrap().key().into();
                         // Cipher is not supported by Sequoia, look
                         // for a fallback.

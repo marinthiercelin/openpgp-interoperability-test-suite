@@ -1,4 +1,5 @@
 use sequoia_openpgp as openpgp;
+use openpgp::policy::{Policy, StandardPolicy};
 
 use crate::{
     Data,
@@ -17,6 +18,16 @@ mod key_generation;
 mod certificates;
 mod messages;
 mod ecc;
+
+/// A StandardPolicy for the tests to use.
+fn p() -> &'static dyn Policy {
+    /// XXX: This is a const fn in later versions of Sequoia.
+    lazy_static::lazy_static! {
+        static ref P: StandardPolicy = StandardPolicy::new();
+    }
+    &*P
+}
+
 
 /// Metadata for the tests.
 pub trait Test {

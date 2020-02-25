@@ -55,7 +55,8 @@ impl ConsumerTest for CompressionSupport {
         use CompressionAlgorithm::*;
         for &c in &[Uncompressed, Zip, Zlib, BZip2] {
             let recipient: Recipient =
-                cert.keys().policy(None).for_transport_encryption()
+                cert.keys().with_policy(super::p(), None)
+                .for_transport_encryption()
                 .nth(0).unwrap().key().into();
 
             let mut b = Vec::new();
