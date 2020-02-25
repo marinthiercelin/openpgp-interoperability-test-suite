@@ -112,10 +112,14 @@ impl Config {
         let mut r: Vec<Box<dyn OpenPGP + Sync>> = Vec::new();
         for d in self.drivers.iter() {
             r.push(match d.driver.as_str() {
-                "sq" => Box::new(sq::Sq::new(&d.path)?),
-                "rnp" => Box::new(rnp::RNP::new(&d.path)?),
-                "dkgpg" => Box::new(dkgpg::DKGPG::new(&d.path)?),
-                "sop" => Box::new(sop::Sop::new(&d.path, &d.env)?),
+                "sq" => Box::new(sq::Sq::new(&d.path)
+                                 .context("Creating sq backend")?),
+                "rnp" => Box::new(rnp::RNP::new(&d.path)
+                                 .context("Creating rnp backend")?),
+                "dkgpg" => Box::new(dkgpg::DKGPG::new(&d.path)
+                                 .context("Creating dkgpg backend")?),
+                "sop" => Box::new(sop::Sop::new(&d.path, &d.env)
+                                 .context("Creating sop backend")?),
                 _ => return Err(failure::format_err!("Unknown driver {:?}",
                                                      d.driver)),
             });
@@ -131,7 +135,7 @@ fn real_main() -> failure::Fallible<()> {
         ).context("Reading config file")?;
     c.set_rlimits().context("Setting resource limits")?;
     let implementations = c.implementations()
-        .context("Reading config file")?;
+        .context("Setting up implementations")?;
 
     eprintln!("Configured engines:");
     for i in implementations.iter() {
