@@ -1,5 +1,5 @@
 use sequoia_openpgp as openpgp;
-use openpgp::cert::components::Amalgamation;
+use openpgp::cert::prelude::*;
 use openpgp::types::{
     Features,
     KeyFlags,
@@ -103,7 +103,7 @@ impl ConsumerTest for EncryptionKeyFlags {
             self.cert.primary_key()
             .key().clone().mark_parts_secret()?.into_keypair()?;
         let uid =
-            self.cert.userids().with_policy(super::p(), None).nth(0).unwrap();
+            self.cert.userids().with_policy(super::P, None).nth(0).unwrap();
         let cert_stem: Vec<openpgp::Packet> = vec![
             self.cert.primary_key().key().clone().into(),
             uid.userid().clone().into(),

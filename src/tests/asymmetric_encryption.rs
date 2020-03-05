@@ -1,7 +1,7 @@
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
-use openpgp::cert::components::Amalgamation;
+use openpgp::cert::prelude::*;
 use openpgp::types::{Features, KeyFlags};
 use openpgp::parse::Parse;
 use openpgp::serialize::SerializeInto;
@@ -51,7 +51,7 @@ impl EncryptDecryptRoundtrip {
                        -> Result<EncryptDecryptRoundtrip>
     {
         // Change the cipher preferences of CERT.
-        let uid = cert.primary_userid(super::p(), None).unwrap();
+        let uid = cert.primary_userid(super::P, None).unwrap();
         let mut builder = openpgp::packet::signature::Builder::from(
             uid.binding_signature().clone())
             .set_preferred_symmetric_algorithms(vec![cipher])?;
@@ -137,11 +137,11 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             let mut algos = Vec::new();
             'search: for p in pp.children() {
                 if let openpgp::Packet::PKESK(p) = p {
-                    for ka in cert.keys().with_policy(super::p(), None).secret()
+                    for ka in cert.keys().with_policy(super::P, None).secret()
                         .key_flags(mode.clone())
                     {
                         let mut keypair = ka.key().clone().into_keypair()?;
-                        if let Ok((a, _)) = p.decrypt(&mut keypair) {
+                        if let Ok((a, _)) = p.decrypt(&mut keypair, None) {
                             if a == cipher {
                                 ok = true;
                                 break 'search;

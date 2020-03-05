@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use failure::ResultExt;
 
 use sequoia_openpgp as openpgp;
-use openpgp::cert::components::Amalgamation;
+use openpgp::cert::prelude::*;
 use openpgp::types::{HashAlgorithm, SignatureType};
 use openpgp::parse::Parse;
 use openpgp::serialize::{Serialize, SerializeInto};
@@ -455,7 +455,7 @@ impl DetachedSignVerifyRoundtrip {
                      -> Result<DetachedSignVerifyRoundtrip>
     {
         // Change the hash algorithm preferences of CERT.
-        let uid = cert.primary_userid(super::p(), None).unwrap();
+        let uid = cert.primary_userid(super::P, None).unwrap();
         let builder = openpgp::packet::signature::Builder::from(
             uid.binding_signature().clone())
             .set_preferred_hash_algorithms(vec![hash])?;
