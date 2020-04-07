@@ -102,7 +102,7 @@ impl crate::OpenPGP for DKGPG {
                          &["-k",
                            recipient_file.path().to_str().unwrap(),
                            "-r",
-                           &recipient_fp.to_hex(),
+                           &format!("{:X}", recipient_fp),
                            "-i",
                            plaintext_file.path().to_str().unwrap()])?;
         Ok(o.stdout.clone().into_boxed_slice())
@@ -158,7 +158,7 @@ impl crate::OpenPGP for DKGPG {
 
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
         if userids.len() == 0 {
-            return Err(failure::format_err!(
+            return Err(anyhow::anyhow!(
                 "Generating UID-less keys not supported"));
         }
 

@@ -65,7 +65,7 @@ impl EncryptionKeyFlags {
         let keyid_a = cert.keys().subkeys().nth(0).unwrap().key().keyid();
         let aesk: openpgp::packet::Key<key::PublicParts, key::SubordinateRole> =
             openpgp::packet::key::Key4::generate_rsa(2048)?
-                .mark_parts_public().into();
+                .parts_into_public().into();
         let keyid_b = aesk.keyid();
         Ok(EncryptionKeyFlags {
             cert, aesk, keyid_a, keyid_b,
@@ -101,7 +101,7 @@ impl ConsumerTest for EncryptionKeyFlags {
     fn produce(&self) -> Result<Vec<(String, Data)>> {
         let mut primary_signer =
             self.cert.primary_key()
-            .key().clone().mark_parts_secret()?.into_keypair()?;
+            .key().clone().parts_into_secret()?.into_keypair()?;
         let uid =
             self.cert.userids().with_policy(super::P, None).nth(0).unwrap();
         let cert_stem: Vec<openpgp::Packet> = vec![
@@ -331,7 +331,7 @@ impl ConsumerTest for PrimaryKeyFlags {
     fn produce(&self) -> Result<Vec<(String, Data)>> {
         let cert =
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
-        let primary = cert.primary_key().key().clone().mark_parts_secret()?;
+        let primary = cert.primary_key().key().clone().parts_into_secret()?;
         let mut primary_signer = primary.clone().into_keypair()?;
         let userid = cert.userids().nth(0).unwrap().userid().clone();
         let subkey = cert.keys().subkeys().nth(0).unwrap().key().clone();
@@ -349,7 +349,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
-                subkey.clone().mark_parts_secret()?.into(),
+                subkey.clone().parts_into_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
@@ -379,7 +379,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
-                subkey.clone().mark_parts_secret()?.into(),
+                subkey.clone().parts_into_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
@@ -404,7 +404,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::PositiveCertification))?
                     .into(),
-                subkey.clone().mark_parts_secret()?.into(),
+                subkey.clone().parts_into_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
@@ -434,7 +434,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
-                subkey.clone().mark_parts_secret()?.into(),
+                subkey.clone().parts_into_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
@@ -460,7 +460,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                     Builder::new(SignatureType::PositiveCertification)
                         .set_key_flags(&KeyFlags::default())?)?
                     .into(),
-                subkey.clone().mark_parts_secret()?.into(),
+                subkey.clone().parts_into_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
@@ -482,7 +482,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
-                subkey.clone().mark_parts_secret()?.into(),
+                subkey.clone().parts_into_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)
@@ -499,7 +499,7 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::PositiveCertification))?
                     .into(),
-                subkey.clone().mark_parts_secret()?.into(),
+                subkey.clone().parts_into_secret()?.into(),
                 subkey.bind(
                     &mut primary_signer, &cert,
                     Builder::new(SignatureType::SubkeyBinding)

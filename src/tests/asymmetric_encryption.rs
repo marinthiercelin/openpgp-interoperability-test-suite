@@ -1,4 +1,4 @@
-use failure::ResultExt;
+use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 use openpgp::cert::prelude::*;
@@ -62,7 +62,7 @@ impl EncryptDecryptRoundtrip {
         }
         let mut primary_keypair =
             cert.primary_key()
-            .key().clone().mark_parts_secret()?.into_keypair()?;
+            .key().clone().parts_into_secret()?.into_keypair()?;
         let new_sig = uid.bind(&mut primary_keypair, &cert, builder)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
         let key = cert.as_tsk().to_vec()?;
@@ -107,23 +107,23 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             match pp.children().last() {
                 Some(openpgp::Packet::AED(a)) => {
                     if a.aead() != aead_algo {
-                        return Err(failure::format_err!(
+                        return Err(anyhow::anyhow!(
                             "Producer did not use {:?}, but {:?}",
                             aead_algo, a.aead()));
                     }
 
                     if let Some(cipher) = self.cipher {
                         if a.symmetric_algo() != cipher {
-                            return Err(failure::format_err!(
+                            return Err(anyhow::anyhow!(
                                 "Producer did not use {:?} but {:?}",
                                 cipher, a.symmetric_algo()));
                         }
                     }
                 },
                 Some(p) => return
-                    Err(failure::format_err!("Producer did not use AEAD, found \
+                    Err(anyhow::anyhow!("Producer did not use AEAD, found \
                                               {} packet", p.tag())),
-                None => return Err(failure::format_err!("No packet emitted")),
+                None => return Err(anyhow::anyhow!("No packet emitted")),
             }
         } else if let Some(cipher) = self.cipher {
             // Check that the producer used CIPHER.
@@ -153,7 +153,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             }
 
             if ! ok {
-                return Err(failure::format_err!(
+                return Err(anyhow::anyhow!(
                     "Producer did not use {:?}, but {:?}", cipher, algos));
             }
         }
@@ -170,7 +170,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
         if &artifact[..] == &self.message[..] {
             Ok(())
         } else {
-            Err(failure::format_err!("Expected {:?}, got {:?}",
+            Err(anyhow::anyhow!("Expected {:?}, got {:?}",
                                      self.message, artifact))
         }
     }

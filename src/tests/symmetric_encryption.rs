@@ -42,12 +42,12 @@ impl SymmetricEncryptionSupport {
                 cipher: SymmetricAlgorithm, msg: Data)
                 -> Result<(String, Data)>
     {
-        match (&recipient.keyid().to_hex()[..], cipher, msg) {
+        match (&format!("{:X}", recipient.keyid())[..], cipher, msg) {
             ("7C2FAA4DF93C37B2", SymmetricAlgorithm::IDEA, _) =>
                 Ok((cipher.to_string(),
                     data::message("7C2FAA4DF93C37B2.IDEA.pgp").into())),
             _ =>
-                Err(failure::format_err!(
+                Err(anyhow::anyhow!(
                     "Unsupported symmetric algorithm: {:?}", cipher))
         }
     }
@@ -89,7 +89,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                     .into_bytes().into_boxed_slice();
                 let stack = Message::new(&mut b);
                 let stack = match
-                    Encryptor::for_recipient(stack, recipient).sym_algo(cipher)
+                    Encryptor::for_recipients(stack, vec![recipient])
+                        .sym_algo(cipher)
                         .build()
                 {
                     Ok(stack) => stack,

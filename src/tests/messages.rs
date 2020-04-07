@@ -93,7 +93,8 @@ impl ConsumerTest for MessageStructure {
                                 .for_transport_encryption()
                                 .nth(0).unwrap().key().into();
                             stack =
-                                Encryptor::for_recipient(stack, r).build()?;
+                                Encryptor::for_recipients(stack, vec![r])
+                                .build()?;
                             layers.push("encrypt");
                         },
                         'c' => {
@@ -178,7 +179,7 @@ impl ConsumerTest for RecursionDepth {
 
                 let stack = Message::new(&mut b);
                 let mut stack =
-                    Encryptor::for_recipient(stack, r).build()?;
+                    Encryptor::for_recipients(stack, vec![r]).build()?;
 
                 for _ in 0..(n - 1) {
                     stack = Compressor::new(stack)
@@ -269,7 +270,7 @@ impl ConsumerTest for MarkerPacket {
             marker.serialize(&mut b)?;
             {
                 let mut stack = Message::new(&mut b);
-                stack = Encryptor::for_recipient(stack, r).build()?;
+                stack = Encryptor::for_recipients(stack, vec![r]).build()?;
                 stack = Signer::new(stack, signer).build()?;
                 stack = LiteralWriter::new(stack).build()?;
                 stack.write_all(test.as_bytes())?;

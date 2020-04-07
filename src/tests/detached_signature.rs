@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use failure::ResultExt;
+use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 use openpgp::cert::prelude::*;
@@ -63,7 +63,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let mut primary_keypair =
             cert.primary_key()
-            .key().clone().mark_parts_secret()?.into_keypair()?;
+            .key().clone().parts_into_secret()?.into_keypair()?;
         let issuer_fp = primary_keypair.public().fingerprint();
         let issuer: openpgp::KeyID = issuer_fp.clone().into();
 
@@ -461,7 +461,7 @@ impl DetachedSignVerifyRoundtrip {
             .set_preferred_hash_algorithms(vec![hash])?;
         let mut primary_keypair =
             cert.primary_key()
-            .key().clone().mark_parts_secret()?.into_keypair()?;
+            .key().clone().parts_into_secret()?.into_keypair()?;
         let new_sig = uid.bind(
             &mut primary_keypair, &cert, builder)?;
         let cert = cert.merge_packets(vec![new_sig.into()])?;
@@ -503,7 +503,7 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
         let pp = openpgp::PacketPile::from_bytes(&artifact)
             .context("Produced data is malformed")?;
         if pp.children().count() != 1 {
-            return Err(failure::format_err!(
+            return Err(anyhow::anyhow!(
                 "Producer produced more than one packet: {:?}",
                 pp.children().collect::<Vec<_>>()));
         }
@@ -512,14 +512,14 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
             openpgp::Packet::Signature(p) =>
                 if let Some(hash) = self.hash {
                     if p.hash_algo() != hash {
-                        return Err(failure::format_err!(
+                        return Err(anyhow::anyhow!(
                             "Producer did not use {:?}, but {:?}",
                             hash, p.hash_algo()));
                     }
                 },
 
             p => return
-                Err(failure::format_err!(
+                Err(anyhow::anyhow!(
                     "Producer did produce an Signature packet, found \
                      {:?} packet", p)),
         }

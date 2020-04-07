@@ -64,14 +64,14 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
         let missing: Vec<&str> = self.userids.difference(&userids)
             .map(|s| &s[..]).collect();
         if ! missing.is_empty() {
-            return Err(failure::format_err!("Missing userids: {:?}",
+            return Err(anyhow::anyhow!("Missing userids: {:?}",
                                             missing));
         }
 
         let additional: Vec<&str> = userids.difference(&self.userids)
             .map(|s| &s[..]).collect();
         if ! additional.is_empty() {
-            return Err(failure::format_err!("Additional userids: {:?}",
+            return Err(anyhow::anyhow!("Additional userids: {:?}",
                                             additional));
         }
 

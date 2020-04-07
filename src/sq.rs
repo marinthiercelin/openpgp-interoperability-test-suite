@@ -34,12 +34,12 @@ impl PartialOrd for SqVersion {
 }
 
 impl FromStr for SqVersion {
-    type Err = failure::Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
         let mut v_pre = s.split("-");
         let mut v =
-            v_pre.next().ok_or(failure::err_msg("No version string found"))?
+            v_pre.next().ok_or(anyhow::anyhow!("No version string found"))?
             .split(".");
         Ok(Self {
             major: v.next().unwrap().parse()?,

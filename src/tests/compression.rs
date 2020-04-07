@@ -64,7 +64,7 @@ impl ConsumerTest for CompressionSupport {
             {
                 let stack = Message::new(&mut b);
                 let stack =
-                    Encryptor::for_recipient(stack, recipient).build()?;
+                    Encryptor::for_recipients(stack, vec![recipient]).build()?;
                 let stack = Compressor::new(stack).algo(c).build()?;
                 let mut literal_writer = LiteralWriter::new(stack).build()?;
 

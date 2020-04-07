@@ -34,9 +34,9 @@ impl Entry {
         use std::error::Error;
         get().render("section.inc.html", self)
             .map_err(|e| if let Some(s) = e.source() {
-                failure::format_err!("{}: {}", e, s)
+                anyhow::anyhow!("{}: {}", e, s)
             } else {
-                failure::format_err!("{}", e)
+                anyhow::anyhow!("{}", e)
             })
     }
 }
@@ -130,9 +130,9 @@ impl<'a> Renderable for Results<'a> {
         use std::error::Error;
         get().render("results.html", self)
             .map_err(|e| if let Some(s) = e.source() {
-                failure::format_err!("{}: {}", e, s)
+                anyhow::anyhow!("{}: {}", e, s)
             } else {
-                failure::format_err!("{}", e)
+                anyhow::anyhow!("{}", e)
             })
     }
 }
@@ -142,9 +142,9 @@ impl Renderable for crate::tests::TestMatrix {
         use std::error::Error;
         get().render("test-matrix.inc.html", self)
             .map_err(|e| if let Some(s) = e.source() {
-                failure::format_err!("{}: {}", e, s)
+                anyhow::anyhow!("{}: {}", e, s)
             } else {
-                failure::format_err!("{}", e)
+                anyhow::anyhow!("{}", e)
             })
     }
 }

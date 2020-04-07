@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fs;
 
-use failure::ResultExt;
+use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 use openpgp::{
@@ -102,7 +102,7 @@ impl Config {
             match key.as_str() {
                 "DATA" => rlimit::RLimit::DATA.set(value, value)?,
                 _ => return
-                    Err(failure::format_err!("Unknown limit {:?}", key)),
+                    Err(anyhow::anyhow!("Unknown limit {:?}", key)),
             }
         }
         Ok(())
@@ -120,7 +120,7 @@ impl Config {
                                  .context("Creating dkgpg backend")?),
                 "sop" => Box::new(sop::Sop::new(&d.path, &d.env)
                                  .context("Creating sop backend")?),
-                _ => return Err(failure::format_err!("Unknown driver {:?}",
+                _ => return Err(anyhow::anyhow!("Unknown driver {:?}",
                                                      d.driver)),
             });
         }
@@ -128,7 +128,7 @@ impl Config {
     }
 }
 
-fn real_main() -> failure::Fallible<()> {
+fn main() -> anyhow::Result<()> {
     let c: Config =
         serde_json::from_reader(
             fs::File::open("config.json").context("Opening config file")?
@@ -150,31 +150,18 @@ fn real_main() -> failure::Fallible<()> {
     Ok(())
 }
 
-fn main() {
-    if let Err(e) = real_main() {
-        let mut cause = e.as_fail();
-        eprint!("{}", cause);
-        while let Some(c) = cause.cause() {
-            eprint!(":\n  {}", c);
-            cause = c;
-        }
-        eprintln!();
-        std::process::exit(2);
-    }
-}
-
-#[derive(failure::Fail, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone)]
 pub enum Error {
     /// Not implemented by the driver.
-    #[fail(display = "This is not implemented by the driver.")]
+    #[error("This is not implemented by the driver.")]
     NotImplemented,
 
     /// This should not happen.
-    #[fail(display = "This should not happen.")]
+    #[error("This should not happen.")]
     InternalDriverError,
 
     /// Unspecified engine error.
-    #[fail(display = "Unspecified engine error.  Status: {}, stderr:\n{}",
+    #[error("Unspecified engine error.  Status: {}, stderr:\n{}",
            _0, _1)]
     EngineError(std::process::ExitStatus, String),
 }

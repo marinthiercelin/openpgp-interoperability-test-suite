@@ -204,10 +204,10 @@ pub fn extract_cert(key: &[u8]) -> Result<Data> {
         ppr = ppr_;
         match packet {
             Packet::SecretKey(k) =>
-                Packet::PublicKey(k.mark_parts_public())
+                Packet::PublicKey(k.parts_into_public())
                     .serialize(&mut cert)?,
             Packet::SecretSubkey(k) =>
-                Packet::PublicSubkey(k.mark_parts_public())
+                Packet::PublicSubkey(k.parts_into_public())
                     .serialize(&mut cert)?,
             p => p.serialize(&mut cert)?,
         }

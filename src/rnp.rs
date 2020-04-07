@@ -136,7 +136,7 @@ impl crate::OpenPGP for RNP {
 
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
         if userids.len() == 0 {
-            return Err(failure::format_err!(
+            return Err(anyhow::anyhow!(
                 "Generating UID-less keys not supported"));
         }
 
