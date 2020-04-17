@@ -2,7 +2,7 @@ use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 use openpgp::cert::prelude::*;
-use openpgp::types::{Features, KeyFlags};
+use openpgp::types::{Features, KeyFlags, Timestamp};
 use openpgp::parse::Parse;
 use openpgp::serialize::SerializeInto;
 
@@ -54,6 +54,7 @@ impl EncryptDecryptRoundtrip {
         let uid = cert.primary_userid(super::P, None).unwrap();
         let mut builder = openpgp::packet::signature::Builder::from(
             uid.binding_signature().clone())
+            .set_signature_creation_time(Timestamp::now())?
             .set_preferred_symmetric_algorithms(vec![cipher])?;
         if let Some(algo) = aead {
             builder = builder.set_preferred_aead_algorithms(vec![algo])?;

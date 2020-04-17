@@ -4,7 +4,7 @@ use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 use openpgp::cert::prelude::*;
-use openpgp::types::{HashAlgorithm, SignatureType};
+use openpgp::types::{HashAlgorithm, SignatureType, Timestamp};
 use openpgp::parse::Parse;
 use openpgp::serialize::{Serialize, SerializeInto};
 
@@ -458,6 +458,7 @@ impl DetachedSignVerifyRoundtrip {
         let uid = cert.primary_userid(super::P, None).unwrap();
         let builder = openpgp::packet::signature::Builder::from(
             uid.binding_signature().clone())
+            .set_signature_creation_time(Timestamp::now())?
             .set_preferred_hash_algorithms(vec![hash])?;
         let mut primary_keypair =
             cert.primary_key()
