@@ -24,7 +24,7 @@ fn make<B: AsRef<[u8]>>(test: &str, b: B, kind: armor::Kind)
 {
     let mut buf = Vec::new();
     {
-        let mut w = armor::Writer::new(&mut buf, kind, &[])?;
+        let mut w = armor::Writer::new(&mut buf, kind)?;
         w.write_all(b.as_ref())?;
         w.finalize()?;
     }
@@ -290,7 +290,8 @@ impl ConsumerTest for MarkerPacket {
                -> Result<Data> {
         // Peek at the data to decide what to do.
         let pp = openpgp::PacketPile::from_bytes(artifact)?;
-        if let Some(openpgp::Packet::PublicKey(_)) = pp.children().nth(1) {
+        let mut children = pp.children();
+        if let Some(openpgp::Packet::PublicKey(_)) = children.nth(1) {
             // A certificate.
             let ciphertext = pgp.encrypt(artifact, b"Marker + Certificate")?;
             pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)

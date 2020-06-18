@@ -182,10 +182,10 @@ fn pgp2string(v: tera::Value,
     if ! armored {
         let mut armored = Vec::new();
         {
-            let mut writer = openpgp::armor::Writer::new(
+            let mut writer = openpgp::armor::Writer::with_headers(
                 &mut armored, openpgp::armor::Kind::File,
-                &[("Comment",
-                   "ASCII Armor added by openpgp-interoperability-test-suite")])
+                Some(("Comment",
+                      "ASCII Armor added by openpgp-interoperability-test-suite")))
                     .unwrap();
             writer.write_all(&bytes[..]).unwrap();
             writer.finalize().unwrap();

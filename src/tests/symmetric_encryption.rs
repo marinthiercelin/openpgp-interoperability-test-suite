@@ -90,7 +90,7 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                 let stack = Message::new(&mut b);
                 let stack = match
                     Encryptor::for_recipients(stack, vec![recipient])
-                        .sym_algo(cipher)
+                        .symmetric_algo(cipher)
                         .build()
                 {
                     Ok(stack) => stack,

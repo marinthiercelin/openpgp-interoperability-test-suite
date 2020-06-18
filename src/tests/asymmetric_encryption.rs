@@ -51,8 +51,9 @@ impl EncryptDecryptRoundtrip {
                        -> Result<EncryptDecryptRoundtrip>
     {
         // Change the cipher preferences of CERT.
-        let uid = cert.primary_userid(super::P, None).unwrap();
-        let mut builder = openpgp::packet::signature::Builder::from(
+        let uid = cert.with_policy(super::P, None).unwrap()
+            .primary_userid().unwrap();
+        let mut builder = openpgp::packet::signature::SignatureBuilder::from(
             uid.binding_signature().clone())
             .set_signature_creation_time(Timestamp::now())?
             .set_preferred_symmetric_algorithms(vec![cipher])?;
@@ -65,7 +66,7 @@ impl EncryptDecryptRoundtrip {
             cert.primary_key()
             .key().clone().parts_into_secret()?.into_keypair()?;
         let new_sig = uid.bind(&mut primary_keypair, &cert, builder)?;
-        let cert = cert.merge_packets(vec![new_sig.into()])?;
+        let cert = cert.merge_packets(Some(new_sig))?;
         let key = cert.as_tsk().to_vec()?;
         let cert = cert.to_vec()?;
 
@@ -142,7 +143,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
                         .key_flags(mode.clone())
                     {
                         let mut keypair = ka.key().clone().into_keypair()?;
-                        if let Ok((a, _)) = p.decrypt(&mut keypair, None) {
+                        if let Some((a, _)) = p.decrypt(&mut keypair, None) {
                             if a == cipher {
                                 ok = true;
                                 break 'search;

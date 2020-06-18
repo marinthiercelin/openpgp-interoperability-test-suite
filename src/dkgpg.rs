@@ -52,7 +52,7 @@ impl DKGPG {
             // Already armored.
             f.write_all(o.as_ref())?;
         } else {
-            let mut sink = openpgp::armor::Writer::new(&mut f, kind, &[])?;
+            let mut sink = openpgp::armor::Writer::new(&mut f, kind)?;
             sink.write_all(o.as_ref())?;
             sink.finalize()?;
         }
