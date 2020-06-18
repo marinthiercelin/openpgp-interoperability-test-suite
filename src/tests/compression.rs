@@ -66,9 +66,10 @@ impl ConsumerTest for CompressionSupport {
                 let stack =
                     Encryptor::for_recipients(stack, vec![recipient]).build()?;
                 let stack = Compressor::new(stack).algo(c).build()?;
-                let mut literal_writer = LiteralWriter::new(stack).build()?;
+                let mut stack = LiteralWriter::new(stack).build()?;
 
-                write!(literal_writer, "Compressed using {}.", c)?;
+                write!(stack, "Compressed using {}.", c)?;
+                stack.finalize()?;
             }
 
             t.push((c.to_string(), b.into_boxed_slice()));
