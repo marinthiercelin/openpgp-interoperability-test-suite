@@ -117,6 +117,21 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                                    false)?)?;
                 make(test, builder)?
             },
+            {
+                let test = "Base case, unhashed issuer fingerprint";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::IssuerFingerprint(
+                        issuer_fp.clone()), false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
+                                   false)?)?;
+                make(test, builder)?
+            },
 
             // Issuer and IssuerFingerprint.
             {
