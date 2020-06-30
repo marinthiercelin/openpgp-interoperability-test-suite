@@ -222,6 +222,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "No creation time";
                 let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                // XXX: builder = builder.suppress_signature_creation_time();
                 builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
@@ -229,11 +230,14 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                let sig = make_sig(builder)?;
+                assert!(sig.signature_creation_time().is_none());
+                (test.into(), make_armor(sig)?)
             },
             {
                 let test = "Creation time given twice";
                 let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                // XXX: builder = builder.suppress_signature_creation_time();
                 builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
@@ -252,6 +256,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Future creation time";
                 let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                // XXX: builder = builder.suppress_signature_creation_time();
                 builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
@@ -267,6 +272,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Future creation time given twice";
                 let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                // XXX: builder = builder.suppress_signature_creation_time();
                 builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
@@ -285,6 +291,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             {
                 let test = "Future creation time, backdated";
                 let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                // XXX: builder = builder.suppress_signature_creation_time();
                 builder.hashed_area_mut().clear();
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
