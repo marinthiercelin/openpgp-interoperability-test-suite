@@ -53,6 +53,7 @@ impl Test for DetachedSignatureSubpacket {
 
 impl ConsumerTest for DetachedSignatureSubpacket {
     fn produce(&self) -> Result<Vec<(String, Data)>> {
+        use openpgp::packet::Signature;
         use openpgp::packet::signature::subpacket::{
             Subpacket,
             SubpacketTag,
@@ -61,10 +62,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
 
         let cert =
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
-        let mut primary_keypair =
-            cert.primary_key()
-            .key().clone().parts_into_secret()?.into_keypair()?;
-        let issuer_fp = primary_keypair.public().fingerprint();
+        let issuer_fp = cert.fingerprint();
         let issuer: openpgp::KeyID = issuer_fp.clone().into();
 
         let hash_algo = HashAlgorithm::SHA256;
@@ -72,21 +70,31 @@ impl ConsumerTest for DetachedSignatureSubpacket {
             openpgp::crypto::hash_reader(std::io::Cursor::new(&self.message),
                                          &[hash_algo])?.pop().unwrap();
 
-        let mut make =
-            move |test: &str, builder: SignatureBuilder|
-                 -> Result<(String, Data)>
+        let make_sig = move |builder: SignatureBuilder| -> Result<Signature>
         {
+            let mut primary_keypair =
+                cert.primary_key()
+                .key().clone().parts_into_secret()?.into_keypair()?;
+            builder.sign_hash(&mut primary_keypair, hash_ctx.clone())
+        };
+
+        let make_armor = |sig: Signature| -> Result<Data> {
             let mut buf = Vec::new();
             {
                 use openpgp::armor;
                 let mut w =
                     armor::Writer::new(&mut buf, armor::Kind::Signature)?;
-                openpgp::Packet::Signature(builder.sign_hash(
-                    &mut primary_keypair,
-                    hash_ctx.clone())?).serialize(&mut w)?;
+                openpgp::Packet::Signature(sig).serialize(&mut w)?;
                 w.finalize()?;
             }
-            Ok((test.into(), buf.into()))
+            Ok(buf.into())
+        };
+
+        let make =
+            |test: &str, builder: SignatureBuilder|
+                 -> Result<(String, Data)>
+        {
+            Ok((test.into(), make_armor(make_sig(builder)?)?))
         };
 
         let now = std::time::SystemTime::now();
@@ -159,11 +167,31 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                         issuer_fp.clone()), false)?)?;
                 make(test, builder)?
             },
+            {
+                let test = "No issuer, no issuer fingerprint";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
+                // We need to add issuer information and remove it
+                // after signing.
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(
+                        issuer.clone()), false)?)?;
+
+                let mut sig = make_sig(builder)?;
+                sig.unhashed_area_mut().clear();
+                assert!(sig.issuer().is_none());
+                assert!(sig.issuer_fingerprint().is_none());
+                (test.into(), make_armor(sig)?)
+            },
 
             // Creation time.
             {
                 let test = "Unhashed creation time";
                 let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                // XXX: builder = builder.suppress_signature_creation_time();
                 builder.hashed_area_mut().clear();
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
