@@ -1,9 +1,13 @@
 use std::io::Write;
 
 use sequoia_openpgp as openpgp;
-use openpgp::parse::Parse;
-use openpgp::types::SymmetricAlgorithm;
-
+use openpgp::{
+    PacketPile,
+    packet::prelude::*,
+    parse::Parse,
+    serialize::SerializeInto,
+    types::SymmetricAlgorithm,
+};
 use crate::{
     OpenPGP,
     Data,
@@ -125,6 +129,151 @@ impl ConsumerTest for SymmetricEncryptionSupport {
     }
 }
 
+/// Tests support for symmetric encryption algorithms.
+struct SEIPSupport {
+}
+
+impl SEIPSupport {
+    pub fn new() -> Result<SEIPSupport> {
+        Ok(SEIPSupport {
+        })
+    }
+}
+
+impl Test for SEIPSupport {
+    fn title(&self) -> String {
+        "SEIP packet support".into()
+    }
+
+    fn description(&self) -> String {
+        "This tests support for the Symmetrically Encrypted Integrity \
+         Protected Data Packet (Tag 18) and verifies that modifications to \
+         the ciphertext are detected.  It uses Sequoia to generate the \
+         artifacts.".into()
+    }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+           -> Result<TestMatrix> {
+        ConsumerTest::run(self, implementations)
+    }
+}
+
+impl ConsumerTest for SEIPSupport {
+    fn produce(&self) -> Result<Vec<(String, Data)>> {
+        use openpgp::serialize::stream::*;
+
+        // The tests.
+        let mut t = Vec::new();
+        // Makes tests.
+        let make = |test: &str, message: &[u8]| -> Result<(String, Data)> {
+            let mut buf = Vec::new();
+            {
+                use openpgp::armor;
+                let mut w =
+                    armor::Writer::new(&mut buf, armor::Kind::Message)?;
+                w.write_all(message)?;
+                w.finalize()?;
+            }
+            Ok((test.into(), buf.into()))
+        };
+
+        // Use the RSA key to increase compatibility.
+        let cert =
+            openpgp::Cert::from_bytes(data::certificate("bob.pgp"))?;
+        let recipient: Recipient =
+            cert.keys().with_policy(super::P, None)
+            .for_transport_encryption()
+            .nth(0).unwrap().key().into();
+
+        let mut buf = Vec::new();
+        let message = Message::new(&mut buf);
+        let message = Encryptor::for_recipients(message, vec![recipient])
+            .symmetric_algo(SymmetricAlgorithm::AES256)
+            .build()?;
+        let mut message = LiteralWriter::new(message).build()?;
+        message.write_all(b"Encrypted using SEIP + MDC.")?;
+        message.finalize()?;
+
+        // The base case as-is.
+        t.push(make("Base case", &buf)?);
+
+        // Shave off the MDC packet.
+        let mut packets = PacketPile::from_bytes(&buf)?;
+        if let Some(Packet::SEIP(seip)) = packets.path_ref_mut(&[1]) {
+            let tampered = if let Body::Unprocessed(ciphertext) = seip.body() {
+                Body::Unprocessed(ciphertext[..ciphertext.len() - 22].into())
+            } else {
+                panic!("Unexpected packet body");
+                // XXX: panic!("Unexpected packet body: {:?}", seip.body());
+            };
+            seip.set_body(tampered);
+        } else {
+            panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
+        }
+        t.push(make("Missing MDC", &packets.to_vec()?)?);
+
+        // Downgrade to SED packet.
+        let mut packets = PacketPile::from_bytes(&buf)?;
+        let mut sed = Unknown::new(Tag::SED,
+                                   anyhow::anyhow!("SED not supported"));
+        if let Some(Packet::SEIP(seip)) = packets.path_ref(&[1]) {
+            if let Body::Unprocessed(ciphertext) = seip.body() {
+                sed.set_body(ciphertext[..ciphertext.len() - 22].into());
+            } else {
+                panic!("Unexpected packet body");
+                // XXX: panic!("Unexpected packet body: {:?}", seip.body());
+            }
+        } else {
+            panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
+        }
+        packets.replace(&[1], 1, vec![sed.into()])?;
+        t.push(make("Downgrade to SED", &packets.to_vec()?)?);
+
+        // Tamper with the literal data.
+        let mut packets = PacketPile::from_bytes(&buf)?;
+        if let Some(Packet::SEIP(seip)) = packets.path_ref_mut(&[1]) {
+            let tampered = if let Body::Unprocessed(ciphertext) = seip.body() {
+                let mut body = ciphertext.clone();
+                let l = body.len();
+                body[l - 23] = 0;
+                Body::Unprocessed(body)
+            } else {
+                panic!("Unexpected packet body");
+                // XXX: panic!("Unexpected packet body: {:?}", seip.body());
+            };
+            seip.set_body(tampered);
+        } else {
+            panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
+        }
+        t.push(make("Tampered ciphertext", &packets.to_vec()?)?);
+
+        // Tamper with the MDC.
+        let mut packets = PacketPile::from_bytes(&buf)?;
+        if let Some(Packet::SEIP(seip)) = packets.path_ref_mut(&[1]) {
+            let tampered = if let Body::Unprocessed(ciphertext) = seip.body() {
+                let mut body = ciphertext.clone();
+                let l = body.len();
+                body[l - 1] = 0;
+                Body::Unprocessed(body)
+            } else {
+                panic!("Unexpected packet body");
+                // XXX: panic!("Unexpected packet body: {:?}", seip.body());
+            };
+            seip.set_body(tampered);
+        } else {
+            panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
+        }
+        t.push(make("Tampered MDC", &packets.to_vec()?)?);
+
+        Ok(t)
+    }
+
+    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+               -> Result<Data> {
+        pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
+    }
+}
+
 pub fn schedule(report: &mut Report) -> Result<()> {
     use openpgp::types::SymmetricAlgorithm::*;
     use openpgp::types::AEADAlgorithm::*;
@@ -157,6 +306,8 @@ pub fn schedule(report: &mut Report) -> Result<()> {
                 b"Hello, world!".to_vec().into_boxed_slice(), AES256,
                 Some(aead_algo))?));
     }
+
+    report.add(Box::new(SEIPSupport::new()?));
 
     Ok(())
 }
