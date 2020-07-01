@@ -77,6 +77,10 @@ impl ConsumerTest for MessageStructure {
             "ees",
             "ese",
             "ses",
+            "ess",
+            "esss",
+            "essss",
+            "esssss",
         ] {
             let mut layers = Vec::new();
             let mut test;
