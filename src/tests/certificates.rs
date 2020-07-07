@@ -23,6 +23,8 @@ use crate::{
     },
 };
 
+mod revoked_key;
+
 fn make_test(test: &str, packets: Vec<openpgp::Packet>)
              -> Result<(String, Data)> {
     use openpgp::Packet;
@@ -530,5 +532,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add_section("Certificates");
     report.add(Box::new(EncryptionKeyFlags::new()?));
     report.add(Box::new(PrimaryKeyFlags::new()?));
+
+    revoked_key::schedule(report)?;
     Ok(())
 }
