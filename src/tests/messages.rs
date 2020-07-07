@@ -52,6 +52,10 @@ impl Test for MessageStructure {
             .into()
     }
 
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob-secret.pgp").into())]
+    }
+
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
@@ -159,6 +163,10 @@ impl Test for RecursionDepth {
             .into()
     }
 
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob-secret.pgp").into())]
+    }
+
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
@@ -226,6 +234,10 @@ impl Test for MarkerPacket {
     fn description(&self) -> String {
         "Tests whether the Marker Packet is correctly ignored."
             .into()
+    }
+
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob-secret.pgp").into())]
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])

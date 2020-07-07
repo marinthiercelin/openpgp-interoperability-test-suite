@@ -67,6 +67,10 @@ impl Test for SymmetricEncryptionSupport {
          using Sequoia to generate the artifacts.".into()
     }
 
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob.pgp").into())]
+    }
+
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
@@ -150,6 +154,10 @@ impl Test for SEIPSupport {
          Protected Data Packet (Tag 18) and verifies that modifications to \
          the ciphertext are detected.  It uses Sequoia to generate the \
          artifacts.".into()
+    }
+
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob-secret.pgp").into())]
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])

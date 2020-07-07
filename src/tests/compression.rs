@@ -38,6 +38,10 @@ impl Test for CompressionSupport {
          using Sequoia to generate the artifacts.".into()
     }
 
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob.pgp").into())]
+    }
+
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)

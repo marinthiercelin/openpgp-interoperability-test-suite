@@ -45,6 +45,10 @@ impl Test for DetachedSignatureSubpacket {
          signatures depending on the given subpackets.".into()
     }
 
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob.pgp").into())]
+    }
+
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
@@ -538,6 +542,10 @@ impl Test for DetachedSignVerifyRoundtrip {
 
     fn description(&self) -> String {
         self.description.clone()
+    }
+
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), self.cert.clone().into())]
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix> {

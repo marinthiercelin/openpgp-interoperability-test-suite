@@ -38,6 +38,10 @@ impl Test for EdDSASignatureEncoding {
          accepted.".into()
     }
 
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("alice.pgp").into())]
+    }
+
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
