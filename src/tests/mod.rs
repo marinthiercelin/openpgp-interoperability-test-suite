@@ -26,6 +26,9 @@ const P: &StandardPolicy = &StandardPolicy::new();
 pub trait Test {
     fn title(&self) -> String;
     fn description(&self) -> String;
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        Vec::with_capacity(0)
+    }
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>;
 }
 
@@ -80,6 +83,7 @@ pub trait ConsumerTest : Test {
             title: self.title(),
             slug: crate::templates::slug(&self.title()),
             description: self.description(),
+            artifacts: self.artifacts(),
             consumers: implementations.iter().map(|i| i.version().unwrap())
                 .collect(),
             results: test_results,
@@ -155,6 +159,7 @@ pub trait ProducerConsumerTest : Test {
             title: self.title(),
             slug: crate::templates::slug(&self.title()),
             description: self.description(),
+            artifacts: self.artifacts(),
             consumers: implementations.iter().map(|i| i.version().unwrap())
                 .collect(),
             results: test_results,
@@ -175,6 +180,7 @@ pub struct TestMatrix {
     title: String,
     slug: String,
     description: String,
+    artifacts: Vec<(String, Data)>,
     consumers: Vec<Version>,
     results: Vec<TestResults>,
 }

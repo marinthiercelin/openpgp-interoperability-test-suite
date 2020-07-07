@@ -2,6 +2,24 @@
 <p>
   {{description | safe}}
 </p>
+{%- if artifacts -%}
+<p>
+  Additional artifacts:
+  <ul>
+    {%- for artifact in artifacts -%}
+    <li>
+      <form action="{{dump_url()}}" method="post">
+	<label>
+	  {{artifact.0}}
+	  <button type="submit" title="Inspect with packet dumper">🔎</button>
+	</label>
+	<input name="data" type="hidden" value="{{artifact.1 | pgp2string}}" />
+      </form>
+    </li>
+    {%- endfor -%}
+  </ul>
+</p>
+{%- endif -%}
 <table>
   <tr style="border: none">
     <th></th>
