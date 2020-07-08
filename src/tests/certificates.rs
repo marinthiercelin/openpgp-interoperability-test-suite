@@ -17,6 +17,7 @@ use crate::{
     data,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ConsumerTest,
@@ -26,7 +27,7 @@ use crate::{
 mod revoked_key;
 
 fn make_test(test: &str, packets: Vec<openpgp::Packet>)
-             -> Result<(String, Data)> {
+             -> Result<(String, Data, Option<Expectation>)> {
     use openpgp::Packet;
     use openpgp::serialize::Serialize;
 
@@ -48,7 +49,7 @@ fn make_test(test: &str, packets: Vec<openpgp::Packet>)
         openpgp::PacketPile::from(packets).serialize(&mut w)?;
         w.finalize()?;
     }
-    Ok((test.into(), buf.into()))
+    Ok((test.into(), buf.into(), None))
 }
 
 /// Tests how implementation interpret encryption keyflags.
@@ -99,7 +100,7 @@ impl Test for EncryptionKeyFlags {
 }
 
 impl ConsumerTest for EncryptionKeyFlags {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         let mut primary_signer =
             self.cert.primary_key()
             .key().clone().parts_into_secret()?.into_keypair()?;
@@ -329,7 +330,7 @@ impl Test for PrimaryKeyFlags {
 }
 
 impl ConsumerTest for PrimaryKeyFlags {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         let cert =
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let primary = cert.primary_key().key().clone().parts_into_secret()?;

@@ -15,6 +15,7 @@ use crate::{
     data,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ConsumerTest,
@@ -44,12 +45,13 @@ impl SymmetricEncryptionSupport {
 
     fn fallback(recipient: &openpgp::serialize::stream::Recipient,
                 cipher: SymmetricAlgorithm, msg: Data)
-                -> Result<(String, Data)>
+                -> Result<(String, Data, Option<Expectation>)>
     {
         match (&format!("{:X}", recipient.keyid())[..], cipher, msg) {
             ("7C2FAA4DF93C37B2", SymmetricAlgorithm::IDEA, _) =>
                 Ok((cipher.to_string(),
-                    data::message("7C2FAA4DF93C37B2.IDEA.pgp").into())),
+                    data::message("7C2FAA4DF93C37B2.IDEA.pgp").into(),
+                    None)),
             _ =>
                 Err(anyhow::anyhow!(
                     "Unsupported symmetric algorithm: {:?}", cipher))
@@ -78,7 +80,7 @@ impl Test for SymmetricEncryptionSupport {
 }
 
 impl ConsumerTest for SymmetricEncryptionSupport {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         use openpgp::serialize::stream::*;
 
         let cert =
@@ -86,6 +88,18 @@ impl ConsumerTest for SymmetricEncryptionSupport {
         let mut t = Vec::new();
 
         for &cipher in CIPHERS {
+            use SymmetricAlgorithm::*;
+            let expectation = match cipher {
+                // Even though this is a MUST, it should better be avoided.
+                TripleDES =>
+                    None, // Don't judge.
+                AES128 =>
+                    Some(Ok("AES-128 is a MUST according to RFC4880bis8.".into())),
+                AES192 | AES256 =>
+                    Some(Ok("AES should be supported".into())),
+                _ => None,
+            };
+
             let mut b = Vec::new();
 
             {
@@ -121,7 +135,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                 stack.finalize()?;
             }
 
-            t.push((format!("{:?}", cipher), b.into_boxed_slice()));
+            t.push(
+                (format!("{:?}", cipher), b.into_boxed_slice(), expectation));
         }
 
         Ok(t)
@@ -167,13 +182,16 @@ impl Test for SEIPSupport {
 }
 
 impl ConsumerTest for SEIPSupport {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         use openpgp::serialize::stream::*;
 
         // The tests.
         let mut t = Vec::new();
         // Makes tests.
-        let make = |test: &str, message: &[u8]| -> Result<(String, Data)> {
+        let make =
+            |test: &str, message: &[u8], expectation: Option<Expectation>|
+            -> Result<(String, Data, Option<Expectation>)>
+        {
             let mut buf = Vec::new();
             {
                 use openpgp::armor;
@@ -182,7 +200,7 @@ impl ConsumerTest for SEIPSupport {
                 w.write_all(message)?;
                 w.finalize()?;
             }
-            Ok((test.into(), buf.into()))
+            Ok((test.into(), buf.into(), expectation))
         };
 
         // Use the RSA key to increase compatibility.
@@ -203,7 +221,8 @@ impl ConsumerTest for SEIPSupport {
         message.finalize()?;
 
         // The base case as-is.
-        t.push(make("Base case", &buf)?);
+        t.push(make("Base case", &buf,
+                    Some(Ok("SEIP is a MUST according to RFC4880.".into())))?);
 
         // Shave off the MDC packet.
         let mut packets = PacketPile::from_bytes(&buf)?;
@@ -218,7 +237,8 @@ impl ConsumerTest for SEIPSupport {
         } else {
             panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
         }
-        t.push(make("Missing MDC", &packets.to_vec()?)?);
+        t.push(make("Missing MDC", &packets.to_vec()?,
+                    Some(Err("Missing MDC must abort processing.".into())))?);
 
         // Downgrade to SED packet.
         let mut packets = PacketPile::from_bytes(&buf)?;
@@ -235,7 +255,9 @@ impl ConsumerTest for SEIPSupport {
             panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
         }
         packets.replace(&[1], 1, vec![sed.into()])?;
-        t.push(make("Downgrade to SED", &packets.to_vec()?)?);
+        t.push(make("Downgrade to SED", &packets.to_vec()?,
+                    Some(Err("Security concern: Downgrade must be prevented."
+                             .into())))?);
 
         // Tamper with the literal data.
         let mut packets = PacketPile::from_bytes(&buf)?;
@@ -253,7 +275,9 @@ impl ConsumerTest for SEIPSupport {
         } else {
             panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
         }
-        t.push(make("Tampered ciphertext", &packets.to_vec()?)?);
+        t.push(make("Tampered ciphertext", &packets.to_vec()?,
+                    Some(Err("Security concern: Tampering must be prevented."
+                             .into())))?);
 
         // Tamper with the MDC.
         let mut packets = PacketPile::from_bytes(&buf)?;
@@ -271,7 +295,9 @@ impl ConsumerTest for SEIPSupport {
         } else {
             panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
         }
-        t.push(make("Tampered MDC", &packets.to_vec()?)?);
+        t.push(make("Tampered MDC", &packets.to_vec()?,
+                    Some(Err("Security concern: Tampering must be prevented."
+                             .into())))?);
 
         Ok(t)
     }

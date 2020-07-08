@@ -32,21 +32,20 @@ pub trait Test {
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>;
 }
 
+/// States the expected result of a test.
+type Expectation = std::result::Result<String, String>;
+
 /// Checks that artifacts can be used by all implementations.
 pub trait ConsumerTest : Test {
-    fn produce(&self) -> Result<Vec<(String, Data)>>;
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>>;
     fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8]) -> Result<Data>;
     fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>
     {
         let mut test_results = Vec::new();
 
-        for (description, data) in self.produce()? {
-            let artifact = Artifact {
-                producer: description,
-                data: data,
-                error: "".into(),
-            };
+        for (description, data, expectation) in self.produce()? {
+            let artifact = Artifact::ok(description, data);
 
             let mut results = Vec::new();
             for consumer in implementations.iter() {
@@ -54,17 +53,11 @@ pub trait ConsumerTest : Test {
                 let plaintext = self.consume(c.as_mut(), &artifact.data);
                 let mut a = match plaintext {
                     Ok(p) =>
-                        Artifact {
-                            producer: c.version()?.to_string(),
-                            data: p,
-                            error: "".into(),
-                        },
+                        Artifact::ok(c.version()?.to_string(), p),
                     Err(e) =>
-                        Artifact {
-                            producer: c.version()?.to_string(),
-                            data: Default::default(),
-                            error: e.to_string(),
-                        },
+                        Artifact::err(c.version()?.to_string(),
+                                      Default::default(),
+                                      e.to_string()),
                 };
 
                 if a.error.len() == 0 {
@@ -73,10 +66,12 @@ pub trait ConsumerTest : Test {
                     }
                 }
 
+                a.set_score(&expectation);
+
                 results.push(a);
             }
 
-            test_results.push(TestResults { artifact, results} );
+            test_results.push(TestResults { artifact, results, expectation });
         }
 
         Ok(TestMatrix {
@@ -98,23 +93,21 @@ pub trait ProducerConsumerTest : Test {
     fn check_producer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8]) -> Result<Data>;
     fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
+    fn expectation(&self) -> Option<Expectation> {
+        Some(Ok("Interoperability concern.".into()))
+    }
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>
     {
         let mut test_results = Vec::new();
 
         for producer in implementations.iter() {
+            let expectation = self.expectation();
             let mut p = producer.new_context()?;
             let mut artifact = match self.produce(p.as_mut()) {
-                Ok(d) => Artifact {
-                    producer: p.version()?.to_string(),
-                    data: d,
-                    error: "".into(),
-                },
-                Err(e) => Artifact {
-                    producer: p.version()?.to_string(),
-                    data: Default::default(),
-                    error: e.to_string(),
-                },
+                Ok(d) => Artifact::ok(p.version()?.to_string(), d),
+                Err(e) => Artifact::err(p.version()?.to_string(),
+                                        Default::default(),
+                                        e.to_string()),
             };
             if artifact.error.len() == 0 {
                 if let Err(e) = self.check_producer(&artifact.data) {
@@ -129,18 +122,13 @@ pub trait ProducerConsumerTest : Test {
                     let plaintext = self.consume(c.as_mut(), &artifact.data);
                     let mut a = match plaintext {
                         Ok(p) =>
-                            Artifact {
-                                producer: c.version()?.to_string(),
-                                data: p,
-                                error: "".into(),
-                            },
+                            Artifact::ok(c.version()?.to_string(), p),
                         Err(e) =>
-                            Artifact {
-                                producer: c.version()?.to_string(),
-                                data: Default::default(),
-                                error: e.to_string(),
-                            },
+                            Artifact::err(c.version()?.to_string(),
+                                          Default::default(),
+                                          e.to_string()),
                     };
+                    a.set_score(&expectation);
 
                     if a.error.len() == 0 {
                         if let Err(e) = self.check_consumer(&a.data) {
@@ -152,7 +140,7 @@ pub trait ProducerConsumerTest : Test {
                 }
             }
 
-            test_results.push(TestResults { artifact, results} );
+            test_results.push(TestResults { artifact, results, expectation });
         }
 
         Ok(TestMatrix {
@@ -173,6 +161,40 @@ struct Artifact {
     producer: String,
     data: Data,
     error: String,
+    score: Option<bool>,
+    score_class: &'static str,
+}
+
+impl Artifact {
+    fn ok(producer: String, data: Data) -> Self {
+        Self {
+            producer,
+            data,
+            error: Default::default(),
+            score: None,
+            score_class: "score",
+        }
+    }
+
+    fn err(producer: String, data: Data, error: String) -> Self {
+        Self {
+            producer,
+            data,
+            error,
+            score: None,
+            score_class: "score",
+        }
+    }
+
+    fn set_score(&mut self, expectation: &Option<Expectation>) {
+        self.score =
+            expectation.as_ref().map(|e| e.is_err() == (self.error.len() > 0));
+        match self.score {
+            None => (),
+            Some(true) => self.score_class = "score-good",
+            Some(false) => self.score_class = "score-bad",
+        }
+    }
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -195,6 +217,7 @@ impl TestMatrix {
 struct TestResults {
     artifact: Artifact,
     results: Vec<Artifact>,
+    expectation: Option<Expectation>,
 }
 
 /// Extracts the public certificate from the given key.

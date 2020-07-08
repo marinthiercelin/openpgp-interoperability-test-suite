@@ -27,6 +27,8 @@
     {%- for impl in consumers -%}
     <th class="rotate"><div><span>{{impl.implementation}}/{{impl.version}}</span></div></th>
     {%- endfor -%}
+    <th class="rotate"><div><span>Expectation</span></div></th>
+    <th class="rotate"><div><span>Comment</span></div></th>
   </tr>
   <tr>
     <th>Producer</th>
@@ -48,7 +50,7 @@
     </th>
     {%- if row.results -%}
     {%- for result in row.results -%}
-    <td>
+    <td class="{{result.score_class}}">
       {%- if result.data -%}
       <span title="{{result.data | bin2string}}">✓</span>
       {%- else -%}
@@ -61,6 +63,24 @@
     <td></td>
     {%- endfor -%}
     {%- endif -%}
+    <td class="score">
+      {%- if row.expectation -%}
+        {%- if row.expectation.Ok -%}
+          <span>✓</span>
+        {%- else -%}
+          <span>✗</span>
+        {%- endif -%}
+      {%- endif -%}
+    </td>
+    <td class="score">
+      {%- if row.expectation -%}
+        {%- if row.expectation.Ok -%}
+          <span>{{ row.expectation.Ok }}</span>
+        {%- else -%}
+          <span>{{ row.expectation.Err }}</span>
+        {%- endif -%}
+      {%- endif -%}
+    </td>
   </tr>
   {%- endfor -%}
 </table>

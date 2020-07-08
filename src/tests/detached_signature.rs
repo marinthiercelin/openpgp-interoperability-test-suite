@@ -16,6 +16,7 @@ use crate::{
     data,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ConsumerTest,
@@ -56,7 +57,7 @@ impl Test for DetachedSignatureSubpacket {
 }
 
 impl ConsumerTest for DetachedSignatureSubpacket {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         use openpgp::packet::Signature;
         use openpgp::packet::signature::subpacket::{
             Subpacket,
@@ -95,10 +96,10 @@ impl ConsumerTest for DetachedSignatureSubpacket {
         };
 
         let make =
-            |test: &str, builder: SignatureBuilder|
-                 -> Result<(String, Data)>
+            |test: &str, builder: SignatureBuilder, e: Option<Expectation>|
+            -> Result<(String, Data, Option<Expectation>)>
         {
-            Ok((test.into(), make_armor(make_sig(builder)?)?))
+            Ok((test.into(), make_armor(make_sig(builder)?)?, e))
         };
 
         let now = std::time::SystemTime::now();
@@ -119,7 +120,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
             {
                 let test = "Base case, unhashed issuer fingerprint";
@@ -134,7 +136,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
 
             // Issuer and IssuerFingerprint.
@@ -148,7 +151,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
             {
                 let test = "No issuer fingerprint, hashed issuer";
@@ -160,7 +164,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
             {
                 let test = "No issuer";
@@ -172,7 +177,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.hashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Issuer fingerprint ought to be enough.".into())))?
             },
             {
                 let test = "No issuer, unhashed issuer fingerprint";
@@ -184,7 +190,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::IssuerFingerprint(
                         issuer_fp.clone()), false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Issuer fingerprint ought to be enough.".into())))?
             },
             {
                 let test = "No issuer, no issuer fingerprint";
@@ -203,7 +210,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 sig.unhashed_area_mut().clear();
                 assert!(sig.issuer().is_none());
                 assert!(sig.issuer_fingerprint().is_none());
-                (test.into(), make_armor(sig)?)
+                (test.into(), make_armor(sig)?, None)
             },
 
             // Creation time.
@@ -221,7 +228,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Err("Creation time must be hashed.".into())))?
             },
             {
                 let test = "No creation time";
@@ -236,7 +244,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                                    false)?)?;
                 let sig = make_sig(builder)?;
                 assert!(sig.signature_creation_time().is_none());
-                (test.into(), make_armor(sig)?)
+                (test.into(), make_armor(sig)?,
+                 Some(Err("Creation time must exist.".into())))
             },
             {
                 let test = "Creation time given twice";
@@ -255,7 +264,9 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Uniqueness of subpackets is not required."
+                             .into())))?
             },
             {
                 let test = "Future creation time";
@@ -271,7 +282,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Err("Creation time is in the future.".into())))?
             },
             {
                 let test = "Future creation time given twice";
@@ -290,7 +302,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
                                    false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Err("Creation time is in the future.".into())))?
             },
             {
                 let test = "Future creation time, backdated";
@@ -309,7 +322,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 builder.unhashed_area_mut().add(
                     Subpacket::new(SubpacketValue::SignatureCreationTime(
                         now.try_into()?), false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Err("Creation time is in the future.".into())))?
             },
 
             // Unknown subpackets.
@@ -331,7 +345,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                         tag: SubpacketTag::Unknown(127),
                         body: b"value".to_vec(),
                     }, false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
             {
                 let test = "Critical unknown subpacket";
@@ -351,7 +366,9 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                         tag: SubpacketTag::Unknown(127),
                         body: b"value".to_vec(),
                     }, true)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Err("Critical unknown subpacket invalidates signature."
+                              .into())))?
             },
             {
                 let test = "Unknown subpacket, unhashed";
@@ -371,7 +388,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                         tag: SubpacketTag::Unknown(127),
                         body: b"value".to_vec(),
                     }, false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
             {
                 let test = "Critical unknown subpacket, unhashed";
@@ -391,7 +409,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                         tag: SubpacketTag::Unknown(127),
                         body: b"value".to_vec(),
                     }, true)?)?;
-                make(test, builder)?
+                make(test, builder, None)?
             },
 
             // Unknown notations.
@@ -412,7 +430,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::NotationData(
                         NotationData::new("unknown@tests.sequoia-pgp.org",
                                           b"value", None)), false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
             {
                 let test = "Critical unknown notation";
@@ -431,7 +450,9 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::NotationData(
                         NotationData::new("unknown@tests.sequoia-pgp.org",
                                           b"value", None)), true)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Err("Critical unknown notation invalidates signature."
+                              .into())))?
             },
             {
                 let test = "Unknown notation, unhashed";
@@ -450,7 +471,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::NotationData(
                         NotationData::new("unknown@tests.sequoia-pgp.org",
                                           b"value", None)), false)?)?;
-                make(test, builder)?
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
             {
                 let test = "Critical unknown notation, unhashed";
@@ -469,7 +491,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                     Subpacket::new(SubpacketValue::NotationData(
                         NotationData::new("unknown@tests.sequoia-pgp.org",
                                           b"value", None)), true)?)?;
-                make(test, builder)?
+                make(test, builder, None)?
             },
         ])
     }
@@ -590,6 +612,25 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
     fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.verify_detached(&self.cert, &self.message, &artifact)
+    }
+
+    fn expectation(&self) -> Option<Expectation> {
+        if let Some(hash) = self.hash {
+            use HashAlgorithm::*;
+            match hash {
+                MD5 | SHA1 | RipeMD =>
+                    Some(Err("Hash should not be used anymore.".into())),
+                SHA256 =>
+                    Some(Ok("MUST be implemented according to RFC4880bis8."
+                            .into())),
+                SHA384 | SHA512 =>
+                    Some(Ok("Should be supported.".into())),
+                _ =>
+                    Some(Ok("Interoperability concern.".into())),
+            }
+        } else {
+            Some(Ok("Interoperability concern.".into()))
+        }
     }
 }
 

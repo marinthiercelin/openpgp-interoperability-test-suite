@@ -9,6 +9,7 @@ use crate::{
     data,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ConsumerTest,
@@ -49,7 +50,7 @@ impl Test for EdDSASignatureEncoding {
 }
 
 impl ConsumerTest for EdDSASignatureEncoding {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         let sig = openpgp::Packet::from_bytes(
             "-----BEGIN PGP SIGNATURE-----
 
@@ -76,9 +77,10 @@ impl ConsumerTest for EdDSASignatureEncoding {
         assert_eq!(sig_0x40.len(), sig_0x40[1] as usize + 2 /* CTB + length */);
 
         Ok(vec![
-            ("MPI encoding".into(), sig.to_vec()?.into_boxed_slice()),
-            ("S 0-padded".into(), sig_0.into_boxed_slice()),
-            ("R 0x40-prefixed".into(), sig_0x40.into_boxed_slice()),
+            ("MPI encoding".into(), sig.to_vec()?.into_boxed_slice(),
+             Some(Ok("MPI encoding must be supported.".into()))),
+            ("S 0-padded".into(), sig_0.into_boxed_slice(), None),
+            ("R 0x40-prefixed".into(), sig_0x40.into_boxed_slice(), None),
         ])
     }
 

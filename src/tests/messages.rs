@@ -13,23 +13,12 @@ use crate::{
     data,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ConsumerTest,
     },
 };
-
-fn make<B: AsRef<[u8]>>(test: &str, b: B, kind: armor::Kind)
-                        -> Result<(String, Data)>
-{
-    let mut buf = Vec::new();
-    {
-        let mut w = armor::Writer::new(&mut buf, kind)?;
-        w.write_all(b.as_ref())?;
-        w.finalize()?;
-    }
-    Ok((test.into(), buf.into()))
-}
 
 /// Tests various conforming, but unusual message structures.
 struct MessageStructure {
@@ -63,7 +52,7 @@ impl Test for MessageStructure {
 }
 
 impl ConsumerTest for MessageStructure {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         use openpgp::serialize::stream::*;
         use CompressionAlgorithm::Zip;
 
@@ -127,7 +116,7 @@ impl ConsumerTest for MessageStructure {
                 stack.write_all(test.as_bytes())?;
                 stack.finalize()?;
             }
-            t.push((test, b.into_boxed_slice()));
+            t.push((test, b.into_boxed_slice(), None));
         }
 
         Ok(t)
@@ -174,7 +163,7 @@ impl Test for RecursionDepth {
 }
 
 impl ConsumerTest for RecursionDepth {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         use openpgp::serialize::stream::*;
 
         let cert =
@@ -183,6 +172,14 @@ impl ConsumerTest for RecursionDepth {
 
         for n in (0..self.max).map(|n| 2_usize.pow(n)) {
             let mut b = Vec::new();
+
+            let expectation = if n < 8 {
+                Some(Ok("Maximum recursion depth too small".into()))
+            } else if n > 16 {
+                Some(Err("Maximum recursion depth too large".into()))
+            } else {
+                None
+            };
 
             {
                 let r: Recipient =
@@ -203,7 +200,7 @@ impl ConsumerTest for RecursionDepth {
                 stack.finalize()?;
             }
 
-            t.push((format!("Depth {}", n), b.into_boxed_slice()));
+            t.push((format!("Depth {}", n), b.into_boxed_slice(), expectation));
         }
 
         Ok(t)
@@ -247,12 +244,25 @@ impl Test for MarkerPacket {
 }
 
 impl ConsumerTest for MarkerPacket {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         use openpgp::serialize::stream::*;
 
         let cert =
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let marker = openpgp::Packet::Marker(Default::default());
+
+        fn make<B: AsRef<[u8]>>(test: &str, b: B, kind: armor::Kind)
+                                -> Result<(String, Data, Option<Expectation>)>
+        {
+            let mut buf = Vec::new();
+            {
+                let mut w = armor::Writer::new(&mut buf, kind)?;
+                w.write_all(b.as_ref())?;
+                w.finalize()?;
+            }
+            Ok((test.into(), buf.into(),
+                Some(Ok("Marker packets MUST be ignored.".into()))))
+        }
 
         Ok(vec![{
             let test = "Marker + Signed Message";

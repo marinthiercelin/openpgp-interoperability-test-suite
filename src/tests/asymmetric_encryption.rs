@@ -2,7 +2,7 @@ use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 use openpgp::cert::prelude::*;
-use openpgp::types::{Features, KeyFlags, Timestamp};
+use openpgp::types::*;
 use openpgp::parse::Parse;
 use openpgp::serialize::SerializeInto;
 
@@ -13,6 +13,7 @@ use crate::{
     data,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ProducerConsumerTest,
@@ -178,6 +179,37 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
         } else {
             Err(anyhow::anyhow!("Expected {:?}, got {:?}",
                                      self.message, artifact))
+        }
+    }
+
+    fn expectation(&self) -> Option<Expectation> {
+        if let Some(aead) = self.aead {
+            use AEADAlgorithm::*;
+            return match aead {
+                EAX =>
+                    Some(Ok("EAX is a MUST according to RFC4880bis8.".into())),
+                _ =>
+                    Some(Ok("Interoperability concern.".into())),
+            };
+        }
+
+        if let Some(cipher) = self.cipher {
+            use SymmetricAlgorithm::*;
+            match cipher {
+                IDEA | CAST5 =>
+                    Some(Err("Algorithm should be avoided.".into())),
+                // Even though this is a MUST, it should better be avoided.
+                TripleDES =>
+                    None, // Don't judge.
+                AES128 =>
+                    Some(Ok("AES-128 is a MUST according to RFC4880bis8.".into())),
+                AES192 | AES256 =>
+                    Some(Ok("AES should be supported".into())),
+                _ =>
+                    Some(Ok("Interoperability concern.".into())),
+            }
+        } else {
+            Some(Ok("Interoperability concern.".into()))
         }
     }
 }

@@ -11,6 +11,7 @@ use crate::{
     data,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ConsumerTest,
@@ -49,7 +50,7 @@ impl Test for CompressionSupport {
 }
 
 impl ConsumerTest for CompressionSupport {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         use openpgp::serialize::stream::*;
 
         let cert =
@@ -58,6 +59,17 @@ impl ConsumerTest for CompressionSupport {
 
         use CompressionAlgorithm::*;
         for &c in &[Uncompressed, Zip, Zlib, BZip2] {
+            let expectation = match c {
+                Uncompressed =>
+                    Some(Ok("Uncompressed MUST be supported.".into())),
+                Zip =>
+                    Some(Ok("SHOULD be able to decompress ZIP.".into())),
+                Zlib =>
+                    Some(Ok("Zlib SHOULD be supported.".into())),
+                _ =>
+                    None,
+            };
+
             let recipient: Recipient =
                 cert.keys().with_policy(super::P, None)
                 .for_transport_encryption()
@@ -76,7 +88,7 @@ impl ConsumerTest for CompressionSupport {
                 stack.finalize()?;
             }
 
-            t.push((c.to_string(), b.into_boxed_slice()));
+            t.push((c.to_string(), b.into_boxed_slice(), expectation));
         }
 
         Ok(t)

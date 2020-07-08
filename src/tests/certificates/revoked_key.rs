@@ -44,6 +44,7 @@ use crate::{
     Result,
     templates::Report,
     tests::{
+        Expectation,
         Test,
         TestMatrix,
         ConsumerTest,
@@ -58,11 +59,19 @@ enum Flavor {
 }
 
 impl Flavor {
-    fn signing_key(&self) -> &'static str {
+    fn subkey_signs(&self) -> bool {
         use self::Flavor::*;
         match self {
-            PrimarySigns => "primary key",
-            _ => "subkey",
+            PrimarySigns => false,
+            _ => true,
+        }
+    }
+
+    fn signing_key(&self) -> &'static str {
+        if self.subkey_signs() {
+            "subkey"
+        } else {
+            "primary key"
         }
     }
 
@@ -112,6 +121,14 @@ impl Revoked {
             Superseded => Some(false),
             KeyRetired => Some(false),
             UidRetired => Some(false),
+        }
+    }
+
+    fn is_revoked(&self) -> bool {
+        use self::Revoked::*;
+        match self {
+            NotRevoked => false,
+            _ => true,
         }
     }
 
@@ -258,16 +275,37 @@ Timeline:   v
 }
 
 impl ConsumerTest for RevokedKey {
-    fn produce(&self) -> Result<Vec<(String, Data)>> {
-        let make = |test: &str| -> (String, Data) {
-            (test.into(), self.sig(test))
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
+        let make = |test: &str, e: Option<Expectation>|
+                   -> (String, Data, Option<Expectation>)
+        {
+            (test.into(), self.sig(test), e)
         };
 
         Ok(vec![
-            make("t0"),
-            make("t1-t2"),
-            make("t2-t3"),
-            make("t3-now"),
+            make("t0", Some(Err("Signature predates primary key.".into()))),
+            make("t1-t2", if self.revoked.hard().unwrap_or(false) {
+                Some(Err("Hard revocations invalidate key at all times."
+                         .into()))
+            } else if self.flavor.subkey_signs() {
+                Some(Err("Subkey is not bound at this time.".into()))
+            } else {
+                Some(Ok("Key is valid at this time.".into()))
+            }),
+            make("t2-t3", if self.revoked.hard().unwrap_or(false) {
+                Some(Err("Hard revocations invalidate key at all times."
+                         .into()))
+            } else if self.revoked.is_revoked() {
+                Some(Err("Key is revoked at this time.".into()))
+            } else {
+                Some(Ok("Key is valid at this time.".into()))
+            }),
+            make("t3-now", if self.revoked.hard().unwrap_or(false) {
+                Some(Err("Hard revocations invalidate key at all times."
+                         .into()))
+            } else {
+                Some(Ok("Key is valid at this time.".into()))
+            }),
         ])
     }
 
