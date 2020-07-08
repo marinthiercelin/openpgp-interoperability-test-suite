@@ -17,16 +17,14 @@ use crate::{
 
 pub struct GenerateThenEncryptDecryptRoundtrip {
     title: String,
-    description: String,
     userids: HashSet<String>,
 }
 
 impl GenerateThenEncryptDecryptRoundtrip {
-    pub fn new(title: &str, description: &str, userids: &[&str])
+    pub fn new(title: &str, userids: &[&str])
                -> GenerateThenEncryptDecryptRoundtrip {
         GenerateThenEncryptDecryptRoundtrip {
             title: title.into(),
-            description: description.into(),
             userids: userids.iter().map(|u| u.to_string()).collect(),
         }
     }
@@ -38,7 +36,11 @@ impl Test for GenerateThenEncryptDecryptRoundtrip {
     }
 
     fn description(&self) -> String {
-        self.description.clone()
+        "This models key generation, distribution, and encrypted
+        message exchange.  Generates a default key with the producer
+        <i>P</i>, then extracts the certificate from the key and uses
+        it to encrypt a message using the consumer <i>C</i>, and
+        finally <i>P</i> to decrypt the message.".into()
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix> {
@@ -78,11 +80,18 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
         Ok(())
     }
 
-    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _: &mut OpenPGP, _: &[u8]) -> Result<Data> {
+        unreachable!()
+    }
+
+    fn consume_with_producer(&self,
+                             producer: &mut OpenPGP,
+                             consumer: &mut OpenPGP,
+                             artifact: &[u8])
                -> Result<Data> {
-        let ciphertext = pgp.encrypt(&super::extract_cert(artifact)?,
-                                     b"Hello, World!")?;
-        pgp.decrypt(artifact, &ciphertext)
+        let ciphertext = consumer.encrypt(&super::extract_cert(artifact)?,
+                                          b"Hello, World!")?;
+        producer.decrypt(artifact, &ciphertext)
     }
 }
 
@@ -92,20 +101,14 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip",
-            "Default key generation, followed by the consumer using this \
-             key to encrypt and then decrypt a message.",
             &["Bernadette <b@example.org>"])));
     report.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip, 2 UIDs",
-            "Default key generation with two UserIDs, followed by the consumer \
-             using this key to encrypt and then decrypt a message.",
             &["Bernadette <b@example.org>", "Soo <s@example.org>"])));
     report.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip, no UIDs",
-            "Default key generation without UserIDs, followed by the consumer \
-             using this key to encrypt and then decrypt a message.",
             &[])));
     Ok(())
 }
