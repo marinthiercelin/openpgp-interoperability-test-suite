@@ -67,7 +67,6 @@ pub trait ConsumerTest : Test {
                 }
 
                 a.set_score(&expectation);
-
                 results.push(a);
             }
 
@@ -128,7 +127,6 @@ pub trait ProducerConsumerTest : Test {
                                           Default::default(),
                                           e.to_string()),
                     };
-                    a.set_score(&expectation);
 
                     if a.error.len() == 0 {
                         if let Err(e) = self.check_consumer(&a.data) {
@@ -136,6 +134,7 @@ pub trait ProducerConsumerTest : Test {
                         }
                     }
 
+                    a.set_score(&expectation);
                     results.push(a);
                 }
             }
