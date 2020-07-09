@@ -51,10 +51,10 @@
     {%- if row.results -%}
     {%- for result in row.results -%}
     <td class="{{result.score_class}}">
-      {%- if result.data -%}
-      <span title="{{result.data | bin2string}}">✓</span>
-      {%- else -%}
+      {%- if result.error -%}
       <span title="{{result.error | addslashes}}">✗</span>
+      {%- else -%}
+      <span title="{{result.data | bin2string}}">✓</span>
       {%- endif -%}
     </td>
     {%- endfor -%}
