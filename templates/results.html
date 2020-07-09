@@ -43,6 +43,17 @@
 	  background: no-repeat right top url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiPjxwYXRoIHN0eWxlPSJzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MXB4IiBkPSJtIDEwLDEwIC0xMCwtMTAiLz48L3N2Zz4K);
 	  background-color: red;
       }
+
+      figure {
+	  border: solid 1px black;
+	  padding: 2em;
+	  margin: 2em auto;
+	  max-width: 600px;
+      }
+      figure figcaption {
+	  text-align: center;
+	  margin-top: 2em;
+      }
     </style>
   </head>
   <body>
@@ -54,27 +65,215 @@
       commit }}">{{commit}}</a>) on {{ timestamp | date(format="%Y-%m-%dT%H:%M") }}.
     </p>
     <p>
-      Note: These results are not opinionated, i.e. they merely
-      reflect what implementations do, without judging whether this is
-      the correct thing or not.  Therefore, these results must be
-      carefully interpreted.
-    </p>
-    <p>
       This test suite has been <a href="#hall-of-fame">very
       successful</a> in identifying problems in many OpenPGP
       implementations.  If you want to see your implementation
       included in these results, please implement the
-      <a href="https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli-01">
-	Stateless OpenPGP Command Line Interface
-      </a>
-      and open an issue in our
-      <a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/issues">
-	tracker
-      </a>.  Note: The implementation doesn't have to be complete to
-      be useful.  Currently, the test suite only uses "generate-key",
-      "encrypt", "decrypt", "sign", and "verify", each without any
-      arguments.
+      <a href="https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli-01">Stateless
+      OpenPGP Command Line Interface</a> and open an issue in our
+      <a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/issues">tracker</a>.
+      Note: The implementation doesn't have to be complete to be
+      useful.
     </p>
+    <h2>How to read the test results</h2>
+    <p>
+      Tests are loosely coupled in categories.  Both tests and
+      categories have anchors and can be linked to.  The anchors
+      should be stable enough to be included in commit messages and
+      documentation.  Every test describes the setup, and may
+      introduce terminology used in the test results.  Additional
+      resources (e.g. certificates) required by the test can be
+      inspected by clicking on the inspect button
+      (<button type="submit" title="Inspect with packet dumper"
+      disabled="true">🔎</button>).  The results are in tabular form.
+      The producers are on the left going down, the consumers on the
+      top going right.
+    </p>
+    <p>
+      There are two kinds of tests.  In producer-consumer tests, the
+      OpenPGP implementations being tested produce an artifact
+      (e.g. they encrypt a message), and every implementation is used
+      to consume the artifact (e.g. to decrypt the encrypted message).
+      In consumer tests, the artifacts are produced by the test suite,
+      and consumed by every OpenPGP implementation.  In either case,
+      the artifact that is consumed can be inspected by clicking on
+      the inspect button (<button type="submit" title="Inspect with
+      packet dumper" disabled="true">🔎</button>) in the second column
+      in every row.  If a producer failed to produce an artifact, or
+      the artifact did not conform to the expectation, a cross mark
+      (✗) is displayed.  Hovering over it with the mouse pointer
+      reveals the error message in a tooltip.
+    </p>
+    <p>
+      Each row now contains the result of consuming the row's artifact
+      using the different OpenPGP implementations.  Here, a check mark
+      (✓) indicates that the operation was successful.  The resulting
+      output (e.g. the decrypted message) can be found in the tooltip.
+      Like before, a cross mark (✗) indicates that the operation was
+      not successful, or the produced artifact did not meet
+      expectations.  Again, details can be found in the tooltip.
+    </p>
+    <p>
+      Up to this point, we did not judge whether or not a operation
+      should be successful or not, we merely recorded the facts.  This
+      answers the question of how implementations react to certain
+      inputs, and we can quantify that and have an informed
+      conversation about the consequences.  But, we observed that the
+      bare results were hard to interpret, a problem exacerbated by
+      the vastness of the results due to combinatorial effects.
+    </p>
+    <p>
+      To address this, most tests now have an expectation for the
+      outcome, and an explanation for the expected outcome.  (If one
+      of these expectations disagree with you, please get in touch!)
+      If the result of an operation agrees with the expectation, the
+      result has a green background and has a diagonal line in the
+      top-left corner.  If they disagree, the background is red the
+      line is in the top-right corner.
+    </p>
+    <figure>
+      <a name="example-test"><h3>Example test</h3></a>
+      <p>
+	This is an example.
+      </p>
+      <p>
+	Additional artifacts:
+	<ul>
+	  <li>
+	    <form>
+	      <label>
+		Certificate
+		<button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
+	      </label>
+	    </form>
+	  </li>
+	</ul>
+      </p>
+      <table>
+	<tr style="border: none">
+	  <th></th>
+	  <th class="rotate"><div><span>Consumer</span></div></th>
+	  <th class="rotate"><div><span>FooPGP/1</span></div></th>
+	  <th class="rotate"><div><span>BarPGP/2</span></div></th>
+	  <th class="rotate"><div><span>BazPGP/3</span></div></th>
+	  <th class="rotate"><div><span>Expectation</span></div></th>
+	  <th class="rotate"><div><span>Comment</span></div></th>
+	</tr>
+	<tr>
+	  <th>Producer</th>
+	  <th>Artifact</th>
+	</tr>
+	<tr>
+	  <th>Base case</th>
+	  <th>
+	    <form>
+	      <button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
+	    </form>
+	  </th>
+	  <td class="score-good">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score-good">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score-good">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score">
+	    <span>✓</span>
+	  </td>
+	  <td class="score">
+	    <span>Interoperability concern.</span>
+	  </td>
+	</tr>
+	<tr>
+	  <th>Well-formed variant</th>
+	  <th>
+	    <form>
+	      <button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
+	    </form>
+	  </th>
+	  <td class="score-good">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score-good">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score-bad">
+	    <span title="Error message">✗</span>
+	  </td>
+	  <td class="score">
+	    <span>✓</span>
+	  </td>
+	  <td class="score">
+	    <span>Interoperability concern.</span>
+	  </td>
+	</tr>
+	<tr>
+	  <th>Malformed variant</th>
+	  <th>
+	    <form>
+	      <button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
+	    </form>
+	  </th>
+	  <td class="score-good">
+	    <span title="Error message">✗</span>
+	  </td>
+	  <td class="score-bad">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score-good">
+	    <span title="Error message">✗</span>
+	  </td>
+	  <td class="score">
+	    <span>✗</span>
+	  </td>
+	  <td class="score">
+	    <span>Message is malformed.</span>
+	  </td>
+	</tr>
+	<tr>
+	  <th>Weird variant</th>
+	  <th>
+	    <form>
+	      <button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
+	    </form>
+	  </th>
+	  <td class="score">
+	    <span title="Error message">✗</span>
+	  </td>
+	  <td class="score">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score">
+	    <span title="Output of the successful operation">✓</span>
+	  </td>
+	  <td class="score">
+	  </td>
+	  <td class="score">
+	  </td>
+	</tr>
+	<tr>
+	  <th>Producer failure</th>
+	  <th>
+	    <span title="Producer failed">✗</span>
+	  </th>
+	  <td class="score">
+	  </td>
+	  <td class="score">
+	  </td>
+	  <td class="score">
+	  </td>
+	  <td class="score">
+	    <span>✓</span>
+	  </td>
+	  <td class="score">
+	    <span>Should work (TM).</span>
+	  </td>
+	</tr>
+      </table>
+      <figcaption>An example consumer test result</figcaption>
+    </figure>
     <hr />
     <h1>Table of Contents</h1>
     <ol>
