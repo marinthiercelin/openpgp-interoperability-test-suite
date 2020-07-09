@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <title>{{title}}</title>
     <style>
+      main {
+	  margin: 3em auto;
+	  max-width: 1200px;
+      }
+      p, pre {
+	  max-width: 800px;
+      }
+
       table {
 	  border-collapse: collapse;
       }
@@ -46,8 +54,8 @@
 
       figure {
 	  border: solid 1px black;
-	  padding: 2em;
-	  margin: 2em auto;
+	  padding: 25px 50px;
+	  margin: 50px;
 	  max-width: 600px;
       }
       figure figcaption {
@@ -57,6 +65,7 @@
     </style>
   </head>
   <body>
+   <main>
     <h1>{{title}}</h1>
     <p>
       These are the results of running the OpenPGP interoperability
@@ -312,5 +321,6 @@
 		commit }}">{{commit}}</a>) powered
       by <a href="https://sequoia-pgp.org">Sequoia-PGP</a>.
     </p>
+   </main>
   </body>
 </html>
