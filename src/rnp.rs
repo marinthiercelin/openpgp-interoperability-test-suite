@@ -135,6 +135,11 @@ impl crate::OpenPGP for RNP {
     }
 
     fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
+        if true {
+            return Err(anyhow::anyhow!(
+                "rnpkeys cannot create unprotected keys"));
+        }
+
         if userids.len() == 0 {
             return Err(anyhow::anyhow!(
                 "Generating UID-less keys not supported"));
