@@ -609,9 +609,12 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
         Ok(())
     }
 
-    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self,
+               _producer: &mut OpenPGP,
+               consumer: &mut OpenPGP,
+               artifact: &[u8])
                -> Result<Data> {
-        pgp.verify_detached(&self.cert, &self.message, &artifact)
+        consumer.verify_detached(&self.cert, &self.message, &artifact)
     }
 
     fn expectation(&self) -> Option<Expectation> {

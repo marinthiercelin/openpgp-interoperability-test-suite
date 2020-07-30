@@ -90,14 +90,10 @@ pub trait ConsumerTest : Test {
 pub trait ProducerConsumerTest : Test {
     fn produce(&self, pgp: &mut OpenPGP) -> Result<Data>;
     fn check_producer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
-    fn consume_with_producer(&self,
-                             producer: &mut OpenPGP,
-                             consumer: &mut OpenPGP,
-                             artifact: &[u8]) -> Result<Data> {
-        let _ = producer;
-        self.consume(consumer, artifact)
-    }
-    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8]) -> Result<Data>;
+    fn consume(&self,
+               producer: &mut OpenPGP,
+               consumer: &mut OpenPGP,
+               artifact: &[u8]) -> Result<Data>;
     fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn expectation(&self) -> Option<Expectation> {
         Some(Ok("Interoperability concern.".into()))
@@ -127,8 +123,8 @@ pub trait ProducerConsumerTest : Test {
                     let mut p = producer.new_context()?;
                     let mut c = consumer.new_context()?;
                     let plaintext =
-                        self.consume_with_producer(p.as_mut(), c.as_mut(),
-                                                   &artifact.data);
+                        self.consume(p.as_mut(), c.as_mut(),
+                                     &artifact.data);
                     let mut a = match plaintext {
                         Ok(p) =>
                             Artifact::ok(c.version()?.to_string(), p),

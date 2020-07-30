@@ -80,14 +80,10 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
         Ok(())
     }
 
-    fn consume(&self, _: &mut OpenPGP, _: &[u8]) -> Result<Data> {
-        unreachable!()
-    }
-
-    fn consume_with_producer(&self,
-                             producer: &mut OpenPGP,
-                             consumer: &mut OpenPGP,
-                             artifact: &[u8])
+    fn consume(&self,
+               producer: &mut OpenPGP,
+               consumer: &mut OpenPGP,
+               artifact: &[u8])
                -> Result<Data> {
         let ciphertext = consumer.encrypt(&super::extract_cert(artifact)?,
                                           b"Hello, World!")?;
