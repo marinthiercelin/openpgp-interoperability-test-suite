@@ -1,13 +1,15 @@
 use std::convert::TryInto;
+use std::io::Write;
 
 use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
+use openpgp::armor;
 use openpgp::cert::prelude::*;
 use openpgp::types::{HashAlgorithm, SignatureType, Timestamp};
 use openpgp::packet::signature::SignatureBuilder;
 use openpgp::parse::Parse;
-use openpgp::serialize::{Serialize, SerializeInto};
+use openpgp::serialize::{Serialize, SerializeInto, stream::*};
 
 use crate::{
     Data,
@@ -637,6 +639,144 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
     }
 }
 
+struct LineBreakNormalizationTest {
+}
+
+impl LineBreakNormalizationTest {
+    pub fn new() -> Result<LineBreakNormalizationTest> {
+        Ok(LineBreakNormalizationTest {
+        })
+    }
+
+    const N_VECTORS: usize = 10;
+    fn test_vector(i: usize)
+                   -> (SignatureType, &'static [u8], Option<Expectation>)
+    {
+        let binary = (i & 1) == 0;
+        let idx = i >> 1;
+        let data = match idx {
+            0 => &b"one\r\ntwo\r\nno ending"[..], // dos
+            1 => b"one\ntwo\nno ending",          // unix
+            2 => b"one\ntwo\r\nno ending",        // mixed
+            3 => b"one\r\ntwo\nno ending",
+            // Obscure endings below.
+            4 => b"one\rtwo\rno ending",          // classic mac
+            5 => b"one\n\rtwo\n\rno ending",      // risc os
+            6 => b"one\x1etwo\x1eno ending",      // classic qnx
+            // Unicode endings below.
+            7 => "one\u{0085}two\u{0085}no ending".as_bytes(), // Next Line
+            8 => "one\u{2028}two\u{2028}no ending".as_bytes(), // Line Separator
+            9 => "one\u{2029}two\u{2029}no ending".as_bytes(), // Paragraph Separator
+            Self::N_VECTORS..=std::usize::MAX =>
+                panic!("Invalid test vector {}", i),
+            _ => unreachable!(),
+        };
+        let expectation = match (binary, idx) {
+            (true, 0) => Some(Ok("Base case (b)".into())),
+            (false, 0) => Some(Ok("Base case (t)".into())),
+            (true, _) =>
+                Some(Err("Binary signature must not be valid (b)".into())),
+            (false, n) if n < 4 =>
+                Some(Ok("Line endings must be normalized (t)".into())),
+            (false, _) => None,
+        };
+
+        (if binary { SignatureType::Binary } else { SignatureType::Text },
+         data,
+         expectation)
+    }
+}
+
+impl Test for LineBreakNormalizationTest {
+    fn title(&self) -> String {
+        "Detached signatures: Linebreak normalization".into()
+    }
+
+    fn description(&self) -> String {
+        "<p>Tests how implementations normalize line breaks when \
+         verifying text signatures.  Section 5.2.1 of RFC4880 says: \
+         <q>The signature is calculated over the text data with its \
+         line endings converted to &lt;CR&gt;&lt;LF&gt;.</q></p>\
+         \
+         <p>This test creates two signatures, a binary and a text \
+         signature, over the message <q>one\\r\\ntwo\\r\\nno ending</q>, \
+         and checks whether variants of the message with different \
+         line endings can be verified using these signatures.</p>"
+            .into()
+    }
+
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Certificate".into(), data::certificate("bob.pgp").into())]
+    }
+
+    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+           -> Result<TestMatrix> {
+        ConsumerTest::run(self, implementations)
+    }
+}
+
+impl ConsumerTest for LineBreakNormalizationTest {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
+        let cert =
+            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
+
+        let mut binary = vec![];
+        {
+            let signing_keypair =
+                cert.primary_key()
+                .key().clone().parts_into_secret()?.into_keypair()?;
+
+            let message = Message::new(&mut binary);
+            let message = Armorer::new(message)
+                .kind(armor::Kind::Signature)
+                .build()?;
+            let b = SignatureBuilder::new(SignatureType::Binary);
+            let mut signer = Signer::with_template(message, signing_keypair, b)
+                .detached()
+                .build()?;
+            signer.write_all(Self::test_vector(0).1)?;
+            signer.finalize()?;
+        }
+        let binary = binary.into_boxed_slice();
+
+        let mut text = vec![];
+        {
+            let signing_keypair =
+                cert.primary_key()
+                .key().clone().parts_into_secret()?.into_keypair()?;
+
+            let message = Message::new(&mut text);
+            let message = Armorer::new(message)
+                .kind(armor::Kind::Signature)
+                .build()?;
+            let b = SignatureBuilder::new(SignatureType::Text);
+            let mut signer = Signer::with_template(message, signing_keypair, b)
+                .detached()
+                .build()?;
+            signer.write_all(Self::test_vector(0).1)?;
+            signer.finalize()?;
+        }
+        let text = text.into_boxed_slice();
+
+        Ok((0..Self::N_VECTORS * 2).into_iter().map(|i| {
+            let (typ, data, expectation) = Self::test_vector(i);
+            (format!("{:?}", String::from_utf8(data.to_vec()).unwrap()),
+             match typ {
+                 SignatureType::Binary => binary.clone(),
+                 SignatureType::Text => text.clone(),
+                 _ => panic!("unexpected signature type: {:?}", typ),
+             },
+             expectation)
+        }).collect())
+    }
+
+    fn consume(&self, i: usize, pgp: &mut OpenPGP, artifact: &[u8])
+               -> Result<Data> {
+        let (_, message, _) = Self::test_vector(i);
+        pgp.verify_detached(data::certificate("bob.pgp"), message, artifact)
+    }
+}
+
 pub fn schedule(report: &mut Report) -> Result<()> {
     report.add_section("Detached Signatures");
     report.add(Box::new(
@@ -654,5 +794,6 @@ pub fn schedule(report: &mut Report) -> Result<()> {
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
     report.add(Box::new(DetachedSignatureSubpacket::new()?));
+    report.add(Box::new(LineBreakNormalizationTest::new()?));
     Ok(())
 }
