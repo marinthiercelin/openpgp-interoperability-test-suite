@@ -496,7 +496,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
         ])
     }
 
-    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.verify_detached(data::certificate("bob.pgp"), &self.message[..],
                             artifact)

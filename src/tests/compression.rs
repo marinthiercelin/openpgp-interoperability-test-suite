@@ -94,7 +94,7 @@ impl ConsumerTest for CompressionSupport {
         Ok(t)
     }
 
-    fn consume(&self, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
     }
