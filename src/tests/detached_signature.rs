@@ -648,7 +648,8 @@ impl LineBreakNormalizationTest {
         })
     }
 
-    const N_VECTORS: usize = 12;
+    const N_VECTORS: usize = 21;
+    const N_PLAUSIBLE_VECTORS: usize = 12;
     fn test_vector(i: usize)
                    -> (SignatureType, &'static [u8], Option<Expectation>)
     {
@@ -669,6 +670,31 @@ impl LineBreakNormalizationTest {
             9 => "one\u{85}two\u{85}three".as_bytes(), // Next Line
             10 => "one\u{2028}two\u{2028}three".as_bytes(), // Line Separator
             11 => "one\u{2029}two\u{2029}three".as_bytes(), // Paragraph Separator
+            // Trailing whitespace below.
+            12 => b"one \ntwo\nthree",
+            13 => b"one\ntwo \nthree",
+            14 => b"one\ntwo\nthree ",
+            15 => b"one\ntwo\nthree\n",
+            16 => b"\none\ntwo\nthree",
+            17 => b"one\t\ntwo\nthree",
+            18 => "one\u{a0}\ntwo\nthree".as_bytes(),
+            19 => "one\u{1680}\ntwo\nthree".as_bytes(),
+            20 => "one\u{2000}\ntwo\nthree".as_bytes(),
+            // XXX: This is getting repetitive... Clamping N_VECTORS
+            // to 21...
+            21 => "one\u{2001}\ntwo\nthree".as_bytes(),
+            22 => "one\u{2002}\ntwo\nthree".as_bytes(),
+            23 => "one\u{2003}\ntwo\nthree".as_bytes(),
+            24 => "one\u{2004}\ntwo\nthree".as_bytes(),
+            25 => "one\u{2005}\ntwo\nthree".as_bytes(),
+            26 => "one\u{2006}\ntwo\nthree".as_bytes(),
+            27 => "one\u{2007}\ntwo\nthree".as_bytes(),
+            28 => "one\u{2008}\ntwo\nthree".as_bytes(),
+            29 => "one\u{2009}\ntwo\nthree".as_bytes(),
+            30 => "one\u{200a}\ntwo\nthree".as_bytes(),
+            31 => "one\u{202f}\ntwo\nthree".as_bytes(),
+            32 => "one\u{205f}\ntwo\nthree".as_bytes(),
+            33 => "one\u{3000}\ntwo\nthree".as_bytes(),
             Self::N_VECTORS..=std::usize::MAX =>
                 panic!("Invalid test vector {}", i),
             _ => unreachable!(),
@@ -680,6 +706,9 @@ impl LineBreakNormalizationTest {
                 Some(Err("Binary signature must not be valid (b)".into())),
             (false, n) if n < 4 =>
                 Some(Ok("Line endings must be normalized (t)".into())),
+            (false, n) if n >= Self::N_PLAUSIBLE_VECTORS =>
+                Some(Err("Erroneous normalization \
+                          (e.g. trailing whitespace) (t)".into())),
             (false, _) => None,
         };
 
