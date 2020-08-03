@@ -25,6 +25,7 @@ use crate::{
 };
 
 mod revoked_key;
+mod primary_key_binding;
 
 fn make_test(test: &str, packets: Vec<openpgp::Packet>)
              -> Result<(String, Data, Option<Expectation>)> {
@@ -533,6 +534,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add_section("Certificates");
     report.add(Box::new(EncryptionKeyFlags::new()?));
     report.add(Box::new(PrimaryKeyFlags::new()?));
+    report.add(Box::new(primary_key_binding::PrimaryKeyBinding::new()?));
 
     revoked_key::schedule(report)?;
     Ok(())
