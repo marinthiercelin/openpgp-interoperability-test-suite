@@ -123,7 +123,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true))?)?
+                                        .set_transport_encryption())?)?
                      .into());
                  p
             })?,
@@ -135,7 +135,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_storage_encryption(true))?)?
+                                        .set_storage_encryption())?)?
                      .into());
                  p
             })?,
@@ -147,8 +147,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true)
-                                        .set_storage_encryption(true))?)?
+                                        .set_transport_encryption()
+                                        .set_storage_encryption())?)?
                      .into());
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
@@ -156,8 +156,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true)
-                                        .set_storage_encryption(true))?)?
+                                        .set_transport_encryption()
+                                        .set_storage_encryption())?)?
                      .into());
                  p
             })?,
@@ -169,8 +169,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true)
-                                        .set_storage_encryption(true))?)?
+                                        .set_transport_encryption()
+                                        .set_storage_encryption())?)?
                      .into());
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -178,8 +178,8 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true)
-                                        .set_storage_encryption(true))?)?
+                                        .set_transport_encryption()
+                                        .set_storage_encryption())?)?
                      .into());
                  p
             })?,
@@ -191,7 +191,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true))?)?
+                                        .set_transport_encryption())?)?
                      .into());
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
@@ -199,7 +199,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_storage_encryption(true))?)?
+                                        .set_storage_encryption())?)?
                      .into());
                  p
             })?,
@@ -211,7 +211,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_storage_encryption(true))?)?
+                                        .set_storage_encryption())?)?
                      .into());
                  p.push(key_b.clone().into());
                  p.push(key_b.bind(
@@ -219,7 +219,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true))?)?
+                                        .set_transport_encryption())?)?
                      .into());
                  p
             })?,
@@ -231,7 +231,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true))?)?
+                                        .set_transport_encryption())?)?
                      .into());
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -239,7 +239,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_storage_encryption(true))?)?
+                                        .set_storage_encryption())?)?
                      .into());
                  p
             })?,
@@ -251,7 +251,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_storage_encryption(true))?)?
+                                        .set_storage_encryption())?)?
                      .into());
                  p.push(key_a.clone().into());
                  p.push(key_a.bind(
@@ -259,7 +259,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                      &self.cert,
                      SignatureBuilder::new(SignatureType::SubkeyBinding)
                          .set_key_flags(&KeyFlags::default()
-                                        .set_transport_encryption(true))?)?
+                                        .set_transport_encryption())?)?
                      .into());
                  p
              })?,
@@ -346,8 +346,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::PositiveCertification)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_certification(true))?
-                    .set_features(&Features::default().set_mdc(true))?
+                                       .set_certification())?
+                    .set_features(&Features::empty().set_mdc())?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
@@ -356,8 +356,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_transport_encryption(true)
-                                       .set_storage_encryption(true))?)?
+                                       .set_transport_encryption()
+                                       .set_storage_encryption())?)?
                     .into(),
             ])?,
 
@@ -365,19 +365,19 @@ impl ConsumerTest for PrimaryKeyFlags {
                 primary.clone().into(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::default()
-                                   .set_certification(true))?
-                .set_features(&Features::default().set_mdc(true))?
+                                   .set_certification())?
+                .set_features(&Features::empty().set_mdc())?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_direct_key(&mut primary_signer)?
+                .sign_direct_key(&mut primary_signer, &primary)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::PositiveCertification)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_certification(true))?
-                    .set_features(&Features::default().set_mdc(true))?
+                                       .set_certification())?
+                    .set_features(&Features::empty().set_mdc())?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
@@ -386,8 +386,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_transport_encryption(true)
-                                       .set_storage_encryption(true))?)?
+                                       .set_transport_encryption()
+                                       .set_storage_encryption())?)?
                     .into(),
             ])?,
 
@@ -395,11 +395,11 @@ impl ConsumerTest for PrimaryKeyFlags {
                 primary.clone().into(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::default()
-                                   .set_certification(true))?
-                .set_features(&Features::default().set_mdc(true))?
+                                   .set_certification())?
+                .set_features(&Features::empty().set_mdc())?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_direct_key(&mut primary_signer)?
+                .sign_direct_key(&mut primary_signer, &primary)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
@@ -411,8 +411,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_transport_encryption(true)
-                                       .set_storage_encryption(true))?)?
+                                       .set_transport_encryption()
+                                       .set_storage_encryption())?)?
                     .into(),
             ])?,
 
@@ -420,19 +420,19 @@ impl ConsumerTest for PrimaryKeyFlags {
                 primary.clone().into(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::default()
-                                   .set_certification(true))?
-                .set_features(&Features::default().set_mdc(true))?
+                                   .set_certification())?
+                .set_features(&Features::empty().set_mdc())?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_direct_key(&mut primary_signer)?
+                .sign_direct_key(&mut primary_signer, &primary)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::PositiveCertification)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_signing(true))?
-                    .set_features(&Features::default().set_mdc(true))?
+                                       .set_signing())?
+                    .set_features(&Features::empty().set_mdc())?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
@@ -441,8 +441,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_transport_encryption(true)
-                                       .set_storage_encryption(true))?)?
+                                       .set_transport_encryption()
+                                       .set_storage_encryption())?)?
                     .into(),
             ])?,
 
@@ -450,11 +450,11 @@ impl ConsumerTest for PrimaryKeyFlags {
                 primary.clone().into(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::default()
-                                   .set_certification(true))?
-                .set_features(&Features::default().set_mdc(true))?
+                                   .set_certification())?
+                .set_features(&Features::empty().set_mdc())?
                 .set_preferred_symmetric_algorithms(
                     vec![SymmetricAlgorithm::AES256])?
-                .sign_direct_key(&mut primary_signer)?
+                .sign_direct_key(&mut primary_signer, &primary)?
                 .into(),
                 userid.clone().into(),
                 userid.bind(
@@ -467,8 +467,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_transport_encryption(true)
-                                       .set_storage_encryption(true))?)?
+                                       .set_transport_encryption()
+                                       .set_storage_encryption())?)?
                     .into(),
             ])?,
 
@@ -479,8 +479,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::PositiveCertification)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_signing(true))?
-                    .set_features(&Features::default().set_mdc(true))?
+                                       .set_signing())?
+                    .set_features(&Features::empty().set_mdc())?
                     .set_preferred_symmetric_algorithms(
                         vec![SymmetricAlgorithm::AES256])?)?
                     .into(),
@@ -489,8 +489,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_transport_encryption(true)
-                                       .set_storage_encryption(true))?)?
+                                       .set_transport_encryption()
+                                       .set_storage_encryption())?)?
                     .into(),
             ])?,
 
@@ -506,8 +506,8 @@ impl ConsumerTest for PrimaryKeyFlags {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_key_flags(&KeyFlags::default()
-                                       .set_transport_encryption(true)
-                                       .set_storage_encryption(true))?)?
+                                       .set_transport_encryption()
+                                       .set_storage_encryption())?)?
                     .into(),
             ])?,
 

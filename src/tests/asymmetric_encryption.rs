@@ -61,7 +61,7 @@ impl EncryptDecryptRoundtrip {
         if let Some(algo) = aead {
             builder = builder.set_preferred_aead_algorithms(vec![algo])?;
             builder = builder.set_features(
-                &Features::default().set_mdc(true).set_aead(true))?;
+                &Features::empty().set_mdc().set_aead())?;
         }
         let mut primary_keypair =
             cert.primary_key()
@@ -138,7 +138,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             let pp = openpgp::PacketPile::from_bytes(&artifact)
                 .context("Produced data is malformed")?;
             let mode = KeyFlags::default()
-                .set_storage_encryption(true).set_transport_encryption(true);
+                .set_storage_encryption().set_transport_encryption();
 
             let mut ok = false;
             let mut algos = Vec::new();
