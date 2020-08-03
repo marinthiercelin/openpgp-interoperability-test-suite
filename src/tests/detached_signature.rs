@@ -648,25 +648,27 @@ impl LineBreakNormalizationTest {
         })
     }
 
-    const N_VECTORS: usize = 10;
+    const N_VECTORS: usize = 12;
     fn test_vector(i: usize)
                    -> (SignatureType, &'static [u8], Option<Expectation>)
     {
         let binary = (i & 1) == 0;
         let idx = i >> 1;
         let data = match idx {
-            0 => &b"one\r\ntwo\r\nno ending"[..], // dos
-            1 => b"one\ntwo\nno ending",          // unix
-            2 => b"one\ntwo\r\nno ending",        // mixed
-            3 => b"one\r\ntwo\nno ending",
+            0 => &b"one\r\ntwo\r\nthree"[..], // dos
+            1 => b"one\ntwo\nthree",          // unix
+            2 => b"one\ntwo\r\nthree",        // mixed
+            3 => b"one\r\ntwo\nthree",
             // Obscure endings below.
-            4 => b"one\rtwo\rno ending",          // classic mac
-            5 => b"one\n\rtwo\n\rno ending",      // risc os
-            6 => b"one\x1etwo\x1eno ending",      // classic qnx
+            4 => b"one\rtwo\rthree",          // classic mac
+            5 => b"one\n\rtwo\n\rthree",      // risc os
+            6 => b"one\x1etwo\x1ethree",      // classic qnx
+            7 => b"one\x0btwo\x0bthree",      // line feed
+            8 => b"one\x0ctwo\x0cthree",      // form feed
             // Unicode endings below.
-            7 => "one\u{0085}two\u{0085}no ending".as_bytes(), // Next Line
-            8 => "one\u{2028}two\u{2028}no ending".as_bytes(), // Line Separator
-            9 => "one\u{2029}two\u{2029}no ending".as_bytes(), // Paragraph Separator
+            9 => "one\u{85}two\u{85}three".as_bytes(), // Next Line
+            10 => "one\u{2028}two\u{2028}three".as_bytes(), // Line Separator
+            11 => "one\u{2029}two\u{2029}three".as_bytes(), // Paragraph Separator
             Self::N_VECTORS..=std::usize::MAX =>
                 panic!("Invalid test vector {}", i),
             _ => unreachable!(),
@@ -699,7 +701,7 @@ impl Test for LineBreakNormalizationTest {
          line endings converted to &lt;CR&gt;&lt;LF&gt;.</q></p>\
          \
          <p>This test creates two signatures, a binary and a text \
-         signature, over the message <q>one\\r\\ntwo\\r\\nno ending</q>, \
+         signature, over the message <q>one\\r\\ntwo\\r\\nthree</q>, \
          and checks whether variants of the message with different \
          line endings can be verified using these signatures.</p>"
             .into()
