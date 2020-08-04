@@ -313,14 +313,14 @@ impl Test for PrimaryKeyFlags {
     }
 
     fn description(&self) -> String {
-        "This tests various ways of specifying the primary key's \
+        "<p>This tests various ways of specifying the primary key's \
          flags.  Key flags can be provided using direct key signatures, \
-         as well as binding signatures on userids.  \
-         Notation: p[flags-on-direct-key-sig] u[flags-on-uid-binding] \
+         as well as binding signatures on userids.</p> \
+         <p>Notation: p[flags-on-direct-key-sig] u[flags-on-uid-binding] \
          s[flags-on-binding], where CSEA refer to certification, signing, \
          encryption, and authentication capabilities, and 0 refers to an \
          explicit empty set (the subpacket is present, but empty).  \
-         The key is then used to do an encrypt-decrypt roundtrip."
+         The key is then used to do an encrypt-decrypt roundtrip.</p>"
             .into()
     }
 
