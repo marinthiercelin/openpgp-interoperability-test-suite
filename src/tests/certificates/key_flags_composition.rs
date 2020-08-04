@@ -81,7 +81,9 @@ impl Test for KeyFlagsComposition {
         signatures are honored, and if multiple subpackets are given, \
         what their precedence relation is, and how they are composed \
         (e.g. is a union or intersection computed, or first or last \
-        subpacket wins, etc.).</p> \
+        subpacket wins, etc.), and whether a default value is used if \
+        the subpacket is not present (e.g., GnuPG appears to default \
+        to CSEA).</p>\
         \
         <p>The notation used in the rows is as follows.  First, a \
         letter identifies a certificate component: <code>p</code> for \
@@ -190,6 +192,28 @@ impl ConsumerTest for KeyFlagsComposition {
                     .into(),
             ], Some(Ok("Base case".into())))?,
 
+            make_test("p u[C] s[E]", vec![
+                primary.clone().into(),
+                userid.clone().into(),
+                userid_binding.clone().into(),
+                subkey.clone().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    SignatureBuilder::new(SignatureType::SubkeyBinding)
+                        .modify_hashed_area(|mut a| {
+                            a.add(Subpacket::new(
+                                SubpacketValue::KeyFlags(
+                                    KeyFlags::empty()
+                                        .set_transport_encryption()
+                                        .set_storage_encryption()),
+                                true)?)?;
+                            Ok(a)
+                        })?
+                        // We need to create a primary key binding signature.
+                        .set_embedded_signature(backsig.clone())?)?
+                    .into(),
+            ], Some(Err("Base case, encryption subkey".into())))?,
+
             make_test("p u[C] s[][S]", vec![
                 primary.clone().into(),
                 userid.clone().into(),
@@ -266,6 +290,31 @@ impl ConsumerTest for KeyFlagsComposition {
             ], Some(Ok("[S]ubpackets on the direct-key signature apply to the \
                         entire key".into())))?,
 
+            make_test("p[CE] u[C] s", vec![
+                primary.clone().into(),
+                SignatureBuilder::new(SignatureType::DirectKey)
+                    .modify_hashed_area(|mut a| {
+                        a.add(Subpacket::new(
+                            SubpacketValue::KeyFlags(
+                                KeyFlags::empty()
+                                    .set_certification()
+                                    .set_transport_encryption()
+                                    .set_storage_encryption()),
+                            true)?)?;
+                        Ok(a)
+                    })?
+                .sign_direct_key(&mut primary_signer, &primary)?.into(),
+                userid.clone().into(),
+                userid_binding.clone().into(),
+                subkey.clone().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    SignatureBuilder::new(SignatureType::SubkeyBinding)
+                        // We need to create a primary key binding signature.
+                        .set_embedded_signature(backsig.clone())?)?
+                    .into(),
+            ], Some(Err("Encryption subkey".into())))?,
+
             make_test("p[C][CS] u[C] s", vec![
                 primary.clone().into(),
                 SignatureBuilder::new(SignatureType::DirectKey)
@@ -319,6 +368,36 @@ impl ConsumerTest for KeyFlagsComposition {
                 subkey.bind(
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
+                        // We need to create a primary key binding signature.
+                        .set_embedded_signature(backsig.clone())?)?
+                    .into(),
+            ], None)?,
+
+            // Check if key flags are honored at all.
+            make_test("p[] u[C] s[]", vec![
+                primary.clone().into(),
+                SignatureBuilder::new(SignatureType::DirectKey)
+                    .modify_hashed_area(|mut a| {
+                        a.add(Subpacket::new(
+                            SubpacketValue::KeyFlags(
+                                KeyFlags::empty()),
+                            true)?)?;
+                        Ok(a)
+                    })?
+                .sign_direct_key(&mut primary_signer, &primary)?.into(),
+                userid.clone().into(),
+                userid_binding.clone().into(),
+                subkey.clone().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    SignatureBuilder::new(SignatureType::SubkeyBinding)
+                        .modify_hashed_area(|mut a| {
+                            a.add(Subpacket::new(
+                                SubpacketValue::KeyFlags(
+                                    KeyFlags::empty()),
+                                true)?)?;
+                            Ok(a)
+                        })?
                         // We need to create a primary key binding signature.
                         .set_embedded_signature(backsig.clone())?)?
                     .into(),
