@@ -56,6 +56,9 @@ impl PacketBoundaries {
         let mut sink = Vec::new();
         {
             let message = Message::new(&mut sink);
+            let message = Armorer::new(message)
+                .kind(openpgp::armor::Kind::Message)
+                .build()?;
             let message = Encryptor::for_recipients(message, recipients)
                 .build()?;
             let mut message =
@@ -105,7 +108,7 @@ impl Test for PacketBoundaries {
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
-        vec![("Certificate".into(), data::certificate("bob.pgp").into())]
+        vec![("Key".into(), data::certificate("bob-secret.pgp").into())]
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
