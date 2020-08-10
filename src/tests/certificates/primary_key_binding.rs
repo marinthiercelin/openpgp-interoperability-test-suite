@@ -11,7 +11,13 @@ use openpgp::{
         SignatureType,
         SymmetricAlgorithm,
     },
-    packet::signature::SignatureBuilder,
+    packet::signature::{
+        SignatureBuilder,
+        subpacket::{
+            Subpacket,
+            SubpacketValue,
+        },
+    },
     parse::Parse,
     serialize::stream::*,
 };
@@ -73,11 +79,14 @@ impl Test for PrimaryKeyBinding {
     }
 
     fn description(&self) -> String {
-        "A subkey binding signature indicating signing capabilities \
-         must carry an embedded primary key signature from the \
-         subkey over the primary key.  This tests whether \
-         implementations pay attention to that signature."
-            .into()
+        format!(
+            "<p>A subkey binding signature indicating signing \
+             capabilities must carry an embedded primary key signature \
+             from the subkey over the primary key.  This tests whether \
+             implementations pay attention to that signature.</p>\
+             \
+             <p>The signature is over the string <code>{}</code>.</p>",
+            String::from_utf8(self.message().into()).unwrap())
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
@@ -165,6 +174,33 @@ impl ConsumerTest for PrimaryKeyBinding {
                                                           &subkey)?)?)?
                     .into(),
             ], Some(Ok("Base case".into())))?,
+
+            make_test("Hashed backsig", vec![
+                primary.clone().into(),
+                userid.clone().into(),
+                userid_binding.clone().into(),
+                subkey.clone().into(),
+                {
+                    let backsig = SignatureBuilder::new(
+                        SignatureType::PrimaryKeyBinding)
+                        .set_signature_creation_time(half_a_year_ago)?
+                        .sign_primary_key_binding(&mut subkey_signer,
+                                                  &primary,
+                                                  &subkey)?;
+                    subkey.bind(
+                        &mut primary_signer, &cert,
+                        SignatureBuilder::new(SignatureType::SubkeyBinding)
+                            .set_key_flags(&KeyFlags::empty().set_signing())?
+                            // We need to create a primary key binding signature.
+                            .modify_hashed_area(|mut a| {
+                                a.add(Subpacket::new(
+                                    SubpacketValue::EmbeddedSignature(backsig),
+                                    true)?)?;
+                                Ok(a)
+                            })?)?
+                        .into()
+                },
+            ], Some(Ok("Embedded signature may be hashed".into())))?,
 
             make_test("No backsig", vec![
                 primary.clone().into(),
@@ -270,8 +306,6 @@ impl ConsumerTest for PrimaryKeyBinding {
                     let fake_backsig = SignatureBuilder::new(
                         SignatureType::PrimaryKeyBinding)
                         .set_signature_creation_time(half_a_year_ago)?
-                        .set_signature_validity_period(
-                            Duration::new(60 * 60 * 24 * 365 / 4, 0))?
                         .sign_primary_key_binding(&mut primary_signer,
                                                   &primary,
                                                   &subkey)?;
