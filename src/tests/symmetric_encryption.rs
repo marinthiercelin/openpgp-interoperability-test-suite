@@ -148,7 +148,7 @@ impl ConsumerTest for SymmetricEncryptionSupport {
     }
 }
 
-/// Tests support for symmetric encryption algorithms.
+/// Tests support for symmetrically encrypted integrity protected packets.
 struct SEIPSupport {
 }
 
