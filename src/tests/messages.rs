@@ -20,6 +20,8 @@ use crate::{
     },
 };
 
+mod unknown_packets;
+
 /// Tests various conforming, but unusual message structures.
 struct MessageStructure {
 }
@@ -332,5 +334,6 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(MessageStructure::new()?));
     report.add(Box::new(RecursionDepth::new(7)?));
     report.add(Box::new(MarkerPacket::new()?));
+    report.add(Box::new(unknown_packets::UnknownPackets::new()?));
     Ok(())
 }
