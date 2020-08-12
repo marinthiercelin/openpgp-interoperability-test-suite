@@ -6,7 +6,7 @@ use crate::{
     data,
     templates::Report,
     tests::{
-        detached_signature::DetachedSignVerifyRoundtrip,
+        detached_signatures::DetachedSignVerifyRoundtrip,
     },
 };
 

@@ -11,7 +11,7 @@ use crate::{
 
 mod asymmetric_encryption;
 mod symmetric_encryption;
-mod detached_signature;
+mod detached_signatures;
 mod hashes;
 mod compression;
 mod key_generation;
@@ -260,7 +260,7 @@ pub fn extract_cert(key: &[u8]) -> Result<Data> {
 pub fn schedule(report: &mut Report) -> Result<()> {
     asymmetric_encryption::schedule(report)?;
     symmetric_encryption::schedule(report)?;
-    detached_signature::schedule(report)?;
+    detached_signatures::schedule(report)?;
     hashes::schedule(report)?;
     compression::schedule(report)?;
     key_generation::schedule(report)?;
