@@ -26,6 +26,8 @@ use crate::{
     },
 };
 
+mod unknown_packets;
+
 struct DetachedSignatureSubpacket {
     message: Vec<u8>,
 }
@@ -826,5 +828,6 @@ pub fn schedule(report: &mut Report) -> Result<()> {
             b"Hello, world!".to_vec().into_boxed_slice())?));
     report.add(Box::new(DetachedSignatureSubpacket::new()?));
     report.add(Box::new(LineBreakNormalizationTest::new()?));
+    report.add(Box::new(unknown_packets::UnknownPackets::new()?));
     Ok(())
 }
