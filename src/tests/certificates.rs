@@ -27,6 +27,7 @@ use crate::{
 mod revoked_key;
 mod primary_key_binding;
 mod key_flags_composition;
+mod concatenated_armor;
 
 fn make_test(test: &str, packets: Vec<openpgp::Packet>)
              -> Result<(String, Data, Option<Expectation>)> {
@@ -537,6 +538,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(PrimaryKeyFlags::new()?));
     report.add(Box::new(primary_key_binding::PrimaryKeyBinding::new()?));
     report.add(Box::new(key_flags_composition::KeyFlagsComposition::new()?));
+    report.add(Box::new(concatenated_armor::ConcatenatedArmorKeyring::new()?));
 
     revoked_key::schedule(report)?;
     Ok(())
