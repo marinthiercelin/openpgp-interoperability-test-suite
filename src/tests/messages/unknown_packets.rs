@@ -201,6 +201,90 @@ impl ConsumerTest for UnknownPackets {
                     vec![&unknown, pkesk, seip],
                     Some(Ok("Unknown versions should be ignored".into())))?);
 
+        // Tests with signed message in the encryption container.
+
+        // First, create a signed message.
+        let cert =
+            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
+        let primary = cert.primary_key().key().clone();
+        let primary_signer =
+            primary.clone().parts_into_secret()?.into_keypair()?;
+        let mut signed_message = Vec::new();
+        {
+            let message = Message::new(&mut signed_message);
+            let message = Signer::new(message, primary_signer)
+                .build()?;
+            let mut message = LiteralWriter::new(message).build()?;
+            message.write_all(b"Encrypted, signed message.")?;
+            message.finalize()?;
+        }
+        let signed_message = openpgp::PacketPile::from_bytes(&signed_message)?
+            .into_children().collect::<Vec<_>>();
+        assert_eq!(signed_message.len(), 3);
+        let ops3 = signed_message[0].clone();
+        let literal = signed_message[1].clone();
+        let sig4 = signed_message[2].clone();
+        assert_eq!(ops3.kind(), Some(Tag::OnePassSig));
+        assert_eq!(literal.kind(), Some(Tag::Literal));
+        assert_eq!(sig4.kind(), Some(Tag::Signature));
+
+        // Base case.
+        let mut buf = Vec::new();
+        {
+            let recipient: Recipient =
+                cert.keys().with_policy(crate::tests::P, None)
+                .for_transport_encryption()
+                .nth(0).unwrap().key().into();
+
+            let message = Message::new(&mut buf);
+            let mut message = Encryptor::for_recipients(message, vec![recipient])
+                .symmetric_algo(SymmetricAlgorithm::AES256)
+                .build()?;
+            ops3.serialize(&mut message)?;
+            literal.serialize(&mut message)?;
+            sig4.serialize(&mut message)?;
+            message.finalize()?;
+        }
+        t.push(make("PKESK3 SEIP [OPS3 Literal Sig4]",
+                    openpgp::PacketPile::from_bytes(&buf)?
+                        .children().collect(),
+                    Some(Ok("Signed, encrypted message.".into())))?);
+
+        // Fictitious signature version.
+        let mut buf = Vec::new();
+        {
+            let recipient: Recipient =
+                cert.keys().with_policy(crate::tests::P, None)
+                .for_transport_encryption()
+                .nth(0).unwrap().key().into();
+
+            let message = Message::new(&mut buf);
+            let mut message = Encryptor::for_recipients(message, vec![recipient])
+                .symmetric_algo(SymmetricAlgorithm::AES256)
+                .build()?;
+
+            // Fictitious OnePassSignature23 packet.
+            let mut buf = Vec::new();
+            ops3.serialize(&mut buf)?;
+            buf[2] = 23;
+            message.write_all(&buf)?;
+
+            // The payload.
+            literal.serialize(&mut message)?;
+
+            // Fictitious Signature23 packet.
+            let mut buf = Vec::new();
+            sig4.serialize(&mut buf)?;
+            buf[3] = 23;
+            message.write_all(&buf)?;
+
+            message.finalize()?;
+        }
+        t.push(make("PKESK3 SEIP [OPS23 Literal Sig23]",
+                    openpgp::PacketPile::from_bytes(&buf)?
+                        .children().collect(),
+                    Some(Ok("Unknown versions should be ignored".into())))?);
+
         Ok(t)
     }
 
