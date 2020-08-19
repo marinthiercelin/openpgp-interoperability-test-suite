@@ -16,6 +16,9 @@
   <li><a href="https://gitlab.com/sequoia-pgp/sequoia/issues/372">
       Marker packet not ignored in certificate parser
   </a></li>
+  <li><a href="https://gitlab.com/sequoia-pgp/sequoia/-/issues/539">
+      Expiration of primary key binding signatures is not honored
+  </a></li>
 </ul>
 
 <h2>DKGPG</h2>
@@ -53,6 +56,31 @@
   <li><a href="https://savannah.nongnu.org/bugs/index.php?58895">
       Unknown notations with the "critical" bit set SHOULD invalidate the signature
   </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?58906">
+      dkgpg fails to enforce packet boundaries
+  </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?58937">
+      dkgpg fails to decrypt message with unknown packet versions
+  </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?58939">
+      dkgpg fails to verify detached signatures with unknown packet versions
+  </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?58981">
+      dkgpg should ignore marker packets when verifying detached signatures
+  </a></li>
+</ul>
+
+<h2>GopenPGP</h2>
+<ul>
+  <li><a href="https://github.com/ProtonMail/gopenpgp/issues/68">
+      Expiration of primary key binding signatures is not honored
+  </a></li>
+  <li><a href="https://github.com/ProtonMail/gopenpgp/issues/69">
+      GopenPGP fails to decrypt message with unknown packet versions
+  </a></li>
+  <li><a href="https://github.com/ProtonMail/gopenpgp/issues/70">
+      GopenPGP fails to verify detached signatures with unknown packet versions
+  </a></li>
 </ul>
 
 <h2>OpenPGP.js</h2>
@@ -62,6 +90,12 @@
   </a></li>
   <li><a href="https://github.com/openpgpjs/openpgpjs/issues/1137">
       Signatures without signature creation time subpackets are invalid
+  </a></li>
+  <li><a href="https://github.com/openpgpjs/openpgpjs/issues/1138">
+      Expiration of primary key binding signatures is not honored
+  </a></li>
+  <li><a href="https://github.com/openpgpjs/openpgpjs/issues/1145">
+      OpenPGPjs should ignore marker packets when verifying detached signatures
   </a></li>
 </ul>
 
@@ -76,6 +110,15 @@
   <li><a href="https://github.com/rnpgp/rnp/issues/1234">
       Unknown notations with the "critical" bit set SHOULD invalidate the signature
   </a></li>
+  <li><a href="https://github.com/rnpgp/rnp/issues/1247">
+      Expiration of primary key binding signatures is not honored
+  </a></li>
+  <li><a href="https://github.com/rnpgp/rnp/issues/1255">
+      RNP fails to decrypt message with unknown packet versions
+  </a></li>
+  <li><a href="https://github.com/rnpgp/rnp/issues/1257">
+      RNP fails to verify detached signatures with unknown packet versions
+  </a></li>
 </ul>
 
 <h2>PGPy</h2>
@@ -85,6 +128,21 @@
   </a></li>
   <li><a href="https://github.com/SecurityInnovation/PGPy/issues/332">
       Critical, unknown subpackets and notations SHOULD invalidate signatures
+  </a></li>
+  <li><a href="https://github.com/SecurityInnovation/PGPy/issues/333">
+      PGPy seems to ignore key flags
+  </a></li>
+  <li><a href="https://github.com/SecurityInnovation/PGPy/issues/334">
+      PGPy fails to decrypt message with unknown packet versions
+  </a></li>
+  <li><a href="https://github.com/SecurityInnovation/PGPy/issues/335">
+      PGPy fails to verify detached signatures with unknown packet versions
+  </a></li>
+  <li><a href="https://github.com/SecurityInnovation/PGPy/issues/337">
+      PGPy should ignore marker packets when verifying detached signatures
+  </a></li>
+  <li><a href="https://github.com/SecurityInnovation/PGPy/issues/338">
+      PGPy should ignore marker packets when parsing certificates
   </a></li>
 </ul>
 
@@ -103,4 +161,19 @@
   <li><a href="https://dev.gnupg.org/T4727">
       GnuPG creates keys that it cannot use, likely related to AEAD
   </a></li>
+  <li>
+    GnuPG 1.4.23 ignores key flags
+  </li>
+  <li>
+    All versions of GnuPG fail to enforce packet boundaries
+  </li>
+  <li>
+    Expiration of primary key binding signatures is not honored
+  </li>
+  <li>
+    All versions of GnuPG fail to decrypt message with unknown packet versions
+  </li>
+  <li>
+    All versions of GnuPG fail to verify detached signatures with unknown packet versions
+  </li>
 </ul>
