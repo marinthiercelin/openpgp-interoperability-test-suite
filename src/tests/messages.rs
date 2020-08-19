@@ -267,7 +267,7 @@ impl ConsumerTest for MarkerPacket {
         }
 
         Ok(vec![{
-            let test = "Marker + Signed Message";
+            let test = "Marker + Detached signature";
             let mut b = Vec::new();
             marker.serialize(&mut b)?;
             {
@@ -277,13 +277,30 @@ impl ConsumerTest for MarkerPacket {
                     .nth(0).unwrap().key().clone()
                     .into_keypair().unwrap();
                 let mut stack = Message::new(&mut b);
-                stack = Signer::new(stack, signer).build()?;
-                stack = LiteralWriter::new(stack).build()?;
+                stack = Signer::new(stack, signer).detached().build()?;
                 stack.write_all(test.as_bytes())?;
                 stack.finalize()?;
             }
-            make(test, b, armor::Kind::Message)?
+            make(test, b, armor::Kind::Signature)?
         }, {
+        // XXX: We cannot test signed messages.
+        //    let test = "Marker + Signed Message";
+        //    let mut b = Vec::new();
+        //    marker.serialize(&mut b)?;
+        //    {
+        //        let signer =
+        //            cert.keys().with_policy(super::P, None)
+        //            .for_signing().secret()
+        //            .nth(0).unwrap().key().clone()
+        //            .into_keypair().unwrap();
+        //        let mut stack = Message::new(&mut b);
+        //        stack = Signer::new(stack, signer).build()?;
+        //        stack = LiteralWriter::new(stack).build()?;
+        //        stack.write_all(test.as_bytes())?;
+        //        stack.finalize()?;
+        //    }
+        //    make(test, b, armor::Kind::Message)?
+        //}, {
             let test = "Marker + Encrypted Message";
             let r: Recipient =
                 cert.keys().with_policy(super::P, None)
@@ -319,12 +336,23 @@ impl ConsumerTest for MarkerPacket {
         // Peek at the data to decide what to do.
         let pp = openpgp::PacketPile::from_bytes(artifact)?;
         let mut children = pp.children();
-        if let Some(openpgp::Packet::PublicKey(_)) = children.nth(1) {
-            // A certificate.
-            let ciphertext = pgp.encrypt(artifact, b"Marker + Certificate")?;
-            pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
-        } else {
-            pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
+
+        match children.nth(1) {
+            Some(openpgp::Packet::Signature(_)) => {
+                // Detached signature.
+                let test = b"Marker + Detached signature";
+                pgp.verify_detached(data::certificate("bob.pgp"),
+                                    test, artifact)
+            },
+            Some(openpgp::Packet::PublicKey(_)) => {
+                // A certificate.
+                let ciphertext =
+                    pgp.encrypt(artifact, b"Marker + Certificate")?;
+                pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
+            },
+            _ => {
+                pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
+            },
         }
     }
 }
