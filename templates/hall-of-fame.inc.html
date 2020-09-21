@@ -68,6 +68,9 @@
   <li><a href="https://savannah.nongnu.org/bugs/index.php?58981">
       dkgpg should ignore marker packets when verifying detached signatures
   </a></li>
+  <li><a href="https://savannah.nongnu.org/bugs/index.php?58983">
+      dkgpg throws std::bad_alloc on duplicated subkeys
+  </a></li>
 </ul>
 
 <h2>GopenPGP</h2>
@@ -80,6 +83,9 @@
   </a></li>
   <li><a href="https://github.com/ProtonMail/gopenpgp/issues/70">
       GopenPGP fails to verify detached signatures with unknown packet versions
+  </a></li>
+  <li><a href="https://github.com/ProtonMail/gopenpgp/issues/72">
+      GopenPGP should ignore unbound or unknown certificate components
   </a></li>
 </ul>
 
@@ -144,6 +150,9 @@
   <li><a href="https://github.com/SecurityInnovation/PGPy/issues/338">
       PGPy should ignore marker packets when parsing certificates
   </a></li>
+  <li><a href="https://github.com/SecurityInnovation/PGPy/issues/339">
+      PGPy should ignore unbound certificate components
+  </a></li>
 </ul>
 
 <h2>GPGME</h2>
@@ -175,5 +184,8 @@
   </li>
   <li>
     All versions of GnuPG fail to verify detached signatures with unknown packet versions
+  </li>
+  <li>
+    All versions of GnuPG fail to ignore signatures and keys with unknown packet versions in certificates
   </li>
 </ul>
