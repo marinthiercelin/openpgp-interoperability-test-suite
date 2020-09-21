@@ -75,9 +75,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
         let issuer: openpgp::KeyID = issuer_fp.clone().into();
 
         let hash_algo = HashAlgorithm::SHA256;
-        let hash_ctx =
-            openpgp::crypto::hash_reader(std::io::Cursor::new(&self.message),
-                                         &[hash_algo])?.pop().unwrap();
+        let mut hash_ctx = hash_algo.context()?;
+        hash_ctx.update(&self.message);
 
         let make_sig = move |builder: SignatureBuilder| -> Result<Signature>
         {
@@ -212,8 +211,8 @@ impl ConsumerTest for DetachedSignatureSubpacket {
 
                 let mut sig = make_sig(builder)?;
                 sig.unhashed_area_mut().clear();
-                assert!(sig.issuer().is_none());
-                assert!(sig.issuer_fingerprint().is_none());
+                assert_eq!(sig.issuers().count(), 0);
+                assert_eq!(sig.issuer_fingerprints().count(), 0);
                 (test.into(), make_armor(sig)?, None)
             },
 

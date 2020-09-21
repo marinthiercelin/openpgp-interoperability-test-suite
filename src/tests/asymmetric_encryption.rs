@@ -137,7 +137,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             let cert = openpgp::Cert::from_bytes(&self.key)?;
             let pp = openpgp::PacketPile::from_bytes(&artifact)
                 .context("Produced data is malformed")?;
-            let mode = KeyFlags::default()
+            let mode = KeyFlags::empty()
                 .set_storage_encryption().set_transport_encryption();
 
             let mut ok = false;

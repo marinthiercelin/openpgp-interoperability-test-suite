@@ -117,7 +117,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                 &mut primary_signer, &cert,
                 SignatureBuilder::new(SignatureType::PositiveCertification)
                     .set_signature_creation_time(half_a_year_ago)?
-                    .set_key_flags(&KeyFlags::default()
+                    .set_key_flags(&KeyFlags::empty()
                                    .set_certification())?
                     .set_features(&Features::empty().set_mdc())?
                     .set_preferred_hash_algorithms(
