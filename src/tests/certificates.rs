@@ -29,6 +29,7 @@ mod primary_key_binding;
 mod key_flags_composition;
 mod concatenated_armor;
 mod perturbed_certs;
+mod expiration;
 
 fn make_test(test: &str, packets: Vec<openpgp::Packet>)
              -> Result<(String, Data, Option<Expectation>)> {
@@ -541,6 +542,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(key_flags_composition::KeyFlagsComposition::new()?));
     report.add(Box::new(concatenated_armor::ConcatenatedArmorKeyring::new()?));
     report.add(Box::new(perturbed_certs::PerturbedCerts::new()?));
+    report.add(Box::new(expiration::CertExpiration::new()?));
 
     revoked_key::schedule(report)?;
     Ok(())
