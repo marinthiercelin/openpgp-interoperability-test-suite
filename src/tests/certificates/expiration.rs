@@ -348,7 +348,8 @@ impl ConsumerTest for CertExpiration {
     fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let ciphertext = pgp.encrypt(artifact, self.message())?;
-        pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
+        pgp.new_context()?
+            .decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
     }
 
     fn check_consumer(&self, _i: usize, artifact: &[u8])
