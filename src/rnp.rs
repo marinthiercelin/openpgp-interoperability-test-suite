@@ -36,7 +36,9 @@ impl RNP {
             Ok(o)
         } else {
             Err(Error::EngineError(
-                o.status, String::from_utf8_lossy(&o.stderr).to_string())
+                o.status,
+                String::from_utf8_lossy(&o.stdout).to_string(),
+                String::from_utf8_lossy(&o.stderr).to_string())
                 .into())
         }
     }
@@ -92,7 +94,7 @@ impl crate::OpenPGP for RNP {
         let o = self.run("rnp",
                          &["--encrypt",
                            "--recipient",
-                           &recipient_fp.to_string(),
+                           &format!("{:X}", recipient_fp),
                            "--armor",
                            "--output=-",
                            plaintext_file.path().to_str().unwrap()])?;

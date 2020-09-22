@@ -37,7 +37,9 @@ impl DKGPG {
             Ok(o)
         } else {
             Err(Error::EngineError(
-                o.status, String::from_utf8_lossy(&o.stderr).to_string())
+                o.status,
+                String::from_utf8_lossy(&o.stdout).to_string(),
+                String::from_utf8_lossy(&o.stderr).to_string())
                 .into())
         }
     }
