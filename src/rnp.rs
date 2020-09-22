@@ -98,7 +98,16 @@ impl crate::OpenPGP for RNP {
                            "--armor",
                            "--output=-",
                            plaintext_file.path().to_str().unwrap()])?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        let ciphertext = o.stdout.clone().into_boxed_slice();
+        // Workaround for https://github.com/rnpgp/rnp/issues/1314
+        if ciphertext.is_empty() {
+            let mut asc = plaintext_file.path().to_path_buf().into_os_string();
+            asc.push(".asc");
+            if let Ok(v) = std::fs::read(asc) {
+                return Ok(v.into());
+            }
+        }
+        Ok(ciphertext)
     }
 
     fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8])
