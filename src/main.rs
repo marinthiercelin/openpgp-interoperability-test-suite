@@ -61,7 +61,7 @@ impl fmt::Display for Version {
 pub type Data = Box<[u8]>;
 
 /// Abstract OpenPGP interface.
-pub trait OpenPGP {
+pub trait OpenPGP: std::fmt::Debug {
     fn new_context(&self) -> Result<Box<dyn OpenPGP>>;
     fn version(&self) -> Result<Version>;
     fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
@@ -139,7 +139,8 @@ fn main() -> anyhow::Result<()> {
 
     eprintln!("Configured engines:");
     for i in implementations.iter() {
-        eprintln!("  - {}", i.version()?);
+        eprintln!("  - {}",
+                  i.version().context(format!("Could not run {:?}", i))?);
     }
 
     let mut report = templates::Report::new(&c);

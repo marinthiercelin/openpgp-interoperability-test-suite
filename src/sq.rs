@@ -61,6 +61,7 @@ impl SqVersion {
     }
 }
 
+#[derive(Debug)]
 pub struct Sq {
     sq: PathBuf,
     #[allow(dead_code)]

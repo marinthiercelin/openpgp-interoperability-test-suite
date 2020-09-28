@@ -9,6 +9,7 @@ use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
+#[derive(Debug)]
 pub struct Sop {
     sop: PathBuf,
     env: HashMap<String, String>,

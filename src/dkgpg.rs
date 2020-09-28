@@ -10,6 +10,7 @@ use crate::{Data, Implementation, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
+#[derive(Debug)]
 pub struct DKGPG {
     prefix: PathBuf,
     #[allow(dead_code)]
