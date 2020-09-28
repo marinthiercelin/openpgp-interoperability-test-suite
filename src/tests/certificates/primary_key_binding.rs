@@ -141,7 +141,6 @@ impl ConsumerTest for PrimaryKeyBinding {
 
             let mut buf = Vec::new();
             {
-                use openpgp::armor;
                 let mut w =
                     armor::Writer::new(&mut buf,
                                        if has_secrets {

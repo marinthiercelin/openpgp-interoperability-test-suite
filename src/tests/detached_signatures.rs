@@ -89,7 +89,6 @@ impl ConsumerTest for DetachedSignatureSubpacket {
         let make_armor = |sig: Signature| -> Result<Data> {
             let mut buf = Vec::new();
             {
-                use openpgp::armor;
                 let mut w =
                     armor::Writer::new(&mut buf, armor::Kind::Signature)?;
                 openpgp::Packet::Signature(sig).serialize(&mut w)?;
