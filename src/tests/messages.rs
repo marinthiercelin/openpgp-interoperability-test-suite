@@ -78,7 +78,7 @@ impl ConsumerTest for MessageStructure {
             "esss",
         ] {
             let mut layers = Vec::new();
-            let mut test;
+            let test;
 
             let mut b = Vec::new();
             {
