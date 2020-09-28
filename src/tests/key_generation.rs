@@ -49,7 +49,7 @@ impl Test for GenerateThenEncryptDecryptRoundtrip {
 }
 
 impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
-    fn produce(&self, pgp: &mut OpenPGP)
+    fn produce(&self, pgp: &mut dyn OpenPGP)
                -> Result<Data> {
         let userids = self.userids.iter().map(|s| &s[..]).collect::<Vec<_>>();
         pgp.generate_key(&userids[..])
@@ -81,8 +81,8 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
     }
 
     fn consume(&self,
-               producer: &mut OpenPGP,
-               consumer: &mut OpenPGP,
+               producer: &mut dyn OpenPGP,
+               consumer: &mut dyn OpenPGP,
                artifact: &[u8])
                -> Result<Data> {
         let ciphertext = consumer.encrypt(&super::extract_cert(artifact)?,

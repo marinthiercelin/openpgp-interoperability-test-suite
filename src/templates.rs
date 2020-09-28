@@ -43,7 +43,7 @@ impl Entry {
 
 /// The test report.
 pub struct Report<'a> {
-    toc: Vec<(Entry, Vec<Box<Test + Sync>>)>,
+    toc: Vec<(Entry, Vec<Box<dyn Test + Sync>>)>,
     configuration: &'a Config,
 }
 
@@ -60,7 +60,7 @@ impl<'a> Report<'a> {
         self.toc.push((entry, Vec::new()));
     }
 
-    pub fn add(&mut self, test: Box<Test + Sync>) {
+    pub fn add(&mut self, test: Box<dyn Test + Sync>) {
         if let Some((_, entries)) = self.toc.iter_mut().last() {
             entries.push(test);
         } else {

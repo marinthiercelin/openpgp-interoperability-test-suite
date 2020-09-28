@@ -133,7 +133,7 @@ impl ConsumerTest for ConcatenatedArmorKeyring {
         ])
     }
 
-    fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.verify_detached(artifact, self.message(), &self.signature()?)
     }

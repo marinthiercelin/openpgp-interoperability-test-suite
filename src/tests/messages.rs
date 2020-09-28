@@ -124,7 +124,7 @@ impl ConsumerTest for MessageStructure {
         Ok(t)
     }
 
-    fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
     }
@@ -208,7 +208,7 @@ impl ConsumerTest for RecursionDepth {
         Ok(t)
     }
 
-    fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
     }
@@ -331,7 +331,7 @@ impl ConsumerTest for MarkerPacket {
         }])
     }
 
-    fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         // Peek at the data to decide what to do.
         let pp = openpgp::PacketPile::from_bytes(artifact)?;

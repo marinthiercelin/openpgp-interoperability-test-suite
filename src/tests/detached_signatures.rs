@@ -499,7 +499,7 @@ impl ConsumerTest for DetachedSignatureSubpacket {
         ])
     }
 
-    fn consume(&self, _i: usize, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.verify_detached(data::certificate("bob.pgp"), &self.message[..],
                             artifact)
@@ -579,7 +579,7 @@ impl Test for DetachedSignVerifyRoundtrip {
 }
 
 impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
-    fn produce(&self, pgp: &mut OpenPGP)
+    fn produce(&self, pgp: &mut dyn OpenPGP)
                -> Result<Data> {
         pgp.sign_detached(&self.key, &self.message)
     }
@@ -613,8 +613,8 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
     }
 
     fn consume(&self,
-               _producer: &mut OpenPGP,
-               consumer: &mut OpenPGP,
+               _producer: &mut dyn OpenPGP,
+               consumer: &mut dyn OpenPGP,
                artifact: &[u8])
                -> Result<Data> {
         consumer.verify_detached(&self.cert, &self.message, &artifact)
@@ -802,7 +802,7 @@ impl ConsumerTest for LineBreakNormalizationTest {
         }).collect())
     }
 
-    fn consume(&self, i: usize, pgp: &mut OpenPGP, artifact: &[u8])
+    fn consume(&self, i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let (_, message, _) = Self::test_vector(i);
         pgp.verify_detached(data::certificate("bob.pgp"), message, artifact)
