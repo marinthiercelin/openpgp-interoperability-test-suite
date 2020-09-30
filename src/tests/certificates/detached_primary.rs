@@ -75,6 +75,7 @@ impl DetachedPrimary {
             subkey.clone().parts_into_secret()?.into_keypair().unwrap();
 
         let backsig = SignatureBuilder::new(SignatureType::PrimaryKeyBinding)
+            .set_signature_creation_time(half_a_year_ago)?
             .sign_primary_key_binding(&mut subkey_signer, &primary, &subkey)?;
 
         use openpgp::Packet;
