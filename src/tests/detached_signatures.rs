@@ -141,6 +141,22 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 make(test, builder,
                      Some(Ok("Interoperability concern.".into())))?
             },
+            {
+                let test = "Base case, hashed issuer";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::IssuerFingerprint(
+                        issuer_fp.clone()), false)?)?;
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
+                                   false)?)?;
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
+            },
 
             // Issuer and IssuerFingerprint.
             {
@@ -213,6 +229,100 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                 assert_eq!(sig.issuers().count(), 0);
                 assert_eq!(sig.issuer_fingerprints().count(), 0);
                 (test.into(), make_armor(sig)?, None)
+            },
+
+            // Multiple issuer informations.
+            {
+                let test = "Issuer, fake issuer";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
+                                   false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(
+                        "AAAA BBBB CCCC DDDD".parse()?),
+                                   false)?)?;
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
+            },
+            {
+                let test = "Fake issuer, issuer";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(
+                        "AAAA BBBB CCCC DDDD".parse()?),
+                                   false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
+                                   false)?)?;
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
+            },
+            {
+                let test = "Issuer, fake issuer, V6 issuer FP";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
+                                   false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(
+                        "AAAA BBBB CCCC DDDD".parse()?),
+                                   false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Unknown {
+                        tag: SubpacketTag::IssuerFingerprint,
+                        body: vec![
+                            6, // Fictitious version 6 fingerprint
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, // 34 bytes of fictitious fingerprint
+                        ],
+                    }, false)?)?;
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
+            },
+            {
+                let test = "Fake issuer, issuer, V6 issuer FP";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignatureCreationTime(
+                        now.try_into()?), false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(
+                        "AAAA BBBB CCCC DDDD".parse()?),
+                                   false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
+                                   false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Unknown {
+                        tag: SubpacketTag::IssuerFingerprint,
+                        body: vec![
+                            6, // Fictitious version 6 fingerprint
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+                            0xAA, 0xAA, // 34 bytes of fictitious fingerprint
+                        ],
+                    }, false)?)?;
+                make(test, builder,
+                     Some(Ok("Interoperability concern.".into())))?
             },
 
             // Creation time.
