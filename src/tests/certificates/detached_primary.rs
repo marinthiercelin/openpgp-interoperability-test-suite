@@ -16,6 +16,7 @@ use openpgp::{
         signature::{SignatureBuilder, subpacket::*},
     },
     parse::Parse,
+    serialize::SerializeInto,
 };
 
 use crate::{
@@ -214,7 +215,7 @@ impl ConsumerTest for DetachedPrimary {
                     .into(),
             ], Some(Ok("Base case".into())))?,
 
-            make_test("SecKey[stub] SecSubkey", vec![
+            make_test("SecKey[0xfe stub] SecSubkey", vec![
                 {
                     let stub = S2K::Unknown {
                         tag: 101,
@@ -230,6 +231,51 @@ impl ConsumerTest for DetachedPrimary {
                             key::Encrypted::new(stub, 0.into(),
                                                 vec![].into()))).0
                         .into()
+                },
+                userid.clone().into(),
+                userid_binding.clone().into(),
+                subkey.clone().into(),
+                subkey.bind(
+                    &mut primary_signer, &cert,
+                    SignatureBuilder::new(SignatureType::SubkeyBinding)
+                        .set_signature_creation_time(half_a_year_ago)?
+                        .modify_hashed_area(|mut a| {
+                            a.add(Subpacket::new(
+                                SubpacketValue::KeyFlags(
+                                    KeyFlags::empty().set_signing()),
+                                true)?)?;
+                            Ok(a)
+                        })?
+                        // We need to create a primary key binding signature.
+                        .set_embedded_signature(backsig.clone())?)?
+                    .into(),
+            ], None)?,
+
+            make_test("SecKey[0xff stub] SecSubkey", vec![
+                {
+                    // Some minor trickery to change the S2K usage
+                    // field from 0xfe (i.e. SHA1-checksum'ed, what
+                    // Sequoia emits) to 0xff (16 bit checksum, what
+                    // GnuPG emits for stubs).  Of course, the stub is
+                    // not checksum'ed at all.
+                    let stub = S2K::Unknown {
+                        tag: 101,
+                        parameters:
+                            Some(vec![0,    // "hash algo"
+                                      0x47, // 'G'
+                                      0x4e, // 'N'
+                                      0x55, // 'U'
+                                      1].into()),
+                    };
+                    let mut buf = openpgp::Packet::from(primary.clone()
+                        .add_secret(key::SecretKeyMaterial::Encrypted(
+                            key::Encrypted::new(stub, 0.into(),
+                                                vec![].into()))).0
+                    ).to_vec()?;
+                    let o = buf.len() - 8; // Offset of S2K usage field.
+                    assert_eq!(buf[o], 0xfe);
+                    buf[o] = 0xff;
+                    openpgp::Packet::from_bytes(&buf)?
                 },
                 userid.clone().into(),
                 userid_binding.clone().into(),
