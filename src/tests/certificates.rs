@@ -31,6 +31,7 @@ mod concatenated_armor;
 mod perturbed_certs;
 mod expiration;
 mod detached_primary;
+mod binding_signature_subpackets;
 
 fn make_test(test: &str, packets: Vec<openpgp::Packet>)
              -> Result<(String, Data, Option<Expectation>)> {
@@ -546,6 +547,8 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(perturbed_certs::PerturbedCerts::new()?));
     report.add(Box::new(expiration::CertExpiration::new()?));
     report.add(Box::new(detached_primary::DetachedPrimary::new()?));
+    report.add(Box::new(
+        binding_signature_subpackets::BindingSignatureSubpackets::new()?));
 
     revoked_key::schedule(report)?;
     Ok(())
