@@ -5,7 +5,7 @@ use openpgp::{
     PacketPile,
     packet::prelude::*,
     parse::Parse,
-    serialize::SerializeInto,
+    serialize::{Serialize, SerializeInto},
     types::SymmetricAlgorithm,
 };
 use crate::{
@@ -137,6 +137,48 @@ impl ConsumerTest for SymmetricEncryptionSupport {
 
             t.push(
                 (format!("{:?}", cipher), b.into_boxed_slice(), expectation));
+        }
+
+        // Unencrypted SEIP packet.
+        {
+            let recipient =
+                cert.keys().with_policy(super::P, None)
+                .for_transport_encryption()
+                .nth(0).unwrap().key();
+            let msg =
+                "NOT ENCRYPTED".to_string().into_bytes().into_boxed_slice();
+
+            let mut b = Vec::new();
+            {
+                let mut stack = Message::new(&mut b);
+
+                // PKESK packet with a fake session key.
+                let session_key = vec![0, 1, 2, 3, 4, 5, 6, 7,
+                                       0, 1, 2, 3, 4, 5, 6, 7].into();
+                let pkesk =
+                    PKESK3::for_recipient(SymmetricAlgorithm::Unencrypted,
+                                          &session_key, recipient)?;
+                Packet::from(pkesk).serialize(&mut stack)?;
+
+                // Fake a SEIP container and continue as usual.
+                let mut stack = ArbitraryWriter::new(stack, Tag::SEIP)?;
+                stack.write(&[1]).unwrap(); // SEIP Version.
+                let mut stack = LiteralWriter::new(stack).build()?;
+                stack.write_all(&msg)?;
+
+                // Fake MDC packet.
+                let mut stack = stack.finalize_one()?.unwrap();
+                let sum = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                           0, 1, 2, 3, 4, 5, 6, 7, 8, 9,];
+                let mdc = MDC::new(sum.clone(), sum);
+                Packet::from(mdc).serialize(&mut stack)?;
+
+                stack.finalize()?;
+            }
+
+            t.push(
+                ("Unencrypted".into(), b.into(),
+                 Some(Err("Unencrypted cipher must not be used".into()))));
         }
 
         Ok(t)
