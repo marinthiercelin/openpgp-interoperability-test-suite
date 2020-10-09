@@ -76,7 +76,7 @@ impl ConsumerTest for RecipientIDs {
         let mut message = LiteralWriter::new(message).build()?;
         message.write_all(self.message())?;
         message.finalize()?;
-        t.push(("Bob's encryption subkey' KeyID".into(),
+        t.push(("Encryption subkey's KeyID".into(),
                 buf.into(),
                 Some(Ok("Base case".into()))));
 
