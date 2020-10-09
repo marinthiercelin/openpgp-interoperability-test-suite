@@ -20,6 +20,8 @@ use crate::{
     },
 };
 
+mod recipient_ids;
+
 /// Roundtrip tests check whether consume(produce(x)) yields x.
 pub struct EncryptDecryptRoundtrip {
     title: String,
@@ -233,5 +235,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
+
+    report.add(Box::new(recipient_ids::RecipientIDs::new()?));
     Ok(())
 }
