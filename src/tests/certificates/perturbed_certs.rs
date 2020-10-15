@@ -3,7 +3,7 @@ use openpgp::{
     Packet,
     packet::{key, Key, Tag},
     parse::Parse,
-    serialize::{Serialize, SerializeInto},
+    serialize::SerializeInto,
     types::SignatureType,
 };
 
@@ -66,24 +66,6 @@ impl Test for PerturbedCerts {
 
 impl ConsumerTest for PerturbedCerts {
     fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
-        // Makes tests.
-        fn make(test: &str, packets: Vec<&Packet>,
-                expectation: Option<Expectation>)
-                -> Result<(String, Data, Option<Expectation>)>
-        {
-            let mut buf = Vec::new();
-            {
-                use openpgp::armor;
-                let mut w =
-                    armor::Writer::new(&mut buf, armor::Kind::PublicKey)?;
-                for p in packets {
-                    p.serialize(&mut w)?;
-                }
-                w.finalize()?;
-            }
-            Ok((test.into(), buf.into(), expectation))
-        };
-
         let packets =
             openpgp::PacketPile::from_bytes(data::certificate("bob.pgp"))?
             .into_children().collect::<Vec<_>>();
@@ -138,6 +120,7 @@ impl ConsumerTest for PerturbedCerts {
         unknown.set_body(bullshit);
         let unknown = Packet::from(unknown);
 
+        use super::make_test as make;
         Ok(vec![
             make("P U UB S SB",
                  vec![primary, uid, uidb, subkey, subkeyb],

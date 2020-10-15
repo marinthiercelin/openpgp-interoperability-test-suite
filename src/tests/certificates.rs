@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use sequoia_openpgp as openpgp;
 use openpgp::cert::prelude::*;
 use openpgp::types::{
@@ -33,12 +35,17 @@ mod expiration;
 mod detached_primary;
 mod binding_signature_subpackets;
 
-fn make_test(test: &str, packets: Vec<openpgp::Packet>)
-             -> Result<(String, Data, Option<Expectation>)> {
+fn make_test<I, P>(test: &str, packets: I,
+             expectation: Option<Expectation>)
+             -> Result<(String, Data, Option<Expectation>)>
+    where I: IntoIterator<Item = P>,
+          P: Borrow<openpgp::Packet>,
+{
     use openpgp::Packet;
     use openpgp::serialize::Serialize;
 
-    let has_secrets = packets.iter().any(|p| match p {
+    let packets = packets.into_iter().collect::<Vec<_>>();
+    let has_secrets = packets.iter().any(|p| match p.borrow() {
         Packet::SecretKey(_) | Packet::SecretSubkey(_) => true,
         _ => false,
     });
@@ -53,10 +60,12 @@ fn make_test(test: &str, packets: Vec<openpgp::Packet>)
                                } else {
                                    armor::Kind::PublicKey
                                })?;
-        openpgp::PacketPile::from(packets).serialize(&mut w)?;
+        for p in packets {
+            p.borrow().serialize(&mut w)?;
+        }
         w.finalize()?;
     }
-    Ok((test.into(), buf.into(), None))
+    Ok((test.into(), buf.into(), expectation))
 }
 
 /// Tests how implementation interpret encryption keyflags.
@@ -133,7 +142,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_transport_encryption())?)?
                      .into());
                  p
-            })?,
+            }, None)?,
             make_test("A 0x08", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
@@ -145,7 +154,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_storage_encryption())?)?
                      .into());
                  p
-            })?,
+            }, None)?,
             make_test("A 0x0c, B 0x0c", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
@@ -167,7 +176,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_storage_encryption())?)?
                      .into());
                  p
-            })?,
+            }, None)?,
             make_test("B 0x0c, A 0x0c", {
                  let mut p = cert_stem.clone();
                  p.push(key_b.clone().into());
@@ -189,7 +198,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_storage_encryption())?)?
                      .into());
                  p
-            })?,
+            }, None)?,
             make_test("A 0x04, B 0x08", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
@@ -209,7 +218,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_storage_encryption())?)?
                      .into());
                  p
-            })?,
+            }, None)?,
             make_test("A 0x08, B 0x04", {
                  let mut p = cert_stem.clone();
                  p.push(key_a.clone().into());
@@ -229,7 +238,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_transport_encryption())?)?
                      .into());
                  p
-            })?,
+            }, None)?,
             make_test("B 0x04, A 0x08", {
                  let mut p = cert_stem.clone();
                  p.push(key_b.clone().into());
@@ -249,7 +258,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_storage_encryption())?)?
                      .into());
                  p
-            })?,
+            }, None)?,
             make_test("B 0x08, A 0x04", {
                  let mut p = cert_stem.clone();
                  p.push(key_b.clone().into());
@@ -269,7 +278,7 @@ impl ConsumerTest for EncryptionKeyFlags {
                                         .set_transport_encryption())?)?
                      .into());
                  p
-             })?,
+             }, None)?,
         ])
     }
 
@@ -341,13 +350,14 @@ impl ConsumerTest for PrimaryKeyFlags {
         let cert =
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let primary = cert.primary_key().key().clone().parts_into_secret()?;
+        let primary_packet = openpgp::Packet::from(primary.clone());
         let mut primary_signer = primary.clone().into_keypair()?;
         let userid = cert.userids().nth(0).unwrap().userid().clone();
         let subkey = cert.keys().subkeys().nth(0).unwrap().key().clone();
 
         Ok(vec![
             make_test("p uC sE (basecase)", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
@@ -366,10 +376,10 @@ impl ConsumerTest for PrimaryKeyFlags {
                                        .set_transport_encryption()
                                        .set_storage_encryption())?)?
                     .into(),
-            ])?,
+            ], None)?,
 
             make_test("pC uC sE", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::empty()
                                    .set_certification())?
@@ -396,10 +406,10 @@ impl ConsumerTest for PrimaryKeyFlags {
                                        .set_transport_encryption()
                                        .set_storage_encryption())?)?
                     .into(),
-            ])?,
+            ], None)?,
 
             make_test("pC u sE", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::empty()
                                    .set_certification())?
@@ -421,10 +431,10 @@ impl ConsumerTest for PrimaryKeyFlags {
                                        .set_transport_encryption()
                                        .set_storage_encryption())?)?
                     .into(),
-            ])?,
+            ], None)?,
 
             make_test("pC uS sE", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::empty()
                                    .set_certification())?
@@ -451,10 +461,10 @@ impl ConsumerTest for PrimaryKeyFlags {
                                        .set_transport_encryption()
                                        .set_storage_encryption())?)?
                     .into(),
-            ])?,
+            ], None)?,
 
             make_test("pC u0 sE", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 SignatureBuilder::new(SignatureType::DirectKey)
                     .set_key_flags(&KeyFlags::empty()
                                    .set_certification())?
@@ -477,10 +487,10 @@ impl ConsumerTest for PrimaryKeyFlags {
                                        .set_transport_encryption()
                                        .set_storage_encryption())?)?
                     .into(),
-            ])?,
+            ], None)?,
 
             make_test("p uS sE", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
@@ -499,10 +509,10 @@ impl ConsumerTest for PrimaryKeyFlags {
                                        .set_transport_encryption()
                                        .set_storage_encryption())?)?
                     .into(),
-            ])?,
+            ], None)?,
 
             make_test("p u sE", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
@@ -516,16 +526,16 @@ impl ConsumerTest for PrimaryKeyFlags {
                                        .set_transport_encryption()
                                        .set_storage_encryption())?)?
                     .into(),
-            ])?,
+            ], None)?,
 
             make_test("p u", vec![
-                primary.clone().into(),
+                primary_packet.clone(),
                 userid.clone().into(),
                 userid.bind(
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::PositiveCertification))?
                     .into(),
-            ])?,
+            ], None)?,
         ])
     }
 

@@ -3,7 +3,6 @@ use openpgp::{
     Packet,
     packet::{Tag, UserID, signature::SignatureBuilder},
     parse::Parse,
-    serialize::Serialize,
     types::SignatureType,
 };
 
@@ -69,24 +68,6 @@ impl Test for CertExpiration {
 
 impl ConsumerTest for CertExpiration {
     fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
-        // Makes tests.
-        fn make(test: &str, packets: Vec<&Packet>,
-                expectation: Option<Expectation>)
-                -> Result<(String, Data, Option<Expectation>)>
-        {
-            let mut buf = Vec::new();
-            {
-                use openpgp::armor;
-                let mut w =
-                    armor::Writer::new(&mut buf, armor::Kind::PublicKey)?;
-                for p in packets {
-                    p.serialize(&mut w)?;
-                }
-                w.finalize()?;
-            }
-            Ok((test.into(), buf.into(), expectation))
-        };
-
         let packets =
             openpgp::PacketPile::from_bytes(data::certificate("bob.pgp"))?
             .into_children().collect::<Vec<_>>();
@@ -138,6 +119,7 @@ impl ConsumerTest for CertExpiration {
         assert!(creation_time + future > now);
         let zero = Duration::new(0, 0);
 
+        use super::make_test as make;
         Ok(vec![
             make("P _ U _",
                  vec![primary, uid, uidb, subkey, subkeyb],
