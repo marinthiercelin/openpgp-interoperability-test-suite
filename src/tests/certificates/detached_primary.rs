@@ -3,7 +3,10 @@ use std::time::{Duration, SystemTime};
 use sequoia_openpgp as openpgp;
 use openpgp::{
     armor,
-    crypto::S2K,
+    crypto::{
+        S2K,
+        mpi::SecretKeyChecksum,
+    },
     types::{
         Features,
         HashAlgorithm,
@@ -16,7 +19,6 @@ use openpgp::{
         signature::{SignatureBuilder, subpacket::*},
     },
     parse::Parse,
-    serialize::SerializeInto,
 };
 
 use crate::{
@@ -229,6 +231,7 @@ impl ConsumerTest for DetachedPrimary {
                     primary.clone()
                         .add_secret(key::SecretKeyMaterial::Encrypted(
                             key::Encrypted::new(stub, 0.into(),
+                                                Some(SecretKeyChecksum::SHA1),
                                                 vec![].into()))).0
                         .into()
                 },
@@ -253,11 +256,6 @@ impl ConsumerTest for DetachedPrimary {
 
             make_test("SecKey[0xff stub] SecSubkey", vec![
                 {
-                    // Some minor trickery to change the S2K usage
-                    // field from 0xfe (i.e. SHA1-checksum'ed, what
-                    // Sequoia emits) to 0xff (16 bit checksum, what
-                    // GnuPG emits for stubs).  Of course, the stub is
-                    // not checksum'ed at all.
                     let stub = S2K::Unknown {
                         tag: 101,
                         parameters:
@@ -267,15 +265,12 @@ impl ConsumerTest for DetachedPrimary {
                                       0x55, // 'U'
                                       1].into()),
                     };
-                    let mut buf = openpgp::Packet::from(primary.clone()
+                    primary.clone()
                         .add_secret(key::SecretKeyMaterial::Encrypted(
                             key::Encrypted::new(stub, 0.into(),
+                                                Some(SecretKeyChecksum::Sum16),
                                                 vec![].into()))).0
-                    ).to_vec()?;
-                    let o = buf.len() - 8; // Offset of S2K usage field.
-                    assert_eq!(buf[o], 0xfe);
-                    buf[o] = 0xff;
-                    openpgp::Packet::from_bytes(&buf)?
+                        .into()
                 },
                 userid.clone().into(),
                 userid_binding.clone().into(),

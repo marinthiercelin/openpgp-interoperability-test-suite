@@ -69,7 +69,7 @@ impl EncryptDecryptRoundtrip {
             cert.primary_key()
             .key().clone().parts_into_secret()?.into_keypair()?;
         let new_sig = uid.bind(&mut primary_keypair, &cert, builder)?;
-        let cert = cert.merge_packets(Some(new_sig))?;
+        let cert = cert.insert_packets(Some(new_sig))?;
         let key = cert.as_tsk().to_vec()?;
         let cert = cert.to_vec()?;
 

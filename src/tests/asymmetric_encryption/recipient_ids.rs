@@ -87,11 +87,8 @@ impl ConsumerTest for RecipientIDs {
         let recipients =
             cert.keys().with_policy(crate::tests::P, None)
             .for_transport_encryption()
-            .map(|key| {
-                let mut r = Recipient::from(key);
-                r.set_keyid(openpgp::KeyID::wildcard());
-                r
-            });
+            .map(|key| Recipient::from(key)
+                 .set_keyid(openpgp::KeyID::wildcard()));
         let message = Encryptor::for_recipients(message, recipients)
             .symmetric_algo(SymmetricAlgorithm::AES256)
             .build()?;
@@ -109,11 +106,8 @@ impl ConsumerTest for RecipientIDs {
         let recipients =
             cert.keys().with_policy(crate::tests::P, None)
             .for_transport_encryption()
-            .map(|key| {
-                let mut r = Recipient::from(key);
-                r.set_keyid(cert.keyid());
-                r
-            });
+            .map(|key| Recipient::from(key)
+                 .set_keyid(cert.keyid()));
         let message = Encryptor::for_recipients(message, recipients)
             .symmetric_algo(SymmetricAlgorithm::AES256)
             .build()?;
@@ -131,11 +125,8 @@ impl ConsumerTest for RecipientIDs {
         let recipients =
             cert.keys().with_policy(crate::tests::P, None)
             .for_transport_encryption()
-            .map(|key| {
-                let mut r = Recipient::from(key);
-                r.set_keyid("AAAA BBBB CCCC DDDD".parse().unwrap());
-                r
-            });
+            .map(|key| Recipient::from(key)
+                 .set_keyid("AAAA BBBB CCCC DDDD".parse().unwrap()));
         let message = Encryptor::for_recipients(message, recipients)
             .symmetric_algo(SymmetricAlgorithm::AES256)
             .build()?;
