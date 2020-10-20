@@ -68,7 +68,7 @@ impl Test for ConcatenatedArmorKeyring {
            recognized as keyring.  This is not mandated by OpenPGP, \
            but some implementations may chose to support this.</p>\
            \
-           <p>The signature is over the string <code>{}</code>.</p>",
+           <p>The signature is from Bob over the string <code>{}</code>.</p>",
           String::from_utf8(self.message().into()).unwrap())
     }
 
