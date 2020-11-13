@@ -150,32 +150,6 @@ impl ConsumerTest for BindingSignatureSubpackets {
         ), true)?;
 
 
-        fn make_test(test: &str, packets: Vec<openpgp::Packet>,
-                     expectation: Option<Expectation>)
-                     -> Result<(String, Data, Option<Expectation>)> {
-            use openpgp::Packet;
-            use openpgp::serialize::Serialize;
-
-            let has_secrets = packets.iter().any(|p| match p {
-                Packet::SecretKey(_) | Packet::SecretSubkey(_) => true,
-                _ => false,
-            });
-
-            let mut buf = Vec::new();
-            {
-                let mut w =
-                    armor::Writer::new(&mut buf,
-                                       if has_secrets {
-                                           armor::Kind::SecretKey
-                                       } else {
-                                           armor::Kind::PublicKey
-                                       })?;
-                openpgp::PacketPile::from(packets).serialize(&mut w)?;
-                w.finalize()?;
-            }
-            Ok((test.into(), buf.into(), expectation))
-        }
-
         let primary_fp = cert.fingerprint();
         let primary_id = cert.keyid();
 
@@ -198,6 +172,9 @@ impl ConsumerTest for BindingSignatureSubpackets {
             },
             false)?;
 
+        let make_test = |test, packets: Vec<openpgp::Packet>, expectation| {
+            super::make_test(test, packets, expectation)
+        };
         Ok(vec![
             make_test("Base case", vec![
                 primary.clone().into(),
