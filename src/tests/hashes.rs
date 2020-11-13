@@ -10,6 +10,8 @@ use crate::{
     },
 };
 
+mod shattered;
+
 pub fn schedule(report: &mut Report) -> Result<()> {
     use openpgp::types::HashAlgorithm::*;
 
@@ -26,6 +28,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
                 openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
                 b"Hello, world!".to_vec().into_boxed_slice(), hash)?));
     }
+    report.add(Box::new(shattered::Shattered::new()?));
 
     Ok(())
 }
