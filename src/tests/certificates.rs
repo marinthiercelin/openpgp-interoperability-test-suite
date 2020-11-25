@@ -29,7 +29,6 @@ use crate::{
 mod revoked_key;
 mod primary_key_binding;
 mod key_flags_composition;
-mod concatenated_armor;
 mod perturbed_certs;
 mod expiration;
 mod detached_primary;
@@ -553,7 +552,6 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(PrimaryKeyFlags::new()?));
     report.add(Box::new(primary_key_binding::PrimaryKeyBinding::new()?));
     report.add(Box::new(key_flags_composition::KeyFlagsComposition::new()?));
-    report.add(Box::new(concatenated_armor::ConcatenatedArmorKeyring::new()?));
     report.add(Box::new(perturbed_certs::PerturbedCerts::new()?));
     report.add(Box::new(expiration::CertExpiration::new()?));
     report.add(Box::new(detached_primary::DetachedPrimary::new()?));

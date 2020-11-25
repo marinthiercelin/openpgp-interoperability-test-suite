@@ -19,6 +19,7 @@ mod certificates;
 mod messages;
 mod ecc;
 mod packet_parser;
+mod armor;
 
 /// A StandardPolicy for the tests to use.
 const P: &StandardPolicy = &StandardPolicy::new();
@@ -266,6 +267,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     key_generation::schedule(report)?;
     certificates::schedule(report)?;
     messages::schedule(report)?;
+    armor::schedule(report)?;
     ecc::schedule(report)?;
     packet_parser::schedule(report)?;
     Ok(())
