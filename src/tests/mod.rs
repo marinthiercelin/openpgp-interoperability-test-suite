@@ -64,8 +64,7 @@ pub trait ConsumerTest : Test {
                         Artifact::ok(c.version()?.to_string(), p),
                     Err(e) =>
                         Artifact::err(c.version()?.to_string(),
-                                      Default::default(),
-                                      e.to_string()),
+                                      Default::default(), e),
                 };
 
                 if a.error.len() == 0 {
@@ -116,8 +115,7 @@ pub trait ProducerConsumerTest : Test {
             let mut artifact = match self.produce(p.as_mut()) {
                 Ok(d) => Artifact::ok(p.version()?.to_string(), d),
                 Err(e) => Artifact::err(p.version()?.to_string(),
-                                        Default::default(),
-                                        e.to_string()),
+                                        Default::default(), e),
             };
             if artifact.error.len() == 0 {
                 if let Err(e) = self.check_producer(&artifact.data) {
@@ -138,8 +136,7 @@ pub trait ProducerConsumerTest : Test {
                             Artifact::ok(c.version()?.to_string(), p),
                         Err(e) =>
                             Artifact::err(c.version()?.to_string(),
-                                          Default::default(),
-                                          e.to_string()),
+                                          Default::default(), e),
                     };
 
                     if a.error.len() == 0 {
@@ -189,7 +186,13 @@ impl Artifact {
         }
     }
 
-    fn err(producer: String, data: Data, error: String) -> Self {
+    fn err(producer: String, data: Data, err: anyhow::Error) -> Self {
+        use std::fmt::Write;
+        let mut error = String::new();
+        writeln!(error, "{}", err).unwrap();
+        err.chain().skip(1)
+            .for_each(|cause| writeln!(error, "  because: {}", cause).unwrap());
+
         Self {
             producer,
             data,
