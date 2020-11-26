@@ -191,6 +191,15 @@ impl ConsumerTest for MangledArmor {
              bobs.clone().replace("-", "").into_bytes().into(),
              None),
 
+            ("Quoted-printable '=' -> '=3D'".into(),
+             bobs.clone().replace("=", "=3D").into_bytes().into(),
+             None),
+
+            ("Dash-escaped frames".into(),
+             bobs.clone().replace("-----B", "- -----B")
+                         .replace("-----E", "- -----E").into_bytes().into(),
+             None),
+
             ("Missing header".into(),
              {
                  let mut l = bobl.clone();
