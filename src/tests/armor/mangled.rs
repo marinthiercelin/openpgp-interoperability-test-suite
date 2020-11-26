@@ -87,10 +87,18 @@ impl ConsumerTest for MangledArmor {
              },
              Some(Ok("Interoperability concern".into()))),
 
-            ("Blank line with ' \\t\\v\\f'".into(),
+            ("Blank line with ' \\t\\r'".into(),
              {
                  let mut l = bobl.clone();
-                 l[2] = " \t\x0b\x0c";
+                 l[2] = " \t\r";
+                 join(l.iter(), "\n")
+             },
+             Some(Ok("Interoperability concern".into()))),
+
+            ("Blank line with ' \\t\\r\\v\\f'".into(),
+             {
+                 let mut l = bobl.clone();
+                 l[2] = " \t\r\x0b\x0c";
                  join(l.iter(), "\n")
              },
              Some(Ok("Interoperability concern".into()))),
@@ -98,7 +106,7 @@ impl ConsumerTest for MangledArmor {
             ("Unknown header key".into(),
              {
                  let mut l = bobl.clone();
-                 l[1] = "Unknown: blabla".into();
+                 l[1] = "Unknown: blabla";
                  join(l.iter(), "\n")
              },
              Some(Ok("Interoperability concern".into()))),
