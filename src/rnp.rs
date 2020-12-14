@@ -4,6 +4,7 @@ use std::io::Write;
 use tempfile::{TempDir, NamedTempFile};
 
 use sequoia_openpgp as openpgp;
+use openpgp::Fingerprint;
 use openpgp::parse::Parse;
 
 use crate::{Data, Implementation, Version, Error, Result};
@@ -90,6 +91,11 @@ impl crate::OpenPGP for RNP {
     fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
                -> Result<Box<[u8]>> {
         let recipient_fp = openpgp::Cert::from_bytes(recipient)?.fingerprint();
+        self.encrypt_with_fp(recipient, recipient_fp, plaintext)
+    }
+
+    fn encrypt_with_fp(&mut self, recipient: &[u8], recipient_fp: Fingerprint,
+                       plaintext: &[u8]) -> Result<Data> {
         self.import_certificate(recipient)?;
         let plaintext_file = self.stash_bytes(plaintext)?;
         let o = self.run("rnp",

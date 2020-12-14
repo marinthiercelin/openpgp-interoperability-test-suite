@@ -248,7 +248,11 @@ impl ConsumerTest for MangledArmor {
 
     fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        let ciphertext = pgp.encrypt(artifact, self.message())
+        use sequoia_openpgp::{Cert, parse::Parse};
+        let bob_fp =
+            Cert::from_bytes(data::certificate("bob.pgp")).unwrap()
+            .fingerprint();
+        let ciphertext = pgp.encrypt_with_fp(artifact, bob_fp, self.message())
             .context("Encryption failed")?;
         pgp.new_context()?
             .decrypt(data::certificate("bob-secret.pgp"), &ciphertext)

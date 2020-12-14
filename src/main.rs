@@ -6,6 +6,7 @@ use anyhow::Context;
 use sequoia_openpgp as openpgp;
 use openpgp::{
     Result,
+    Fingerprint,
 };
 
 mod data;
@@ -61,6 +62,11 @@ pub trait OpenPGP: std::fmt::Debug {
     fn new_context(&self) -> Result<Box<dyn OpenPGP>>;
     fn version(&self) -> Result<Version>;
     fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
+    fn encrypt_with_fp(&mut self, recipient: &[u8], recipient_fp: Fingerprint,
+                       plaintext: &[u8]) -> Result<Data> {
+        let _ = recipient_fp;
+        self.encrypt(recipient, plaintext)
+    }
     fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8]) -> Result<Data>;
     fn sign_detached(&mut self, _signer: &[u8], _data: &[u8]) -> Result<Data> {
         Err(Error::NotImplemented.into())
