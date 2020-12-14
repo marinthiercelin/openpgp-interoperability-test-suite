@@ -14,7 +14,6 @@ mod templates;
 
 mod sq;
 mod rnp;
-mod dkgpg;
 mod sop;
 
 /// Backends supported by the test suite.
@@ -22,7 +21,6 @@ mod sop;
 pub enum Implementation {
     Sequoia,
     RNP,
-    DKGPG,
     Sop(String),
 }
 
@@ -116,8 +114,6 @@ impl Config {
                                  .context("Creating sq backend")?),
                 "rnp" => Box::new(rnp::RNP::new(&d.path)
                                  .context("Creating rnp backend")?),
-                "dkgpg" => Box::new(dkgpg::DKGPG::new(&d.path)
-                                 .context("Creating dkgpg backend")?),
                 "sop" => Box::new(sop::Sop::new(&d.path, &d.env)
                                  .context("Creating sop backend")?),
                 _ => return Err(anyhow::anyhow!("Unknown driver {:?}",
