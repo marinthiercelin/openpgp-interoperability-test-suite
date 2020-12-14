@@ -29,11 +29,12 @@ impl Test for Shattered {
     }
 
     fn description(&self) -> String {
-        "<p>This tests whether detached signatures using SHA-1 over
-         the collision from the paper <i>The first collision for full
-         SHA-1</i> are considered valid.</p>"
-            .into()
-    }
+        "<p>This tests whether detached signatures using SHA-1 over \
+         the collision from the paper <i>The first collision for full \
+         SHA-1</i> are considered valid.</p>\
+         \
+         <p>The first test establishes a baseline.  It is a SHA-1 signature \
+         over the text <code>Hello World :)</code></p>" .into() }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
         vec![("Certificate".into(), data::certificate("bob.pgp").into())]
@@ -49,6 +50,11 @@ impl Test for Shattered {
 impl ConsumerTest for Shattered {
     fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         Ok(vec![
+            ("Baseline".into(),
+             data::message("shattered-baseline.asc").into(),
+             Some(Err(
+                 "Data signatures using SHA-1 should be considered invalid"
+                     .into()))),
             ("SIG-1 over PDF-1".into(),
              data::message("shattered-1.pdf.asc").into(),
              Some(Err("Attack must be mitigated".into()))),
@@ -68,8 +74,9 @@ impl ConsumerTest for Shattered {
     fn consume(&self, i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let message = match i {
-            0 | 2 => data::message("shattered-1.pdf"),
-            1 | 3 => data::message("shattered-2.pdf"),
+            0 => b"Hello World :)",
+            1 | 3 => data::message("shattered-1.pdf"),
+            2 | 4 => data::message("shattered-2.pdf"),
             _ => unreachable!(),
         };
         pgp.verify_detached(data::certificate("bob.pgp"), message, artifact)
