@@ -166,6 +166,10 @@ impl ConsumerTest for MangledArmor {
              join(bobl.iter(), "\n\n"),
              None),
 
+            ("Newlines replaced by spaces".into(),
+             bobs.replace("\n", " ").into_bytes().into(),
+             None),
+
             ("Quoted with '> '".into(),
              join(quote(bobl.iter(), "> "), "\n"),
              None),
