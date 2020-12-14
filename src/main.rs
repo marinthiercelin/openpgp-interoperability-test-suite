@@ -12,14 +12,12 @@ mod data;
 mod tests;
 mod templates;
 
-mod sq;
 mod rnp;
 mod sop;
 
 /// Backends supported by the test suite.
 #[derive(Debug, Clone)]
 pub enum Implementation {
-    Sequoia,
     RNP,
     Sop(String),
 }
@@ -110,8 +108,6 @@ impl Config {
         let mut r: Vec<Box<dyn OpenPGP + Sync>> = Vec::new();
         for d in self.drivers.iter() {
             r.push(match d.driver.as_str() {
-                "sq" => Box::new(sq::Sq::new(&d.path)
-                                 .context("Creating sq backend")?),
                 "rnp" => Box::new(rnp::RNP::new(&d.path)
                                  .context("Creating rnp backend")?),
                 "sop" => Box::new(sop::Sop::new(&d.path, &d.env)
