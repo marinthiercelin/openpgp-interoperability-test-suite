@@ -117,9 +117,9 @@ impl ConsumerTest for PrimaryKeyBinding {
                 &mut primary_signer, &cert,
                 SignatureBuilder::new(SignatureType::PositiveCertification)
                     .set_signature_creation_time(half_a_year_ago)?
-                    .set_key_flags(&KeyFlags::empty()
+                    .set_key_flags(KeyFlags::empty()
                                    .set_certification())?
-                    .set_features(&Features::empty().set_mdc())?
+                    .set_features(Features::empty().set_mdc())?
                     .set_preferred_hash_algorithms(
                         vec![HashAlgorithm::SHA256, HashAlgorithm::SHA512])?
                     .set_preferred_symmetric_algorithms(
@@ -141,7 +141,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_signature_creation_time(half_a_year_ago)?
-                        .set_key_flags(&KeyFlags::empty().set_signing())?
+                        .set_key_flags(KeyFlags::empty().set_signing())?
                         // We need to create a primary key binding signature.
                         .set_embedded_signature(
                             SignatureBuilder::new(
@@ -169,7 +169,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                         &mut primary_signer, &cert,
                         SignatureBuilder::new(SignatureType::SubkeyBinding)
                             .set_signature_creation_time(half_a_year_ago)?
-                            .set_key_flags(&KeyFlags::empty().set_signing())?
+                            .set_key_flags(KeyFlags::empty().set_signing())?
                             // We need to create a primary key binding signature.
                             .modify_hashed_area(|mut a| {
                                 a.add(Subpacket::new(
@@ -191,7 +191,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                     // No backsig
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_signature_creation_time(half_a_year_ago)?
-                        .set_key_flags(&KeyFlags::empty().set_signing())?)?
+                        .set_key_flags(KeyFlags::empty().set_signing())?)?
                     .into(),
             ], Some(Err("Missing primary key binding signature".into())))?,
 
@@ -204,7 +204,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_signature_creation_time(half_a_year_ago)?
-                        .set_key_flags(&KeyFlags::empty().set_signing())?
+                        .set_key_flags(KeyFlags::empty().set_signing())?
                         // We need to create a primary key binding signature.
                         .set_embedded_signature(
                             SignatureBuilder::new(
@@ -226,7 +226,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_signature_creation_time(half_a_year_ago)?
-                        .set_key_flags(&KeyFlags::empty().set_signing())?
+                        .set_key_flags(KeyFlags::empty().set_signing())?
                         // We need to create a primary key binding signature.
                         .set_embedded_signature(
                             SignatureBuilder::new(
@@ -248,7 +248,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_signature_creation_time(half_a_year_ago)?
-                        .set_key_flags(&KeyFlags::empty().set_signing())?
+                        .set_key_flags(KeyFlags::empty().set_signing())?
                         // We need to create a primary key binding signature.
                         .set_embedded_signature(
                             SignatureBuilder::new(
@@ -269,7 +269,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                     &mut primary_signer, &cert,
                     SignatureBuilder::new(SignatureType::SubkeyBinding)
                         .set_signature_creation_time(half_a_year_ago)?
-                        .set_key_flags(&KeyFlags::empty().set_signing())?
+                        .set_key_flags(KeyFlags::empty().set_signing())?
                         // We need to create a primary key binding signature.
                         .set_embedded_signature(
                             SignatureBuilder::new(
@@ -299,7 +299,7 @@ impl ConsumerTest for PrimaryKeyBinding {
                         &mut primary_signer, &cert,
                         SignatureBuilder::new(SignatureType::SubkeyBinding)
                             .set_signature_creation_time(half_a_year_ago)?
-                            .set_key_flags(&KeyFlags::empty().set_signing())?
+                            .set_key_flags(KeyFlags::empty().set_signing())?
                             // We need to create a primary key binding signature.
                             .set_embedded_signature(fake_backsig)?)?
                         .into()

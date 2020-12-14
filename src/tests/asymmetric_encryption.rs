@@ -63,7 +63,7 @@ impl EncryptDecryptRoundtrip {
         if let Some(algo) = aead {
             builder = builder.set_preferred_aead_algorithms(vec![algo])?;
             builder = builder.set_features(
-                &Features::empty().set_mdc().set_aead())?;
+                Features::empty().set_mdc().set_aead())?;
         }
         let mut primary_keypair =
             cert.primary_key()
