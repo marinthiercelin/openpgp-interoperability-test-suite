@@ -7,7 +7,10 @@ use vergen::{generate_cargo_keys, ConstantsFlags};
 
 fn main() {
     // Generate the 'cargo:' key output
-    generate_cargo_keys(ConstantsFlags::all())
+    let mut flags = ConstantsFlags::all();
+    flags.remove(ConstantsFlags::SEMVER);
+    flags.insert(ConstantsFlags::SEMVER_FROM_CARGO_PKG);
+    generate_cargo_keys(flags)
         .expect("Unable to generate the cargo keys!");
 
     include_test_data().unwrap();
