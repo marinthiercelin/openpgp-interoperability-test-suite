@@ -163,7 +163,7 @@ dependencies = [
 
 [[package]]
 name = "buffered-reader"
-version = "0.21.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bzip2 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -809,7 +809,7 @@ dependencies = [
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlimit 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "sequoia-openpgp 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sequoia-openpgp 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1113,13 +1113,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "sequoia-openpgp"
-version = "0.21.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "anyhow 1.0.28 (registry+https://github.com/rust-lang/crates.io-index)",
  "backtrace 0.3.46 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "buffered-reader 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "buffered-reader 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bzip2 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "dyn-clone 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1133,7 +1133,7 @@ dependencies = [
  "memsec 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nettle 7.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "sha1collisiondetection 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sha1collisiondetection 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-normalization 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1179,11 +1179,11 @@ dependencies = [
 
 [[package]]
 name = "sha1collisiondetection"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "digest 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "generic-array 0.12.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "generic-array 0.14.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.81 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1515,7 +1515,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum blake2b_simd 0.5.9 (registry+https://github.com/rust-lang/crates.io-index)" = "b83b7baab1e671718d78204225800d6b170e648188ac7dc992e9d6bddf87d0c0"
 "checksum block-buffer 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "c0940dc441f31689269e10ac70eb1002a3a1d3ad1390e030043662eb7fe4688b"
 "checksum block-padding 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "fa79dedbb091f449f1f39e53edf88d5dbe95f895dae6135a8d7b881fb5af73f5"
-"checksum buffered-reader 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f2ca77c2fbd502f730931449a442cd92deff7ff54516d792598b133f4cc80aaf"
+"checksum buffered-reader 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f5711ccfa79a8167779ad2176d3334078f03b1579ddf8f42aa556196eba60a42"
 "checksum byte-tools 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 "checksum byteorder 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a7c3dd8985a7111efc5c80b44e23ecdd8c007de8ade3b96595387e812b957cf5"
 "checksum bzip2 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "275d84fe348b838dc49477d39770682839b3e73e21a3eadc07b12924f1a9fcbe"
@@ -1632,12 +1632,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum scopeguard 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b42e15e59b18a828bbf5c58ea01debb36b9b096346de35d941dcb89009f24a0d"
 "checksum semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 "checksum semver-parser 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
-"checksum sequoia-openpgp 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1aba5db2826f27a90a614c0d71924ae5b95c611271ef3e4743255581aaa5f645"
+"checksum sequoia-openpgp 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "664de0a9388e38d0f350547056f18fcc03f78d85e5a49fa4fa8927ca6aea1424"
 "checksum serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)" = "0c4b39bd9b0b087684013a792c59e3e07a46a01d2322518d8a1104641a0b1be0"
 "checksum serde_derive 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)" = "ca13fc1a832f793322228923fbb3aba9f3f44444898f835d31ad1b74fa0a2bf8"
 "checksum serde_json 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)" = "2f72eb2a68a7dc3f9a691bfda9305a1c017a6215e5a4545c258500d2099a37c2"
 "checksum sha-1 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "23962131a91661d643c98940b20fcaffe62d776a823247be80a48fcb8b6fce68"
-"checksum sha1collisiondetection 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8b5c5bac82e1474cc9c934496c444da0e1ee7d55ae29e3e675c9a6c587daca5d"
+"checksum sha1collisiondetection 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "d7a6cf187c4059b3e63de2358b7e2f9a2261b6f3fd8ef4e7342308d0863ed082"
 "checksum sha2 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7b4d8bfd0e469f417657573d8451fb33d16cfe0989359b93baf3a1ffc639543d"
 "checksum shlex 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7fdf1b9db47230893d76faad238fd6097fd6d6a9245cd7a4d90dbd639536bbd2"
 "checksum siphasher 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "fa8f3741c7372e75519bd9346068370c9cdaabcc1f9599cbcf2a2719352286b7"
