@@ -33,6 +33,7 @@ mod perturbed_certs;
 mod expiration;
 mod detached_primary;
 mod binding_signature_subpackets;
+mod im_my_own_grandpa;
 
 fn make_test<I, P>(test: &str, packets: I,
              expectation: Option<Expectation>)
@@ -557,6 +558,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(detached_primary::DetachedPrimary::new()?));
     report.add(Box::new(
         binding_signature_subpackets::BindingSignatureSubpackets::new()?));
+    report.add(Box::new(im_my_own_grandpa::ImMyOwnGrandpa::new()?));
 
     revoked_key::schedule(report)?;
     Ok(())
