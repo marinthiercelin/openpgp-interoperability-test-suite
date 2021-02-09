@@ -81,8 +81,14 @@ impl crate::OpenPGP for Sop {
     fn version(&self) -> Result<crate::Version> {
         let o = self.run(&["version"], &[])?;
         let stdout = String::from_utf8_lossy(&o.stdout);
-        let name =
+        let mut name =
             stdout.trim().split(' ').nth(0).unwrap_or("unknown").to_string();
+        if name.to_lowercase().ends_with("-sop") {
+            name =
+                String::from_utf8(name.as_bytes()[..name.len() - 4].to_vec())
+                .unwrap();
+        }
+
         let version =
             stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
         Ok(Version {
