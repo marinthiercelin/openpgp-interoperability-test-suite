@@ -13,13 +13,11 @@ mod data;
 mod tests;
 mod templates;
 
-mod rnp;
 mod sop;
 
 /// Backends supported by the test suite.
 #[derive(Debug, Clone)]
 pub enum Implementation {
-    RNP,
     Sop(String),
 }
 
@@ -27,7 +25,6 @@ impl fmt::Display for Implementation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Implementation::Sop(s) => f.write_str(&s),
-            _ => write!(f, "{:?}", self),
         }
     }
 }
@@ -114,8 +111,6 @@ impl Config {
         let mut r: Vec<Box<dyn OpenPGP + Sync>> = Vec::new();
         for d in self.drivers.iter() {
             r.push(match d.driver.as_str() {
-                "rnp" => Box::new(rnp::RNP::new(&d.path)
-                                 .context("Creating rnp backend")?),
                 "sop" => Box::new(sop::Sop::new(&d.path, &d.env)
                                  .context("Creating sop backend")?),
                 _ => return Err(anyhow::anyhow!("Unknown driver {:?}",
