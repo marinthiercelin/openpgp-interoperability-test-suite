@@ -77,7 +77,11 @@ pub trait ConsumerTest : Test {
                 results.push(a);
             }
 
-            test_results.push(TestResults { artifact, results, expectation });
+            test_results.push(TestResults {
+                artifact: artifact.limit_data_size(),
+                results,
+                expectation,
+            });
         }
 
         Ok(TestMatrix {
@@ -150,7 +154,11 @@ pub trait ProducerConsumerTest : Test {
                 }
             }
 
-            test_results.push(TestResults { artifact, results, expectation });
+            test_results.push(TestResults {
+                artifact: artifact.limit_data_size(),
+                results,
+                expectation,
+            });
         }
 
         Ok(TestMatrix {
@@ -210,6 +218,18 @@ impl Artifact {
             Some(true) => self.score_class = "score-good",
             Some(false) => self.score_class = "score-bad",
         }
+    }
+
+    /// Limits the artifact size.
+    ///
+    /// In order not to bloat the report too much, we limit the size
+    /// of artifacts included in the report.  If the data exceeds the
+    /// configured size, it is dropped.
+    fn limit_data_size(mut self) -> Self {
+        if self.data.len() > crate::MAXIMUM_ARTIFACT_SIZE {
+            self.data = Default::default();
+        }
+        self
     }
 }
 

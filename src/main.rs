@@ -14,6 +14,9 @@ mod templates;
 
 mod sop;
 
+/// Maximum size of artifacts included in the results.
+pub const MAXIMUM_ARTIFACT_SIZE: usize = 50_000;
+
 /// Backends supported by the test suite.
 #[derive(Debug, Clone)]
 pub enum Implementation {
