@@ -152,7 +152,7 @@ pub enum Error {
     InternalDriverError,
 
     /// Unspecified engine error.
-    #[error("Unspecified engine error.  Status: {}, stdout:\n~~~snip~~~\n{}~~~snip~~~\nstderr:\n~~~snip~~~\n{}~~~snip~~~\n",
+    #[error("Unspecified engine error:  {}, stdout:\n~~~snip~~~\n{}~~~snip~~~\nstderr:\n~~~snip~~~\n{}~~~snip~~~\n",
            _0, _1, _2)]
-    EngineError(std::process::ExitStatus, String, String),
+    EngineError(String, String, String),
 }

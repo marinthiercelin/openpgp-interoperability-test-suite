@@ -39,15 +39,23 @@ impl Sop {
             .stdout(process::Stdio::piped())
             .stderr(process::Stdio::piped())
             .spawn()?;
-        child.stdin.as_mut().unwrap().write_all(input.as_ref())?;
+        let write_result =
+            child.stdin.as_mut().unwrap().write_all(input.as_ref());
         let o = child.wait_with_output()?;
-        if o.status.success() {
+
+        if let Err(e) = write_result {
+            Err(Error::EngineError(
+                format!("Writing to child failed: {}", e),
+                String::from_utf8_lossy(&o.stdout).to_string(),
+                String::from_utf8_lossy(&o.stderr).to_string())
+                .into())
+        } else if o.status.success() {
             Ok(o)
         } else if let Some(69) = o.status.code() {
             Err(Error::NotImplemented.into())
         } else {
             Err(Error::EngineError(
-                o.status,
+                format!("Status: {}", o.status),
                 String::from_utf8_lossy(&o.stdout).to_string(),
                 String::from_utf8_lossy(&o.stderr).to_string())
                 .into())
