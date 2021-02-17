@@ -22,6 +22,9 @@
   <li><a href="https://gitlab.com/sequoia-pgp/sequoia/-/issues/564">
       Sequoia does not honor certificate expiration on primary userid when iterating over subkeys
   </a></li>
+  <li><a href="https://gitlab.com/sequoia-pgp/sequoia/-/issues/675">
+      Sequoia does not correctly consume excess bytes in a container packet
+  </a></li>
 </ul>
 
 <h2>DKGPG</h2>
@@ -151,6 +154,46 @@
   </a></li>
 </ul>
 
+<h2>PGPainless</h2>
+<ul>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/74">
+      PGPainless should not emit an uncompressed compressed data packet
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/76">
+      PGPainless should support wildcard recipient ids
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/77">
+      PGPainless successfully "decrypts" unencrypted SEIP packet
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/78">
+      PGPainless does not check the integrity of encrypted data
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/79">
+      Insecure handling of signature creation time subpackets
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/80">
+      Critical unknown subpackets and notations must invalidate signatures
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/81">
+      PGPainless should treat signatures using insecure hash algorithms as invalid
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/82">
+      PGPainless emits a 'Version' header in the ASCII armor
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/84">
+      Marker packets must be ignored
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/85">
+      PGPainless ignores certificate expiration
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/86">
+      PGPainless ignores revocations
+  </a></li>
+  <li><a href="https://github.com/pgpainless/pgpainless/issues/87">
+      Potential denial-of-service problem related to recursion depth
+  </a></li>
+</ul>
+
 <h2>PGPy</h2>
 <ul>
   <li><a href="https://github.com/SecurityInnovation/PGPy/issues/331">
@@ -223,5 +266,8 @@
   </li>
   <li>
     All versions of GnuPG successfully verify signatures using SHA-1
+  </li>
+  <li>
+    All versions of GnuPG fail to correctly consume excess bytes in a container packet
   </li>
 </ul>
