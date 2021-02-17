@@ -25,6 +25,9 @@ use crate::{
     },
 };
 
+mod consumption;
+use consumption::PacketConsumption;
+
 /// Tests whether packet boundaries are enforced.
 struct PacketBoundaries {
 }
@@ -146,5 +149,6 @@ impl ConsumerTest for PacketBoundaries {
 pub fn schedule(report: &mut Report) -> Result<()> {
     report.add_section("Packet parser");
     report.add(Box::new(PacketBoundaries::new()?));
+    report.add(Box::new(PacketConsumption::new()?));
     Ok(())
 }
