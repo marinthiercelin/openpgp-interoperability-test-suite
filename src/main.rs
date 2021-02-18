@@ -13,6 +13,7 @@ mod tests;
 mod templates;
 
 mod sop;
+pub use sop::Sop;
 
 /// Maximum size of artifacts included in the results.
 pub const MAXIMUM_ARTIFACT_SIZE: usize = 50_000;
@@ -141,7 +142,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug)]
 pub enum Error {
     /// Not implemented by the driver.
     #[error("This is not implemented by the driver.")]
@@ -152,7 +153,7 @@ pub enum Error {
     InternalDriverError,
 
     /// Unspecified engine error.
-    #[error("Unspecified engine error:  {}, stdout:\n~~~snip~~~\n{}~~~snip~~~\nstderr:\n~~~snip~~~\n{}~~~snip~~~\n",
+    #[error("{}\nstdout:\n~~~snip~~~\n{}~~~snip~~~\nstderr:\n~~~snip~~~\n{}~~~snip~~~\n",
            _0, _1, _2)]
-    EngineError(String, String, String),
+    EngineError(#[source] sop::SOPError, String, String),
 }
