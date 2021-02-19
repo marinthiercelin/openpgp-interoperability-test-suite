@@ -50,6 +50,13 @@
       }
       /* /Rotate table headings.  */
 
+      /* Summary table.  */
+      table.summary th, table.summary td {
+	  text-align: left;
+	  padding: 0.1em 1em;
+      }
+      /* /Summary table.  */
+
       pre { background-color: #eee; }
 
       .score-good {
@@ -314,12 +321,51 @@
 	  {%- endfor -%}
 	</ol>
       </li>
+      <li><a href="#summary">Test Summary</a></li>
       <li><a href="#hall-of-fame">Hall of Fame</a></li>
       <li><a href="#configuration">Configuration</a></li>
     </ol>
     <hr />
     <a name="test-results"><h1>Test Results</h1></a>
     {{body | safe}}
+    <hr />
+    <a name="summary"><h1>Test Summary</h1></a>
+    <p>
+      This table summarizes the above results.  Reducing the wealth of
+      information to a set of numbers necessarily loses information,
+      so take them with a grain of salt.  Nevertheless, these number
+      provide an indication to what degree an implementation agrees
+      with the expectations of this test suite.
+    </p>
+    <p>
+      The first number is the number of tests where the implementation
+      matched the test suite's expectations on all vectors of a given
+      test.
+    </p>
+    <p>
+      The second number is the number of test vectors where the
+      implementation matched the test suite's expectations.
+    </p>
+    <p>
+      The third number is the number of test vectors where the
+      implementation did not match the test suite's expectations.
+    </p>
+    <table class="summary">
+      <tr>
+	<th>Implementation</th>
+	<th>Matched all</th>
+	<th>Matched</th>
+	<th>Mismatched</th>
+      </tr>
+      {%- for row in summary -%}
+      <tr>
+	<td>{{ row.0 }}</td>
+	<td>{{ row.1.all_good }}</td>
+	<td>{{ row.1.good }}</td>
+	<td>{{ row.1.bad }}</td>
+      </tr>
+      {%- endfor -%}
+    </table>
     <hr />
     {% include "hall-of-fame.inc.html" %}
     <hr />

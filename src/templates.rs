@@ -10,6 +10,8 @@ use crate::{
     tests::{
         Test,
         TestMatrix,
+        Summary,
+        Scores,
     },
 };
 
@@ -88,6 +90,7 @@ impl<'a> Report<'a> {
 
         let mut toc = Vec::new();
         let mut body = String::new();
+        let mut summary = Summary::default();
         for (section, section_results) in results {
             body.push_str(&section.render_section()?);
 
@@ -96,6 +99,7 @@ impl<'a> Report<'a> {
                 let r = maybe_result?;
                 toc_section.push(Entry::new(&r.title()));
                 body.push_str(&r.render()?);
+                r.summarize(&mut summary);
             }
             toc.push((section, toc_section));
         }
@@ -107,6 +111,7 @@ impl<'a> Report<'a> {
             title: format!("OpenPGP interoperability test suite"),
             toc,
             body,
+            summary: summary.for_rendering(),
             configuration: self.configuration,
         })
     }
@@ -121,6 +126,7 @@ pub struct Results<'a> {
     title: String,
     toc: Vec<(Entry, Vec<Entry>)>,
     body: String,
+    summary: Vec<(String, Scores)>,
     configuration: &'a Config,
 }
 

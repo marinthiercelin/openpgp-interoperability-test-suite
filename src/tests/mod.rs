@@ -1,3 +1,7 @@
+use std::{
+    collections::HashMap,
+};
+
 use sequoia_openpgp as openpgp;
 use openpgp::policy::StandardPolicy;
 
@@ -247,6 +251,36 @@ impl TestMatrix {
     pub fn title(&self) -> String {
         self.title.clone()
     }
+
+    pub fn summarize(&self, summary: &mut Summary) {
+        for (i, imp) in self.consumers.iter().enumerate() {
+            let mut good = 0;
+            let mut bad = 0;
+
+            for row in &self.results {
+                // Get the result corresponding to implementation
+                // 'imp'.
+                if let Some(r) = row.results.get(i) {
+                    match r.score {
+                        None => (),
+                        Some(true) => good += 1,
+                        Some(false) => bad += 1,
+                    }
+                }
+            }
+
+            // Count all rows where we have an expectation, and the
+            // producer produced an artifact.
+            let have_expectations = self.results.iter().filter(|row| {
+                row.expectation.is_some() && ! row.results.is_empty()
+            }).count();
+
+            // Did it pass on all test vectors?
+            let all_good = good == have_expectations;
+
+            summary.add(imp.clone(), good, bad, all_good);
+        }
+    }
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -254,6 +288,53 @@ struct TestResults {
     artifact: Artifact,
     results: Vec<Artifact>,
     expectation: Option<Expectation>,
+}
+
+#[derive(Debug, Default, serde::Serialize)]
+pub struct Summary {
+    score: HashMap<Version, Scores>,
+}
+
+impl Summary {
+    fn add(&mut self, imp: Version, good: usize, bad: usize, all_good: bool) {
+        let e = self.score.entry(imp).or_default();
+        e.good += good;
+        e.bad += bad;
+        if all_good {
+            e.all_good += 1;
+        }
+    }
+
+    /// Transforms the summary into a map suitable for rendering.
+    pub fn for_rendering(self) -> Vec<(String, Scores)> {
+        let mut r: Vec<(String, Scores)> =
+            self.score.into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect();
+        r.sort_unstable_by(|a, b| a.1.cmp(&b.1).reverse());
+        r
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct Scores {
+    good: usize,
+    bad: usize,
+    all_good: usize,
+}
+
+impl Ord for Scores {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.all_good.cmp(&other.all_good)
+            .then(self.good.cmp(&other.good))
+            .then(self.bad.cmp(&other.bad).reverse())
+    }
+}
+
+impl PartialOrd for Scores {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 /// Extracts the public certificate from the given key.

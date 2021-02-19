@@ -478,6 +478,18 @@ pub struct Verification {
     pub comment: String,
 }
 
+impl Verification {
+    pub fn expect_timestamp<T>(&self, _t: T)
+                               -> Result<()>
+    where T: Into<DateTime<Utc>>
+    {
+        unimplemented!()
+    }
+    pub fn summary(&self) -> Data {
+        format!("Good signature from {:X}", self.cert).into_bytes().into()
+    }
+}
+
 impl std::str::FromStr for Verification {
     type Err = SOPError;
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
