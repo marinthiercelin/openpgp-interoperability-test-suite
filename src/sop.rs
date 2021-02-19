@@ -430,6 +430,10 @@ impl Sop {
 }
 
 impl crate::OpenPGP for Sop {
+    fn sop(&self) -> &Sop {
+        self
+    }
+
     fn new_context(&self) -> Result<Box<dyn crate::OpenPGP>> {
         Self::new(&self.sop, &self.env)
             .map(|i| -> Box<dyn crate::OpenPGP> { Box::new(i) })

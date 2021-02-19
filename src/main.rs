@@ -58,7 +58,15 @@ impl fmt::Display for Version {
 pub type Data = Box<[u8]>;
 
 /// Abstract OpenPGP interface.
+///
+/// This is the old abstraction for drivers.  We now only have only
+/// one driver, SOP, and in the future, all tests should directly use
+/// the SOP interface.
+///
+/// In the mean time, we provide a method `sop()` that returns the SOP
+/// interface.
 pub trait OpenPGP: std::fmt::Debug {
+    fn sop(&self) -> &Sop;
     fn new_context(&self) -> Result<Box<dyn OpenPGP>>;
     fn version(&self) -> Result<Version>;
     fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
