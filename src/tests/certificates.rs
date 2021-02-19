@@ -34,6 +34,7 @@ mod expiration;
 mod detached_primary;
 mod binding_signature_subpackets;
 mod im_my_own_grandpa;
+mod temporary_validity;
 
 fn make_test<I, P>(test: &str, packets: I,
              expectation: Option<Expectation>)
@@ -559,6 +560,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     report.add(Box::new(
         binding_signature_subpackets::BindingSignatureSubpackets::new()?));
     report.add(Box::new(im_my_own_grandpa::ImMyOwnGrandpa::new()?));
+    report.add(Box::new(temporary_validity::TemporaryValidity::new()?));
 
     revoked_key::schedule(report)?;
     Ok(())
