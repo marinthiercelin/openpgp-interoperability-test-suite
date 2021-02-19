@@ -159,12 +159,12 @@ impl Sop {
     }
 
     /// Creates Detached Signatures.
-    fn sign<'k>(&self,
-                no_armor: bool,
-                as_: SignAs,
-                keys: impl IntoIterator<Item = &'k [u8]>,
-                data: &[u8])
-                -> Result<Data> {
+    pub fn sign<'k>(&self,
+                    no_armor: bool,
+                    as_: SignAs,
+                    keys: impl IntoIterator<Item = &'k [u8]>,
+                    data: &[u8])
+                    -> Result<Data> {
         let mut tmp = Vec::new();
         let mut args = vec!["sign".to_string()];
         if no_armor {
@@ -210,13 +210,13 @@ impl Sop {
     /// Verifies Detached Signatures.
     ///
     /// This provides unparsed signature verification output.
-    fn verify_raw<'c>(&self,
-                      not_before: Option<DateTime<Utc>>,
-                      not_after: Option<DateTime<Utc>>,
-                      signatures: &[u8],
-                      certs: impl IntoIterator<Item = &'c [u8]>,
-                      data: &[u8])
-                      -> Result<Data> {
+    pub fn verify_raw<'c>(&self,
+                          not_before: Option<DateTime<Utc>>,
+                          not_after: Option<DateTime<Utc>>,
+                          signatures: &[u8],
+                          certs: impl IntoIterator<Item = &'c [u8]>,
+                          data: &[u8])
+                          -> Result<Data> {
         let mut tmp = Vec::new();
         let mut args = vec!["verify".to_string()];
         if let Some(t) = not_before {
@@ -317,7 +317,9 @@ impl Sop {
     }
 
     /// Decrypts a Message.
-    fn decrypt_raw<'s, 'p, 'c, 'k>(
+    ///
+    /// This provides unparsed signature verification output.
+    pub fn decrypt_raw<'s, 'p, 'c, 'k>(
         &self,
         session_key_out: Option<&mut Option<Data>>,
         with_session_key: impl IntoIterator<Item = &'s [u8]>,
