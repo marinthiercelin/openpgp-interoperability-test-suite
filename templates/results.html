@@ -22,30 +22,30 @@
 	  margin-left: 0.5em;
       }
 
-      table {
+      table.matrix {
 	  border-collapse: collapse;
       }
 
-      td { border-left:   1px solid #ccc }
-      tr { border-bottom: 1px solid #ccc }
+      table.matrix td { border-left:   1px solid #ccc }
+      table.matrix tr { border-bottom: 1px solid #ccc }
 
-      th, td { min-width: 3em }
-      td { text-align: center }
-      td:last-child { text-align: left }
-      th { text-align: left }
-      th > form { display: inline }
+      table.matrix th, table.matrix td { min-width: 3em }
+      table.matrix td { text-align: center }
+      table.matrix td:last-child { text-align: left }
+      table.matrix th { text-align: left }
+      table.matrix th > form { display: inline }
 
       /* Rotate table headings.  */
-      th.rotate {
+      table.matrix th.rotate {
 	  height: 150px;
 	  white-space: nowrap;
       }
 
-      th.rotate > div {
+      table.matrix th.rotate > div {
 	  transform: translate(25px, 51px) rotate(315deg);
 	  width: 30px;
       }
-      th.rotate > div > span {
+      table.matrix th.rotate > div > span {
 	  padding: 5px 10px;
       }
       /* /Rotate table headings.  */
