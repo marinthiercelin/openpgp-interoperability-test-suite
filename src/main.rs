@@ -1,7 +1,11 @@
 use std::fmt;
 use std::fs;
+use std::{
+    path::PathBuf,
+};
 
 use anyhow::Context;
+use structopt::StructOpt;
 
 use sequoia_openpgp as openpgp;
 use openpgp::{
@@ -127,10 +131,20 @@ impl Config {
     }
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(about = "The OpenPGP Interoperability Test Suite")]
+pub struct Cli {
+    /// Select config file to use.
+    #[structopt(long, default_value = "config.json")]
+    config: PathBuf,
+}
+
 fn main() -> anyhow::Result<()> {
+    let cli = Cli::from_args();
+
     let c: Config =
         serde_json::from_reader(
-            fs::File::open("config.json").context("Opening config file")?
+            fs::File::open(cli.config).context("Opening config file")?
         ).context("Reading config file")?;
     c.set_rlimits().context("Setting resource limits")?;
     let implementations = c.implementations()
