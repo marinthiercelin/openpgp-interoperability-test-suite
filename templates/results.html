@@ -13,11 +13,11 @@
       }
 
       /* Headings.  */
-      h2 > a, h3 > a {
+      h1 > a, h2 > a, h3 > a {
 	  text-decoration: none;
 	  color: black;
       }
-      h2 > a:hover:after, h3 > a:hover:after {
+      h1 > a:hover:after, h2 > a:hover:after, h3 > a:hover:after {
 	  content: "⁋";
 	  margin-left: 0.5em;
       }
@@ -321,15 +321,15 @@
 	  {%- endfor -%}
 	</ol>
       </li>
-      <li><a href="#summary">Test Summary</a></li>
+      <li><a href="#test-summary">Test Summary</a></li>
       <li><a href="#hall-of-fame">Hall of Fame</a></li>
       <li><a href="#configuration">Configuration</a></li>
     </ol>
     <hr />
-    <a name="test-results"><h1>Test Results</h1></a>
+    <h1><a name="test-results" href="#test-results">Test Results</a></h1>
     {{body | safe}}
     <hr />
-    <a name="summary"><h1>Test Summary</h1></a>
+    <h1><a name="summary"><a name="test-summary" href="#test-summary">Test Summary</a></a></h1>
     <p>
       This table summarizes the above results.  Reducing the wealth of
       information to a set of numbers necessarily loses information,
@@ -369,7 +369,7 @@
     <hr />
     {% include "hall-of-fame.inc.html" %}
     <hr />
-    <a name="configuration"><h1>Configuration</h1></a>
+    <h1><a name="configuration" href="#configuration">Configuration</a></h1>
     <p>
       This is the configuration used to produce this report:
     </p>
