@@ -11,7 +11,7 @@ use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 
-use crate::{Data, Implementation, Version, Error, Result};
+use crate::{Data, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -124,7 +124,7 @@ impl Sop {
         let version =
             stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
         Ok(Version {
-            implementation: Implementation::Sop(name),
+            implementation: name,
             version,
         })
     }

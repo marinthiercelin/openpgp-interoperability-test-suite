@@ -50,7 +50,7 @@ impl serde::Serialize for Implementation {
 /// (Backend, Version)-tuple supporting multiple versions per backend.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize)]
 pub struct Version {
-    pub implementation: Implementation,
+    pub implementation: String,
     pub version: String,
 }
 
