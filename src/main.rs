@@ -191,32 +191,62 @@ pub struct Cli {
     /// Select config file to use.
     #[structopt(long, default_value = "config.json")]
     config: PathBuf,
+
+    /// Read results from a JSON file instead of running the tests.
+    #[structopt(long)]
+    json_in: Option<PathBuf>,
+
+    /// Write results to a JSON file.
+    #[structopt(long)]
+    json_out: Option<PathBuf>,
+
+    /// Write the results to a HTML file.
+    #[structopt(long)]
+    html_out: Option<PathBuf>,
 }
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::from_args();
 
-    let c: Config =
-        serde_json::from_reader(
-            fs::File::open(cli.config).context("Opening config file")?
-        ).context("Reading config file")?;
-    c.set_rlimits().context("Setting resource limits")?;
-    let implementations = c.implementations()
-        .context("Setting up implementations")?;
-
-    eprintln!("Configured engines:");
-    for i in implementations.iter() {
-        eprintln!("  - {}",
-                  i.version().context(format!("Could not run {:?}", i))?);
+    if cli.json_out.is_none() && cli.html_out.is_none() {
+        return
+            Err(anyhow::anyhow!("Neither --json-out nor --html-out is given."));
     }
 
-    let mut plan = plan::TestPlan::new(&c);
-    tests::schedule(&mut plan)?;
+    let results = if let Some(p) = cli.json_in.as_ref() {
+        serde_json::from_reader(fs::File::open(p)?)?
+    } else {
+        let c: Config =
+            serde_json::from_reader(
+                fs::File::open(cli.config).context("Opening config file")?
+            ).context("Reading config file")?;
+        c.set_rlimits().context("Setting resource limits")?;
+        let implementations = c.implementations()
+            .context("Setting up implementations")?;
 
-    let results = plan.run(&implementations[..])?;
+        eprintln!("Configured engines:");
+        for i in implementations.iter() {
+            eprintln!("  - {}",
+                      i.version().context(format!("Could not run {:?}", i))?);
+        }
 
-    use templates::{Report, Renderable};
-    println!("{}", Report::new(results)?.render()?);
+        let mut plan = plan::TestPlan::new(&c);
+        tests::schedule(&mut plan)?;
+        plan.run(&implementations[..])?
+    };
+
+    if let Some(p) = cli.json_out.as_ref() {
+        let mut sink = fs::File::create(p)?;
+        serde_json::to_writer_pretty(&mut sink, &results)?;
+    }
+
+    if let Some(p) = cli.html_out.as_ref() {
+        use std::io::Write;
+        use templates::{Report, Renderable};
+
+        let mut sink = fs::File::create(p)?;
+        write!(sink, "{}", Report::new(results)?.render()?)?;
+    }
 
     Ok(())
 }
