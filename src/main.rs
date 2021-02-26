@@ -163,8 +163,8 @@ fn main() -> anyhow::Result<()> {
 
     let results = plan.run(&implementations[..])?;
 
-    use templates::Renderable;
-    println!("{}", results.render()?);
+    use templates::{Report, Renderable};
+    println!("{}", Report::new(results)?.render()?);
 
     Ok(())
 }

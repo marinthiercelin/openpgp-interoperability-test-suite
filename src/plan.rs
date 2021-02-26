@@ -5,11 +5,9 @@ use crate::{
     OpenPGP,
     Result,
     progress_bar::ProgressBarHandle,
-    templates::Report,
     tests::{
         Test,
         TestMatrix,
-        Summary,
     },
 };
 
@@ -44,50 +42,40 @@ impl<'a> TestPlan<'a> {
     }
 
     pub fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
-               -> Result<Report<'a>>
+               -> Result<Results<'a>>
     {
-        use crate::templates::{Entry, Renderable};
-
         let pb = ProgressBarHandle::new(
             self.toc.iter().map(|(_, tests)| tests.len() as u64).sum::<u64>());
 
-        let results: Vec<(Entry, Vec<Result<TestMatrix>>)> =
-            self.toc.par_iter().map(|(section, tests)| {
-                (Entry::new(&section),
+        let results =
+            self.toc.par_iter().map(|(section, tests)|
+                                      -> Result<(String, Vec<TestMatrix>)> {
+                Ok((section.into(),
                  tests.par_iter().map(
                      |test| {
                          pb.start_test(test.title());
                          let r = test.run(implementations);
                          pb.end_test();
                          r
-                     }).collect())
-            }).collect();
+                     }).collect::<Result<Vec<TestMatrix>>>()?))
+            }).collect::<Result<Vec<(String, Vec<TestMatrix>)>>>()?;
 
-        let mut toc = Vec::new();
-        let mut body = String::new();
-        let mut summary = Summary::default();
-        for (section, section_results) in results {
-            body.push_str(&section.render_section()?);
-
-            let mut toc_section = Vec::new();
-            for maybe_result in section_results {
-                let r = maybe_result?;
-                toc_section.push(Entry::new(&r.title()));
-                body.push_str(&r.render()?);
-                r.summarize(&mut summary);
-            }
-            toc.push((section, toc_section));
-        }
-
-        Ok(Report {
+        Ok(Results {
             version: env!("VERGEN_SEMVER").to_string(),
             commit: env!("VERGEN_SHA_SHORT").to_string(),
             timestamp: chrono::offset::Utc::now(),
-            title: format!("OpenPGP interoperability test suite"),
-            toc,
-            body,
-            summary: summary.for_rendering(),
             configuration: self.configuration,
+            results,
         })
     }
+}
+
+/// Result of executing a TestPlan.
+#[derive(Debug, serde::Serialize)]
+pub struct Results<'a> {
+    pub version: String,
+    pub commit: String,
+    pub timestamp: chrono::DateTime<chrono::offset::Utc>,
+    pub configuration: &'a Config,
+    pub results: Vec<(String, Vec<TestMatrix>)>,
 }

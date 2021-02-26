@@ -7,7 +7,9 @@ use crate::{
     Result,
     tests::{
         Scores,
+        Summary,
     },
+    plan::Results,
 };
 
 /// Something renderable.
@@ -38,17 +40,48 @@ impl Entry {
     }
 }
 
-/// The test results.
+/// The test results suitable for rendering.
 #[derive(Debug, serde::Serialize)]
 pub struct Report<'a> {
-    pub version: String,
-    pub commit: String,
-    pub timestamp: chrono::DateTime<chrono::offset::Utc>,
-    pub title: String,
-    pub toc: Vec<(Entry, Vec<Entry>)>,
-    pub body: String,
-    pub summary: Vec<(String, Scores)>,
-    pub configuration: &'a Config,
+    version: String,
+    commit: String,
+    timestamp: chrono::DateTime<chrono::offset::Utc>,
+    title: String,
+    toc: Vec<(Entry, Vec<Entry>)>,
+    body: String,
+    summary: Vec<(String, Scores)>,
+    configuration: &'a Config,
+}
+
+impl<'a> Report<'a> {
+    pub fn new(results: Results<'a>) -> Result<Report<'a>> {
+        let mut toc = Vec::new();
+        let mut body = String::new();
+        let mut summary = Summary::default();
+        for (section, section_results) in results.results {
+            let section = Entry::new(&section);
+            body.push_str(&section.render_section()?);
+
+            let mut toc_section = Vec::new();
+            for r in section_results {
+                toc_section.push(Entry::new(&r.title()));
+                body.push_str(&r.render()?);
+                r.summarize(&mut summary);
+            }
+            toc.push((section, toc_section));
+        }
+
+        Ok(Report {
+            version: results.version,
+            commit: results.commit,
+            timestamp: results.timestamp,
+            title: format!("OpenPGP interoperability test suite"),
+            toc,
+            body,
+            summary: summary.for_rendering(),
+            configuration: results.configuration,
+        })
+    }
 }
 
 
