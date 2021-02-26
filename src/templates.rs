@@ -42,7 +42,7 @@ impl Entry {
 
 /// The test results suitable for rendering.
 #[derive(Debug, serde::Serialize)]
-pub struct Report<'a> {
+pub struct Report {
     version: String,
     commit: String,
     timestamp: chrono::DateTime<chrono::offset::Utc>,
@@ -50,11 +50,11 @@ pub struct Report<'a> {
     toc: Vec<(Entry, Vec<Entry>)>,
     body: String,
     summary: Vec<(String, Scores)>,
-    configuration: &'a Config,
+    configuration: Config,
 }
 
-impl<'a> Report<'a> {
-    pub fn new(results: Results<'a>) -> Result<Report<'a>> {
+impl Report {
+    pub fn new(results: Results) -> Result<Report> {
         let mut toc = Vec::new();
         let mut body = String::new();
         let mut summary = Summary::default();
@@ -85,7 +85,7 @@ impl<'a> Report<'a> {
 }
 
 
-impl<'a> Renderable for Report<'a> {
+impl Renderable for Report {
     fn render(&self) -> Result<String> {
         use std::error::Error;
         get().render("report.html", self)

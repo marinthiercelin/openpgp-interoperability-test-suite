@@ -143,7 +143,7 @@ pub trait OpenPGP: std::fmt::Debug {
 }
 
 /// Test suite configuration.
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     drivers: Vec<Driver>,
     #[serde(default)]
@@ -151,7 +151,7 @@ pub struct Config {
 }
 
 /// A driver configuration.
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 struct Driver {
     driver: String,
     path: String,

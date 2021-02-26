@@ -42,7 +42,7 @@ impl<'a> TestPlan<'a> {
     }
 
     pub fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
-               -> Result<Results<'a>>
+               -> Result<Results>
     {
         let pb = ProgressBarHandle::new(
             self.toc.iter().map(|(_, tests)| tests.len() as u64).sum::<u64>());
@@ -64,7 +64,7 @@ impl<'a> TestPlan<'a> {
             version: env!("VERGEN_SEMVER").to_string(),
             commit: env!("VERGEN_SHA_SHORT").to_string(),
             timestamp: chrono::offset::Utc::now(),
-            configuration: self.configuration,
+            configuration: self.configuration.clone(),
             results,
         })
     }
@@ -72,10 +72,10 @@ impl<'a> TestPlan<'a> {
 
 /// Result of executing a TestPlan.
 #[derive(Debug, serde::Serialize)]
-pub struct Results<'a> {
+pub struct Results {
     pub version: String,
     pub commit: String,
     pub timestamp: chrono::DateTime<chrono::offset::Utc>,
-    pub configuration: &'a Config,
+    pub configuration: Config,
     pub results: Vec<(String, Vec<TestMatrix>)>,
 }
