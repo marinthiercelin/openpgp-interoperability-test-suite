@@ -184,7 +184,6 @@ struct Artifact {
     data: Data,
     error: String,
     score: Option<bool>,
-    score_class: &'static str,
 }
 
 impl Artifact {
@@ -194,7 +193,6 @@ impl Artifact {
             data,
             error: Default::default(),
             score: None,
-            score_class: "score",
         }
     }
 
@@ -210,18 +208,12 @@ impl Artifact {
             data,
             error,
             score: None,
-            score_class: "score",
         }
     }
 
     fn set_score(&mut self, expectation: &Option<Expectation>) {
         self.score =
             expectation.as_ref().map(|e| e.is_err() == (self.error.len() > 0));
-        match self.score {
-            None => (),
-            Some(true) => self.score_class = "score-good",
-            Some(false) => self.score_class = "score-bad",
-        }
     }
 
     /// Limits the artifact size.

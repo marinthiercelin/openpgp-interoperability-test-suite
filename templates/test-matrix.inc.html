@@ -50,7 +50,7 @@
     </th>
     {%- if row.results -%}
     {%- for result in row.results -%}
-    <td class="{{result.score_class}}">
+    <td class="{{ result.score | score2class }}">
       {%- if result.error -%}
       <span title="{{result.error | addslashes}}">✗</span>
       {%- else -%}

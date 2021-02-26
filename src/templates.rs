@@ -115,6 +115,7 @@ fn get() -> &'static tera::Tera {
             let mut tera = tera::compile_templates!("templates/**/*");
             tera.register_filter("pgp2string", pgp2string);
             tera.register_filter("bin2string", bin2string);
+            tera.register_filter("score2class", score2class);
             tera.register_function("dump_url", Box::new(dump_url));
             tera
         };
@@ -185,6 +186,18 @@ fn bin2string(v: tera::Value,
         }
     }
     Ok(Value::String(res))
+}
+
+fn score2class(v: tera::Value,
+               _: std::collections::HashMap<String, tera::Value>)
+               -> tera::Result<tera::Value> {
+    use tera::Value;
+    match v {
+        Value::Null        => Ok(Value::String("score".into())),
+        Value::Bool(true)  => Ok(Value::String("score-good".into())),
+        Value::Bool(false) => Ok(Value::String("score-bad".into())),
+        _ => unimplemented!(),
+    }
 }
 
 fn dump_url(_: std::collections::HashMap<String, tera::Value>)
