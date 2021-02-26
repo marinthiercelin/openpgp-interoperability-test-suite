@@ -90,7 +90,7 @@ impl Test for PrimaryKeyBinding {
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
-        vec![("Signature".into(), self.signature().unwrap().into_boxed_slice())]
+        vec![("Signature".into(), self.signature().unwrap().into())]
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])

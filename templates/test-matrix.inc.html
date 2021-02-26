@@ -13,7 +13,7 @@
 	  {{artifact.0}}
 	  <button type="submit" title="Inspect with packet dumper">🔎</button>
 	</label>
-	<input name="data" type="hidden" value="{{artifact.1 | pgp2string}}" />
+	<input name="data" type="hidden" value="{{artifact.1 | safe | pgp2string}}" />
       </form>
     </li>
     {%- endfor -%}
@@ -41,7 +41,7 @@
       {%- if row.artifact.data -%}
       <form action="{{dump_url()}}" method="post">
 	<button type="submit" title="Inspect with packet dumper">🔎</button>
-	<input name="data" type="hidden" value="{{row.artifact.data|pgp2string}}" />
+	<input name="data" type="hidden" value="{{row.artifact.data | safe | pgp2string}}" />
       </form>
       {%- endif -%}
       {%- if row.artifact.error -%}
@@ -54,7 +54,7 @@
       {%- if result.error -%}
       <span title="{{result.error | addslashes}}">✗</span>
       {%- else -%}
-      <span title="{{result.data | bin2string}}">✓</span>
+      <span title="{{result.data | safe | bin2string}}">✓</span>
       {%- endif -%}
     </td>
     {%- endfor -%}

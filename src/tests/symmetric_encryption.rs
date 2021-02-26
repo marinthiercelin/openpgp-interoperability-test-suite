@@ -108,7 +108,7 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                     .for_transport_encryption()
                     .nth(0).unwrap().key().into();
                 let msg = format!("Encrypted using {:?}.", cipher)
-                    .into_bytes().into_boxed_slice();
+                    .into_bytes().into();
                 let stack = Message::new(&mut b);
                 let stack = match
                     Encryptor::for_recipients(stack, vec![recipient])
@@ -136,7 +136,7 @@ impl ConsumerTest for SymmetricEncryptionSupport {
             }
 
             t.push(
-                (format!("{:?}", cipher), b.into_boxed_slice(), expectation));
+                (format!("{:?}", cipher), b.into(), expectation));
         }
 
         // Unencrypted SEIP packet.
@@ -366,7 +366,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
                           draft-bre-openpgp-samples-00, modified with the \
                           symmetric algorithm preference [{:?}].", cipher),
                 openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into_boxed_slice(), cipher, None)?));
+                b"Hello, world!".to_vec().into(), cipher, None)?));
     }
 
     for &aead_algo in &[EAX, OCB] {
@@ -379,7 +379,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
                           symmetric algorithm preference [AES256], \
                           AEAD algorithm preference [{:?}].", aead_algo),
                 openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into_boxed_slice(), AES256,
+                b"Hello, world!".to_vec().into(), AES256,
                 Some(aead_algo))?));
     }
 

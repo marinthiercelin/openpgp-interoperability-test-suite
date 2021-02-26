@@ -88,7 +88,7 @@ impl ConsumerTest for CompressionSupport {
                 stack.finalize()?;
             }
 
-            t.push((c.to_string(), b.into_boxed_slice(), expectation));
+            t.push((c.to_string(), b.into(), expectation));
         }
 
         Ok(t)

@@ -118,7 +118,7 @@ impl ConsumerTest for MessageStructure {
                 stack.write_all(test.as_bytes())?;
                 stack.finalize()?;
             }
-            t.push((test, b.into_boxed_slice(), None));
+            t.push((test, b.into(), None));
         }
 
         Ok(t)
@@ -202,7 +202,7 @@ impl ConsumerTest for RecursionDepth {
                 stack.finalize()?;
             }
 
-            t.push((format!("Depth {}", n), b.into_boxed_slice(), expectation));
+            t.push((format!("Depth {}", n), b.into(), expectation));
         }
 
         Ok(t)

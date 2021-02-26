@@ -878,7 +878,7 @@ impl ConsumerTest for LineBreakNormalizationTest {
             signer.write_all(Self::test_vector(0).1)?;
             signer.finalize()?;
         }
-        let binary = binary.into_boxed_slice();
+        let binary: Data = binary.into();
 
         let mut text = vec![];
         {
@@ -897,7 +897,7 @@ impl ConsumerTest for LineBreakNormalizationTest {
             signer.write_all(Self::test_vector(0).1)?;
             signer.finalize()?;
         }
-        let text = text.into_boxed_slice();
+        let text: Data = text.into();
 
         Ok((0..Self::N_VECTORS * 2).into_iter().map(|i| {
             let (typ, data, expectation) = Self::test_vector(i);
@@ -926,14 +926,14 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
             "Detached Sign-Verify roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())?));
+            b"Hello, world!".to_vec().into())?));
     plan.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Bob'",
             "Detached Sign-Verify roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-            b"Hello, world!".to_vec().into_boxed_slice())?));
+            b"Hello, world!".to_vec().into())?));
     plan.add(Box::new(DetachedSignatureSubpacket::new()?));
     plan.add(Box::new(LineBreakNormalizationTest::new()?));
     plan.add(Box::new(unknown_packets::UnknownPackets::new()?));

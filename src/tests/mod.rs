@@ -359,7 +359,7 @@ pub fn extract_cert(key: &[u8]) -> Result<Data> {
         }
     }
 
-    Ok(cert.into_boxed_slice())
+    Ok(cert.into())
 }
 
 pub fn schedule(plan: &mut TestPlan) -> Result<()> {

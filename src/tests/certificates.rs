@@ -308,7 +308,7 @@ impl ConsumerTest for EncryptionKeyFlags {
         }
 
         Ok(format!("Encrypted to {}", encrypted_to.join(", "))
-           .into_bytes().into_boxed_slice())
+           .into_bytes().into())
     }
 }
 

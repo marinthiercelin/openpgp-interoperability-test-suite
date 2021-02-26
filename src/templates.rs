@@ -122,22 +122,31 @@ fn get() -> &'static tera::Tera {
     &TERA
 }
 
-fn pgp2string(v: tera::Value,
-              _: std::collections::HashMap<String, tera::Value>)
-              -> tera::Result<tera::Value> {
+/// Recovers binary data encoded in JSON.
+fn json2data(v: tera::Value) -> Vec<u8> {
     use tera::Value;
-    let mut bytes: Vec<u8> = Vec::new();
     match v {
         Value::Array(v) => {
+            let mut bytes = Vec::new();
             for o in v {
                 match o {
                     Value::Number(n) => bytes.push(n.as_u64().unwrap() as u8),
                     _ => unimplemented!(),
                 }
             }
+            bytes
         },
+        Value::String(s) => base64::decode(s).unwrap(),
         _ => unimplemented!(),
     }
+}
+
+fn pgp2string(v: tera::Value,
+              _: std::collections::HashMap<String, tera::Value>)
+              -> tera::Result<tera::Value> {
+    use tera::Value;
+    let mut bytes = json2data(v);
+
     let armored = bytes.get(0).map(|b| b & 0x80 == 0).unwrap_or(false);
     if ! armored {
         let mut armored = Vec::new();
@@ -166,19 +175,7 @@ fn bin2string(v: tera::Value,
               _: std::collections::HashMap<String, tera::Value>)
               -> tera::Result<tera::Value> {
     use tera::Value;
-    let mut bytes: Vec<u8> = Vec::new();
-    match v {
-        Value::Array(v) => {
-            for o in v {
-                match o {
-                    Value::Number(n) => bytes.push(n.as_u64().unwrap() as u8),
-                    _ => unimplemented!(),
-                }
-            }
-        },
-        _ => unimplemented!(),
-    }
-
+    let bytes = json2data(v);
 
     let mut res = String::new();
     for b in bytes {

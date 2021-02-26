@@ -142,7 +142,7 @@ impl Sop {
             args.push(u);
         }
         let o = self.run(&args[..], &[])?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 
     /// Extracts a Certificate from a Secret Key.
@@ -155,7 +155,7 @@ impl Sop {
             args.push("--no-armor");
         }
         let o = self.run(&args[..], key)?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 
     /// Creates Detached Signatures.
@@ -184,7 +184,7 @@ impl Sop {
         }
 
         let o = self.run(&args[..], data)?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 
     /// Verifies Detached Signatures.
@@ -235,7 +235,7 @@ impl Sop {
         }
 
         let o = self.run(&args[..], data)?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 
     /// Encrypts a Message.
@@ -276,7 +276,7 @@ impl Sop {
         }
 
         let o = self.run(&args[..], plaintext)?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 
     /// Decrypts a Message.
@@ -393,17 +393,17 @@ impl Sop {
                 .context("Non UTF-8 session key written to --session-key-out")?;
             let sk = openpgp::fmt::hex::decode(&string)
                 .context("Malformed session key written to --session-key-out")?;
-            *out = Some(sk.into_boxed_slice());
+            *out = Some(sk.into());
         }
 
         if let Some((out, p)) = verify_out_raw {
             let bytes = std::fs::read(&p)
                 .context("No verifications written to --verify-out")?;
             std::fs::remove_file(p)?;
-            *out = Some(bytes.into_boxed_slice());
+            *out = Some(bytes.into());
         }
 
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 
     /// Converts binary OpenPGP data to ASCII
@@ -419,13 +419,13 @@ impl Sop {
         }
 
         let o = self.run(&args[..], data)?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 
     /// Converts ASCII OpenPGP data to binary
     pub fn dearmor(&self, data: &[u8]) -> Result<Data> {
         let o = self.run(&["dearmor"], data)?;
-        Ok(o.stdout.clone().into_boxed_slice())
+        Ok(o.stdout.clone().into())
     }
 }
 
@@ -444,13 +444,13 @@ impl crate::OpenPGP for Sop {
     }
 
     fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
-               -> Result<Box<[u8]>> {
+               -> Result<Data> {
         Sop::encrypt(self, false, EncryptAs::Binary, None, None,
                      vec![recipient], plaintext)
     }
 
     fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8])
-               -> Result<Box<[u8]>> {
+               -> Result<Data> {
         Sop::decrypt_raw(self, None, None, None, None, None, None, None,
                          vec![recipient], ciphertext)
     }
