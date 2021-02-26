@@ -71,7 +71,7 @@ impl<'a> TestPlan<'a> {
 }
 
 /// Result of executing a TestPlan.
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct Results {
     pub version: String,
     pub commit: String,

@@ -25,7 +25,7 @@ pub use sop::Sop;
 pub const MAXIMUM_ARTIFACT_SIZE: usize = 50_000;
 
 /// Backends supported by the test suite.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize)]
 pub enum Implementation {
     Sop(String),
 }
@@ -48,7 +48,7 @@ impl serde::Serialize for Implementation {
 }
 
 /// (Backend, Version)-tuple supporting multiple versions per backend.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
 pub struct Version {
     pub implementation: String,
     pub version: String,

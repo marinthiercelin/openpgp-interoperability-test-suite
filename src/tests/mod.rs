@@ -178,7 +178,7 @@ pub trait ProducerConsumerTest : Test {
 }
 
 /// Artifacts produced by producers.
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct Artifact {
     producer: String,
     data: Data,
@@ -229,7 +229,7 @@ impl Artifact {
     }
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct TestMatrix {
     title: String,
     slug: String,
@@ -275,7 +275,7 @@ impl TestMatrix {
     }
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct TestResults {
     artifact: Artifact,
     results: Vec<Artifact>,
