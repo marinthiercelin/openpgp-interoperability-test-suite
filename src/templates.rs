@@ -40,7 +40,7 @@ impl Entry {
 
 /// The test results.
 #[derive(Debug, serde::Serialize)]
-pub struct Results<'a> {
+pub struct Report<'a> {
     pub version: String,
     pub commit: String,
     pub timestamp: chrono::DateTime<chrono::offset::Utc>,
@@ -52,10 +52,10 @@ pub struct Results<'a> {
 }
 
 
-impl<'a> Renderable for Results<'a> {
+impl<'a> Renderable for Report<'a> {
     fn render(&self) -> Result<String> {
         use std::error::Error;
-        get().render("results.html", self)
+        get().render("report.html", self)
             .map_err(|e| if let Some(s) = e.source() {
                 anyhow::anyhow!("{}: {}", e, s)
             } else {

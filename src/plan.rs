@@ -5,7 +5,7 @@ use crate::{
     OpenPGP,
     Result,
     progress_bar::ProgressBarHandle,
-    templates::Results,
+    templates::Report,
     tests::{
         Test,
         TestMatrix,
@@ -44,7 +44,7 @@ impl<'a> TestPlan<'a> {
     }
 
     pub fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
-               -> Result<Results<'a>>
+               -> Result<Report<'a>>
     {
         use crate::templates::{Entry, Renderable};
 
@@ -79,7 +79,7 @@ impl<'a> TestPlan<'a> {
             toc.push((section, toc_section));
         }
 
-        Ok(Results {
+        Ok(Report {
             version: env!("VERGEN_SEMVER").to_string(),
             commit: env!("VERGEN_SHA_SHORT").to_string(),
             timestamp: chrono::offset::Utc::now(),
