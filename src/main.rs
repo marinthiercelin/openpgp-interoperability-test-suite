@@ -15,6 +15,8 @@ use openpgp::{
 mod data;
 mod tests;
 mod templates;
+mod plan;
+mod progress_bar;
 
 mod sop;
 pub use sop::Sop;
@@ -156,11 +158,14 @@ fn main() -> anyhow::Result<()> {
                   i.version().context(format!("Could not run {:?}", i))?);
     }
 
-    let mut report = templates::Report::new(&c);
-    tests::schedule(&mut report)?;
+    let mut plan = plan::TestPlan::new(&c);
+    tests::schedule(&mut plan)?;
+
+    let results = plan.run(&implementations[..])?;
 
     use templates::Renderable;
-    println!("{}", report.run(&implementations[..])?.render()?);
+    println!("{}", results.render()?);
+
     Ok(())
 }
 

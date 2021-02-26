@@ -1,14 +1,14 @@
 use crate::{
     Result,
-    templates::Report,
+    plan::TestPlan,
 };
 
 mod concatenated_armor;
 mod mangled;
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("ASCII Armor");
-    report.add(Box::new(concatenated_armor::ConcatenatedArmorKeyring::new()?));
-    report.add(Box::new(mangled::MangledArmor::new()?));
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    plan.add_section("ASCII Armor");
+    plan.add(Box::new(concatenated_armor::ConcatenatedArmorKeyring::new()?));
+    plan.add(Box::new(mangled::MangledArmor::new()?));
     Ok(())
 }

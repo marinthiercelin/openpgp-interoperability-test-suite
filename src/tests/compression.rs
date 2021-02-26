@@ -9,7 +9,7 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Expectation,
         Test,
@@ -100,8 +100,8 @@ impl ConsumerTest for CompressionSupport {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("Compression Algorithms");
-    report.add(Box::new(CompressionSupport::new()?));
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    plan.add_section("Compression Algorithms");
+    plan.add(Box::new(CompressionSupport::new()?));
     Ok(())
 }

@@ -4,7 +4,7 @@ use openpgp::parse::Parse;
 use crate::{
     Result,
     data,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         detached_signatures::DetachedSignVerifyRoundtrip,
     },
@@ -12,13 +12,13 @@ use crate::{
 
 mod shattered;
 
-pub fn schedule(report: &mut Report) -> Result<()> {
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     use openpgp::types::HashAlgorithm::*;
 
-    report.add_section("Hash Algorithms");
+    plan.add_section("Hash Algorithms");
 
     for &hash in &[MD5, SHA1, RipeMD, SHA256, SHA384, SHA512, SHA224] {
-        report.add(Box::new(
+        plan.add(Box::new(
             DetachedSignVerifyRoundtrip::with_hash(
                 &format!("Detached Sign-Verify roundtrip with key 'Bob', {:?}",
                          hash),
@@ -28,7 +28,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
                 openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
                 b"Hello, world!".to_vec().into_boxed_slice(), hash)?));
     }
-    report.add(Box::new(shattered::Shattered::new()?));
+    plan.add(Box::new(shattered::Shattered::new()?));
 
     Ok(())
 }

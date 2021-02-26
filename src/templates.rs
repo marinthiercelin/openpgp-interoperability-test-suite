@@ -1,16 +1,11 @@
 use std::io::Write;
-use rayon::prelude::*;
 
 use sequoia_openpgp as openpgp;
 
 use crate::{
     Config,
-    OpenPGP,
     Result,
     tests::{
-        Test,
-        TestMatrix,
-        Summary,
         Scores,
     },
 };
@@ -28,11 +23,11 @@ pub struct Entry {
 }
 
 impl Entry {
-    fn new(title: &str) -> Entry {
+    pub fn new(title: &str) -> Entry {
         Entry { slug: slug(title), title: title.into() }
     }
 
-    fn render_section(&self) -> Result<String> {
+    pub fn render_section(&self) -> Result<String> {
         use std::error::Error;
         get().render("section.inc.html", self)
             .map_err(|e| if let Some(s) = e.source() {
@@ -43,91 +38,17 @@ impl Entry {
     }
 }
 
-/// The test report.
-pub struct Report<'a> {
-    toc: Vec<(Entry, Vec<Box<dyn Test + Sync>>)>,
-    configuration: &'a Config,
-}
-
-impl<'a> Report<'a> {
-    pub fn new(configuration: &'a Config) -> Report<'a> {
-        Report {
-            toc: Default::default(),
-            configuration,
-        }
-    }
-
-    pub fn add_section(&mut self, title: &str) {
-        let entry = Entry::new(title);
-        self.toc.push((entry, Vec::new()));
-    }
-
-    pub fn add(&mut self, test: Box<dyn Test + Sync>) {
-        if let Some((_, entries)) = self.toc.iter_mut().last() {
-            entries.push(test);
-        } else {
-            panic!("No section added")
-        }
-    }
-
-    pub fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
-               -> Result<Results<'a>>
-    {
-        let pb = ProgressBarHandle::new(
-            self.toc.iter().map(|(_, tests)| tests.len() as u64).sum::<u64>());
-
-        let results: Vec<(Entry, Vec<Result<TestMatrix>>)> =
-            self.toc.par_iter().map(|(section, tests)| {
-                (section.clone(),
-                 tests.par_iter().map(
-                     |test| {
-                         pb.start_test(test.title());
-                         let r = test.run(implementations);
-                         pb.end_test();
-                         r
-                     }).collect())
-            }).collect();
-
-        let mut toc = Vec::new();
-        let mut body = String::new();
-        let mut summary = Summary::default();
-        for (section, section_results) in results {
-            body.push_str(&section.render_section()?);
-
-            let mut toc_section = Vec::new();
-            for maybe_result in section_results {
-                let r = maybe_result?;
-                toc_section.push(Entry::new(&r.title()));
-                body.push_str(&r.render()?);
-                r.summarize(&mut summary);
-            }
-            toc.push((section, toc_section));
-        }
-
-        Ok(Results {
-            version: env!("VERGEN_SEMVER").to_string(),
-            commit: env!("VERGEN_SHA_SHORT").to_string(),
-            timestamp: chrono::offset::Utc::now(),
-            title: format!("OpenPGP interoperability test suite"),
-            toc,
-            body,
-            summary: summary.for_rendering(),
-            configuration: self.configuration,
-        })
-    }
-}
-
 /// The test results.
 #[derive(Debug, serde::Serialize)]
 pub struct Results<'a> {
-    version: String,
-    commit: String,
-    timestamp: chrono::DateTime<chrono::offset::Utc>,
-    title: String,
-    toc: Vec<(Entry, Vec<Entry>)>,
-    body: String,
-    summary: Vec<(String, Scores)>,
-    configuration: &'a Config,
+    pub version: String,
+    pub commit: String,
+    pub timestamp: chrono::DateTime<chrono::offset::Utc>,
+    pub title: String,
+    pub toc: Vec<(Entry, Vec<Entry>)>,
+    pub body: String,
+    pub summary: Vec<(String, Scores)>,
+    pub configuration: &'a Config,
 }
 
 
@@ -254,47 +175,4 @@ pub fn slug(title: &str) -> String {
         }
     }
     slug
-}
-
-// Progress bar support
-//
-// This is a bit awkward, we cannot use indicatif's rayon support
-// directly, because we nest par_iter().
-
-use std::sync::Mutex;
-use std::sync::mpsc::{channel, Sender};
-use std::thread;
-
-struct ProgressBarHandle {
-    ch: Mutex<Sender<Option<String>>>,
-}
-
-impl ProgressBarHandle {
-    fn new(length: u64) -> ProgressBarHandle {
-        let pb = indicatif::ProgressBar::new(length);
-        let (sender, receiver) = channel();
-
-        thread::spawn(move || {
-            eprintln!("Running tests:");
-            for msg in receiver.iter() {
-                if let Some(m) = msg {
-                    pb.println(format!("  - {}", m));
-                } else {
-                    pb.inc(1);
-                }
-            }
-        });
-
-        ProgressBarHandle {
-            ch: Mutex::new(sender),
-        }
-    }
-
-    fn start_test(&self, title: String) {
-        self.ch.lock().unwrap().send(Some(title)).unwrap();
-    }
-
-    fn end_test(&self) {
-        self.ch.lock().unwrap().send(None).unwrap();
-    }
 }

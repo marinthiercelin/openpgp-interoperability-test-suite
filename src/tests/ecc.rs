@@ -7,7 +7,7 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Expectation,
         Test,
@@ -90,8 +90,8 @@ impl ConsumerTest for EdDSASignatureEncoding {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("Elliptic Curve Cryptography");
-    report.add(Box::new(EdDSASignatureEncoding::new()?));
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    plan.add_section("Elliptic Curve Cryptography");
+    plan.add(Box::new(EdDSASignatureEncoding::new()?));
     Ok(())
 }

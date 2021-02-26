@@ -11,7 +11,7 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Expectation,
         Test,
@@ -357,11 +357,11 @@ impl ConsumerTest for MarkerPacket {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("Message structure");
-    report.add(Box::new(MessageStructure::new()?));
-    report.add(Box::new(RecursionDepth::new(7)?));
-    report.add(Box::new(MarkerPacket::new()?));
-    report.add(Box::new(unknown_packets::UnknownPackets::new()?));
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    plan.add_section("Message structure");
+    plan.add(Box::new(MessageStructure::new()?));
+    plan.add(Box::new(RecursionDepth::new(7)?));
+    plan.add(Box::new(MarkerPacket::new()?));
+    plan.add(Box::new(unknown_packets::UnknownPackets::new()?));
     Ok(())
 }

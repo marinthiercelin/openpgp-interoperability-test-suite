@@ -42,7 +42,7 @@ use crate::{
     Data,
     OpenPGP,
     Result,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Expectation,
         Test,
@@ -315,13 +315,13 @@ impl ConsumerTest for RevokedKey {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     use self::Flavor::*;
     use self::Revoked::*;
 
-    report.add_section("Revocations");
-    report.add(Box::new(RevokedKey::new(PrimarySigns, NotRevoked)?));
-    report.add(Box::new(RevokedKey::new(SubkeySignsPrimaryRevoked, NotRevoked)?));
+    plan.add_section("Revocations");
+    plan.add(Box::new(RevokedKey::new(PrimarySigns, NotRevoked)?));
+    plan.add(Box::new(RevokedKey::new(SubkeySignsPrimaryRevoked, NotRevoked)?));
 
     for &revocation in &[NoSubpacket,
                          Unspecified,
@@ -334,7 +334,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
         for &flavor in &[PrimarySigns,
                          SubkeySignsPrimaryRevoked,
                          SubkeySignsSubkeyRevoked] {
-            report.add(Box::new(RevokedKey::new(flavor, revocation)?));
+            plan.add(Box::new(RevokedKey::new(flavor, revocation)?));
         }
     }
 

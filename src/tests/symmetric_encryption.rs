@@ -13,7 +13,7 @@ use crate::{
     Data,
     Result,
     data,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Expectation,
         Test,
@@ -350,15 +350,15 @@ impl ConsumerTest for SEIPSupport {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     use openpgp::types::SymmetricAlgorithm::*;
     use openpgp::types::AEADAlgorithm::*;
 
-    report.add_section("Symmetric Encryption");
-    report.add(Box::new(SymmetricEncryptionSupport::new()?));
+    plan.add_section("Symmetric Encryption");
+    plan.add(Box::new(SymmetricEncryptionSupport::new()?));
 
     for &cipher in CIPHERS {
-        report.add(Box::new(
+        plan.add(Box::new(
             EncryptDecryptRoundtrip::with_cipher(
                 &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
                          cipher),
@@ -370,7 +370,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
     }
 
     for &aead_algo in &[EAX, OCB] {
-        report.add(Box::new(
+        plan.add(Box::new(
             EncryptDecryptRoundtrip::with_cipher(
                 &format!("Encrypt-Decrypt roundtrip with key 'Bob', {:?}",
                          aead_algo),
@@ -383,7 +383,7 @@ pub fn schedule(report: &mut Report) -> Result<()> {
                 Some(aead_algo))?));
     }
 
-    report.add(Box::new(SEIPSupport::new()?));
+    plan.add(Box::new(SEIPSupport::new()?));
 
     Ok(())
 }

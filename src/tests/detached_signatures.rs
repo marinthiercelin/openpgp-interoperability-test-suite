@@ -16,7 +16,7 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Expectation,
         Test,
@@ -918,24 +918,24 @@ impl ConsumerTest for LineBreakNormalizationTest {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("Detached Signatures");
-    report.add(Box::new(
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    plan.add_section("Detached Signatures");
+    plan.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Alice'",
             "Detached Sign-Verify roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
-    report.add(Box::new(
+    plan.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Bob'",
             "Detached Sign-Verify roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
             b"Hello, world!".to_vec().into_boxed_slice())?));
-    report.add(Box::new(DetachedSignatureSubpacket::new()?));
-    report.add(Box::new(LineBreakNormalizationTest::new()?));
-    report.add(Box::new(unknown_packets::UnknownPackets::new()?));
+    plan.add(Box::new(DetachedSignatureSubpacket::new()?));
+    plan.add(Box::new(LineBreakNormalizationTest::new()?));
+    plan.add(Box::new(unknown_packets::UnknownPackets::new()?));
     Ok(())
 }

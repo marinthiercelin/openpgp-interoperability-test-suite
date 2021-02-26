@@ -10,7 +10,7 @@ use crate::{
     OpenPGP,
     Result,
     Version,
-    templates::Report,
+    plan::TestPlan,
 };
 
 mod asymmetric_encryption;
@@ -362,17 +362,17 @@ pub fn extract_cert(key: &[u8]) -> Result<Data> {
     Ok(cert.into_boxed_slice())
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    asymmetric_encryption::schedule(report)?;
-    symmetric_encryption::schedule(report)?;
-    detached_signatures::schedule(report)?;
-    hashes::schedule(report)?;
-    compression::schedule(report)?;
-    key_generation::schedule(report)?;
-    certificates::schedule(report)?;
-    messages::schedule(report)?;
-    armor::schedule(report)?;
-    ecc::schedule(report)?;
-    packet_parser::schedule(report)?;
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    asymmetric_encryption::schedule(plan)?;
+    symmetric_encryption::schedule(plan)?;
+    detached_signatures::schedule(plan)?;
+    hashes::schedule(plan)?;
+    compression::schedule(plan)?;
+    key_generation::schedule(plan)?;
+    certificates::schedule(plan)?;
+    messages::schedule(plan)?;
+    armor::schedule(plan)?;
+    ecc::schedule(plan)?;
+    packet_parser::schedule(plan)?;
     Ok(())
 }

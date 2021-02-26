@@ -17,7 +17,7 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Expectation,
         Test,
@@ -548,20 +548,20 @@ impl ConsumerTest for PrimaryKeyFlags {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("Certificates");
-    report.add(Box::new(EncryptionKeyFlags::new()?));
-    report.add(Box::new(PrimaryKeyFlags::new()?));
-    report.add(Box::new(primary_key_binding::PrimaryKeyBinding::new()?));
-    report.add(Box::new(key_flags_composition::KeyFlagsComposition::new()?));
-    report.add(Box::new(perturbed_certs::PerturbedCerts::new()?));
-    report.add(Box::new(expiration::CertExpiration::new()?));
-    report.add(Box::new(detached_primary::DetachedPrimary::new()?));
-    report.add(Box::new(
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    plan.add_section("Certificates");
+    plan.add(Box::new(EncryptionKeyFlags::new()?));
+    plan.add(Box::new(PrimaryKeyFlags::new()?));
+    plan.add(Box::new(primary_key_binding::PrimaryKeyBinding::new()?));
+    plan.add(Box::new(key_flags_composition::KeyFlagsComposition::new()?));
+    plan.add(Box::new(perturbed_certs::PerturbedCerts::new()?));
+    plan.add(Box::new(expiration::CertExpiration::new()?));
+    plan.add(Box::new(detached_primary::DetachedPrimary::new()?));
+    plan.add(Box::new(
         binding_signature_subpackets::BindingSignatureSubpackets::new()?));
-    report.add(Box::new(im_my_own_grandpa::ImMyOwnGrandpa::new()?));
-    report.add(Box::new(temporary_validity::TemporaryValidity::new()?));
+    plan.add(Box::new(im_my_own_grandpa::ImMyOwnGrandpa::new()?));
+    plan.add(Box::new(temporary_validity::TemporaryValidity::new()?));
 
-    revoked_key::schedule(report)?;
+    revoked_key::schedule(plan)?;
     Ok(())
 }

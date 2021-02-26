@@ -7,7 +7,7 @@ use crate::{
     OpenPGP,
     Data,
     Result,
-    templates::Report,
+    plan::TestPlan,
     tests::{
         Test,
         TestMatrix,
@@ -91,18 +91,18 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
     }
 }
 
-pub fn schedule(report: &mut Report) -> Result<()> {
-    report.add_section("Key Generation");
+pub fn schedule(plan: &mut TestPlan) -> Result<()> {
+    plan.add_section("Key Generation");
 
-    report.add(Box::new(
+    plan.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip",
             &["Bernadette <b@example.org>"])));
-    report.add(Box::new(
+    plan.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip, 2 UIDs",
             &["Bernadette <b@example.org>", "Soo <s@example.org>"])));
-    report.add(Box::new(
+    plan.add(Box::new(
         GenerateThenEncryptDecryptRoundtrip::new(
             "Default key generation, encrypt-decrypt roundtrip, no UIDs",
             &[])));
