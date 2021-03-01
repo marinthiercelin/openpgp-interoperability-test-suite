@@ -79,6 +79,11 @@
 
       /* Chart code courtesy of https://codepen.io/Victa/pen/xDqbf */
       .chart {
+	  position: relative;
+	  margin-top: 2em;
+      }
+
+      .chart > ul {
 	  display: table;
 	  table-layout: fixed;
 	  width: 60%;
@@ -88,13 +93,13 @@
 	  background-size: 100% 49.8px;
 	  background-position: left 1px;
       }
-      .chart li {
+      .chart > ul > li {
 	  position: relative;
 	  display: table-cell;
 	  vertical-align: bottom;
 	  height: 200px;
       }
-      .chart > li > span {
+      .chart > ul > li > span {
 	  margin: 0 0.5em;
 	  display: block;
 	  background: rgba(209, 236, 250, 0.75);
@@ -111,7 +116,7 @@
 	  content: attr(title);
 	  word-wrap: break-word;
       }
-      .chart li > span > span {
+      .chart > ul li > span > span {
 	  position: absolute;
 	  left: 0;
 	  right: 0;
@@ -123,7 +128,7 @@
 	  word-wrap: break-word;
 	  transform: rotate(90deg);
       }
-      .chart li > span > span > span {
+      .chart > ul li > span > span > span {
 	  position: absolute;
 	  top: -0.5em;
 	  max-width: 200px;
@@ -137,6 +142,13 @@
 	      height: 0;
 	  }
       }
+
+      /* Chart labels */
+      .chart > span {
+	  position: absolute;
+	  color: rgba(0, 0, 0, 0.1);
+      }
+
       /* /Chart */
     </style>
   </head>
@@ -174,31 +186,45 @@
       implementation agrees with the test suite's expectations on all
       individual test vectors.
     </p>
-    <ul class="chart">
-      {%- for row in summary -%}
-      <li>
-	<span style="height: {{ row.1 | score_test_percentage }}%"
-	      title="{{ row.1 | score_test_summary }}">
-	  <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
-	</span>
-      </li>
-      {%- endfor -%}
-    </ul>
+    <div class="chart">
+      <span style="bottom: 100%">100%</span>
+      <span style="bottom: 75%">75%</span>
+      <span style="bottom: 50%">50%</span>
+      <span style="bottom: 25%">25%</span>
+      <span style="bottom: 0%">0%</span>
+      <ul>
+	{%- for row in summary -%}
+	<li>
+	  <span style="height: {{ row.1 | score_test_percentage }}%"
+		title="{{ row.1 | score_test_summary }}">
+	    <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
+	  </span>
+	</li>
+	{%- endfor -%}
+      </ul>
+    </div>
     <p>
       The second chart shows the percentage of individual test vectors
       where an implementation agrees with the test suite's
       expectations.
     </p>
-    <ul class="chart">
-      {%- for row in summary -%}
-      <li>
-	<span style="height: {{ row.1 | score_vector_percentage }}%"
-	      title="{{ row.1 | score_vector_summary }}">
-	  <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
-	</span>
-      </li>
-      {%- endfor -%}
-    </ul>
+    <div class="chart">
+      <span style="bottom: 100%">100%</span>
+      <span style="bottom: 75%">75%</span>
+      <span style="bottom: 50%">50%</span>
+      <span style="bottom: 25%">25%</span>
+      <span style="bottom: 0%">0%</span>
+      <ul>
+	{%- for row in summary -%}
+	<li>
+	  <span style="height: {{ row.1 | score_vector_percentage }}%"
+		title="{{ row.1 | score_vector_summary }}">
+	    <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
+	  </span>
+	</li>
+	{%- endfor -%}
+      </ul>
+    </div>
     <hr />
     <h1>Table of Contents</h1>
     <ol>
