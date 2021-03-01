@@ -178,7 +178,7 @@
       {%- for row in summary -%}
       <li>
 	<span style="height: {{ row.1 | score_test_percentage }}%"
-	      title="{{ row.1 | score_test_percentage }}%">
+	      title="{{ row.1 | score_test_summary }}">
 	  <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
 	</span>
       </li>
@@ -193,7 +193,7 @@
       {%- for row in summary -%}
       <li>
 	<span style="height: {{ row.1 | score_vector_percentage }}%"
-	      title="{{ row.1 | score_vector_percentage }}%">
+	      title="{{ row.1 | score_vector_summary }}">
 	  <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
 	</span>
       </li>

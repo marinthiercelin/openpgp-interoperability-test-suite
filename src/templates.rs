@@ -118,8 +118,12 @@ fn get() -> &'static tera::Tera {
             tera.register_filter("score2class", score2class);
             tera.register_filter("score_test_percentage",
                                  score_test_percentage);
+            tera.register_filter("score_test_summary",
+                                 score_test_summary);
             tera.register_filter("score_vector_percentage",
                                  score_vector_percentage);
+            tera.register_filter("score_vector_summary",
+                                 score_vector_summary);
             tera.register_function("dump_url", Box::new(dump_url));
             tera
         };
@@ -216,6 +220,20 @@ fn score_test_percentage(v: tera::Value,
     Ok(format!("{:0.2}", good / (good + bad) * 100.).into())
 }
 
+fn score_test_summary(v: tera::Value,
+                      _: std::collections::HashMap<String, tera::Value>)
+                      -> tera::Result<tera::Value> {
+    let s = v.as_object()
+        .expect("argument to score_test_percentage must be an object");
+    let good = s.get("test_good").expect("good value missing")
+        .as_f64().expect("good value not a number");
+    let bad = s.get("test_bad").expect("bad value missing")
+        .as_f64().expect("bad value not a number");
+    Ok(format!("{} of {}, or {:0.2}%",
+               good, good + bad,
+               good / (good + bad) * 100.).into())
+}
+
 fn score_vector_percentage(v: tera::Value,
                            _: std::collections::HashMap<String, tera::Value>)
                            -> tera::Result<tera::Value> {
@@ -226,6 +244,20 @@ fn score_vector_percentage(v: tera::Value,
     let bad = s.get("vector_bad").expect("bad value missing")
         .as_f64().expect("bad value not a number");
     Ok(format!("{:0.2}", good / (good + bad) * 100.).into())
+}
+
+fn score_vector_summary(v: tera::Value,
+                        _: std::collections::HashMap<String, tera::Value>)
+                        -> tera::Result<tera::Value> {
+    let s = v.as_object()
+        .expect("argument to score_vector_percentage must be an object");
+    let good = s.get("vector_good").expect("good value missing")
+        .as_f64().expect("good value not a number");
+    let bad = s.get("vector_bad").expect("bad value missing")
+        .as_f64().expect("bad value not a number");
+    Ok(format!("{} of {}, or {:0.2}%",
+               good, good + bad,
+               good / (good + bad) * 100.).into())
 }
 
 fn dump_url(_: std::collections::HashMap<String, tera::Value>)
