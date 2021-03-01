@@ -290,10 +290,12 @@ pub struct Summary {
 impl Summary {
     fn add(&mut self, imp: Version, good: usize, bad: usize, all_good: bool) {
         let e = self.score.entry(imp).or_default();
-        e.good += good;
-        e.bad += bad;
+        e.vector_good += good;
+        e.vector_bad += bad;
         if all_good {
-            e.all_good += 1;
+            e.test_good += 1;
+        } else {
+            e.test_bad += 1;
         }
     }
 
@@ -310,16 +312,16 @@ impl Summary {
 
 #[derive(Debug, Default, PartialEq, Eq, serde::Serialize)]
 pub struct Scores {
-    good: usize,
-    bad: usize,
-    all_good: usize,
+    vector_good: usize,
+    vector_bad: usize,
+    test_good: usize,
+    test_bad: usize,
 }
 
 impl Ord for Scores {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.all_good.cmp(&other.all_good)
-            .then(self.good.cmp(&other.good))
-            .then(self.bad.cmp(&other.bad).reverse())
+        self.test_good.cmp(&other.test_good)
+            .then(self.vector_good.cmp(&other.vector_good))
     }
 }
 

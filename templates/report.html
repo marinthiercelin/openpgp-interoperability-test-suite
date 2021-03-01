@@ -50,13 +50,6 @@
       }
       /* /Rotate table headings.  */
 
-      /* Summary table.  */
-      table.summary th, table.summary td {
-	  text-align: left;
-	  padding: 0.1em 1em;
-      }
-      /* /Summary table.  */
-
       pre { background-color: #eee; }
 
       .score-good {
@@ -83,6 +76,68 @@
       pre, code {
 	  background-color: #eee;
       }
+
+      /* Chart code courtesy of https://codepen.io/Victa/pen/xDqbf */
+      .chart {
+	  display: table;
+	  table-layout: fixed;
+	  width: 60%;
+	  height: 200px;
+	  margin-bottom: 230px;
+	  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.1) 2%, rgba(0, 0, 0, 0) 2%);
+	  background-size: 100% 49.8px;
+	  background-position: left 1px;
+      }
+      .chart li {
+	  position: relative;
+	  display: table-cell;
+	  vertical-align: bottom;
+	  height: 200px;
+      }
+      .chart > li > span {
+	  margin: 0 0.5em;
+	  display: block;
+	  background: rgba(209, 236, 250, 0.75);
+	  animation: draw 1s ease-in-out;
+      }
+      .chartX span:before {
+	  position: absolute;
+	  left: 0;
+	  right: 0;
+	  top: 100%;
+	  padding: 5px 1em 0;
+	  display: block;
+	  text-align: center;
+	  content: attr(title);
+	  word-wrap: break-word;
+      }
+      .chart li > span > span {
+	  position: absolute;
+	  left: 0;
+	  right: 0;
+	  top: 100%;
+	  padding: 5px 1em 0;
+	  display: block;
+	  text-align: center;
+	  content: attr(title);
+	  word-wrap: break-word;
+	  transform: rotate(90deg);
+      }
+      .chart li > span > span > span {
+	  position: absolute;
+	  top: -0.5em;
+	  max-width: 200px;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	  white-space: nowrap;
+      }
+
+      @keyframes draw {
+	  0% {
+	      height: 0;
+	  }
+      }
+      /* /Chart */
     </style>
   </head>
   <body>
@@ -108,41 +163,42 @@
     <hr />
     <h1><a name="summary"><a name="test-summary" href="#test-summary">Test Summary</a></a></h1>
     <p>
-      This table summarizes the above results.  Reducing the wealth of
+      These charts summarize the results.  Reducing the wealth of
       information to a set of numbers necessarily loses information,
       so take them with a grain of salt.  Nevertheless, these number
       provide an indication to what degree an implementation agrees
       with the expectations of this test suite.
     </p>
     <p>
-      The first number is the number of tests where the implementation
-      matched the test suite's expectations on all vectors of a given
-      test.
+      The first chart shows the percentage of tests where an
+      implementation agrees with the test suite's expectations on all
+      individual test vectors.
     </p>
-    <p>
-      The second number is the number of test vectors where the
-      implementation matched the test suite's expectations.
-    </p>
-    <p>
-      The third number is the number of test vectors where the
-      implementation did not match the test suite's expectations.
-    </p>
-    <table class="summary">
-      <tr>
-	<th>Implementation</th>
-	<th>Matched all</th>
-	<th>Matched</th>
-	<th>Mismatched</th>
-      </tr>
+    <ul class="chart">
       {%- for row in summary -%}
-      <tr>
-	<td>{{ row.0 }}</td>
-	<td>{{ row.1.all_good }}</td>
-	<td>{{ row.1.good }}</td>
-	<td>{{ row.1.bad }}</td>
-      </tr>
+      <li>
+	<span style="height: {{ row.1 | score_test_percentage }}%"
+	      title="{{ row.1 | score_test_percentage }}%">
+	  <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
+	</span>
+      </li>
       {%- endfor -%}
-    </table>
+    </ul>
+    <p>
+      The second chart shows the percentage of individual test vectors
+      where an implementation agrees with the test suite's
+      expectations.
+    </p>
+    <ul class="chart">
+      {%- for row in summary -%}
+      <li>
+	<span style="height: {{ row.1 | score_vector_percentage }}%"
+	      title="{{ row.1 | score_vector_percentage }}%">
+	  <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
+	</span>
+      </li>
+      {%- endfor -%}
+    </ul>
     <hr />
     <h1>Table of Contents</h1>
     <ol>
