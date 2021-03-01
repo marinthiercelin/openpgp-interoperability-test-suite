@@ -106,32 +106,6 @@
       useful.
     </p>
     <hr />
-    <h1>Table of Contents</h1>
-    <ol>
-      <li><a href="#how-to">How to read the test results</a></li>
-      <li>
-	<a href="#test-results">Test Results</a>
-	<ol>
-	  {%- for section in toc -%}
-	  <li><a href="#{{section.0.slug}}">{{section.0.title}}</a>
-	    <ol>
-	      {%- for entry in section.1 -%}
-	      <li><a href="#{{entry.slug}}">{{entry.title}}</a></li>
-	      {%- endfor -%}
-	    </ol>
-	  </li>
-	  {%- endfor -%}
-	</ol>
-      </li>
-      <li><a href="#test-summary">Test Summary</a></li>
-      <li><a href="#hall-of-fame">Hall of Fame</a></li>
-      <li><a href="#configuration">Configuration</a></li>
-    </ol>
-    <hr />
-    {% include "how-to.inc.html" %}
-    <h1><a name="test-results" href="#test-results">Test Results</a></h1>
-    {{body | safe}}
-    <hr />
     <h1><a name="summary"><a name="test-summary" href="#test-summary">Test Summary</a></a></h1>
     <p>
       This table summarizes the above results.  Reducing the wealth of
@@ -169,6 +143,32 @@
       </tr>
       {%- endfor -%}
     </table>
+    <hr />
+    <h1>Table of Contents</h1>
+    <ol>
+      <li><a href="#test-summary">Test Summary</a></li>
+      <li><a href="#how-to">How to read the test results</a></li>
+      <li>
+	<a href="#test-results">Test Results</a>
+	<ol>
+	  {%- for section in toc -%}
+	  <li><a href="#{{section.0.slug}}">{{section.0.title}}</a>
+	    <ol>
+	      {%- for entry in section.1 -%}
+	      <li><a href="#{{entry.slug}}">{{entry.title}}</a></li>
+	      {%- endfor -%}
+	    </ol>
+	  </li>
+	  {%- endfor -%}
+	</ol>
+      </li>
+      <li><a href="#hall-of-fame">Hall of Fame</a></li>
+      <li><a href="#configuration">Configuration</a></li>
+    </ol>
+    <hr />
+    {% include "how-to.inc.html" %}
+    <h1><a name="test-results" href="#test-results">Test Results</a></h1>
+    {{body | safe}}
     <hr />
     {% include "hall-of-fame.inc.html" %}
     <hr />
