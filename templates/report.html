@@ -4,11 +4,41 @@
     <meta charset="UTF-8">
     <title>{{title}}</title>
     <style>
-      main {
-	  margin: 3em auto;
-	  max-width: 1200px;
+      @media (max-width: 2000px) {
+	  main {
+	      margin: 3em auto;
+	      max-width: 1200px;
+	  }
       }
-      p, pre {
+
+      @media (min-width: 2000px) {
+	  main {
+	      margin-top: 3em;
+	      display: grid;
+	      grid-template-columns: 1fr max-content max-content 1fr;
+	      column-gap: 2em;
+	  }
+
+	  section {
+	      grid-column: 3;
+	  }
+	  nav {
+	      grid-column: 2;
+	      grid-row-start: 2;
+	      grid-row-end: 1000;
+	      align-self: start;
+	  }
+	  footer {
+	      grid-column-start: 1;
+	      grid-column-end: 5;
+	  }
+      }
+
+      footer {
+	  border-top: 1px solid black;
+      }
+
+      p, pre, section > div {
 	  max-width: 800px;
       }
 
@@ -142,6 +172,7 @@
   </head>
   <body>
    <main>
+   <section>
     <h1>{{title}}</h1>
     <p>
       These are the results of running the OpenPGP interoperability
@@ -160,7 +191,8 @@
       Note: The implementation doesn't have to be complete to be
       useful.
     </p>
-    <hr />
+   </section>
+   <section>
     <h1><a name="summary"><a name="test-summary" href="#test-summary">Test Summary</a></a></h1>
     <p>
       These charts summarize the results.  Reducing the wealth of
@@ -213,47 +245,55 @@
 	{%- endfor -%}
       </ul>
     </div>
-    <hr />
-    <h1>Table of Contents</h1>
-    <ol>
-      <li><a href="#test-summary">Test Summary</a></li>
-      <li><a href="#how-to">How to read the test results</a></li>
-      <li>
-	<a href="#test-results">Test Results</a>
-	<ol>
-	  {%- for section in toc -%}
-	  <li><a href="#{{section.0.slug}}">{{section.0.title}}</a>
-	    <ol>
-	      {%- for entry in section.1 -%}
-	      <li><a href="#{{entry.slug}}">{{entry.title}}</a></li>
-	      {%- endfor -%}
-	    </ol>
-	  </li>
-	  {%- endfor -%}
-	</ol>
-      </li>
-      <li><a href="#hall-of-fame">Hall of Fame</a></li>
-      <li><a href="#configuration">Configuration</a></li>
-    </ol>
-    <hr />
+   </section>
+    <nav>
+      <h1>Table of Contents</h1>
+      <ol>
+	<li><a href="#test-summary">Test Summary</a></li>
+	<li><a href="#how-to">How to read the test results</a></li>
+	<li>
+	  <a href="#test-results">Test Results</a>
+	  <ol>
+	    {%- for section in toc -%}
+	    <li><a href="#{{section.0.slug}}">{{section.0.title}}</a>
+	      <ol>
+		{%- for entry in section.1 -%}
+		<li><a href="#{{entry.slug}}">{{entry.title}}</a></li>
+		{%- endfor -%}
+	      </ol>
+	    </li>
+	    {%- endfor -%}
+	  </ol>
+	</li>
+	<li><a href="#hall-of-fame">Hall of Fame</a></li>
+	<li><a href="#configuration">Configuration</a></li>
+      </ol>
+    </nav>
+   <section>
     {% include "how-to.inc.html" %}
+   </section>
+   <section>
     <h1><a name="test-results" href="#test-results">Test Results</a></h1>
     {{body | safe}}
-    <hr />
+   </section>
+   <section>
     {% include "hall-of-fame.inc.html" %}
-    <hr />
+   </section>
+   <section>
     <h1><a name="configuration" href="#configuration">Configuration</a></h1>
     <p>
       This is the configuration used to produce this report:
     </p>
     <pre><code>{{configuration | json_encode(pretty=true)}}</code></pre>
-    <hr />
+   </section>
+   <footer>
     <p>
       OpenPGP interoperability test suite version {{version}}
       (<a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/commit/{{
 		commit }}">{{commit}}</a>) powered
       by <a href="https://sequoia-pgp.org">Sequoia-PGP</a>.
     </p>
+   </footer>
    </main>
   </body>
 </html>
