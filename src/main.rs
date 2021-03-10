@@ -153,7 +153,6 @@ pub struct Config {
 /// A driver configuration.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 struct Driver {
-    driver: String,
     path: String,
     #[serde(default)]
     env: std::collections::HashMap<String, String>,
@@ -174,12 +173,8 @@ impl Config {
     fn implementations(&self) -> Result<Vec<Box<dyn OpenPGP + Sync>>> {
         let mut r: Vec<Box<dyn OpenPGP + Sync>> = Vec::new();
         for d in self.drivers.iter() {
-            r.push(match d.driver.as_str() {
-                "sop" => Box::new(sop::Sop::new(&d.path, &d.env)
-                                 .context("Creating sop backend")?),
-                _ => return Err(anyhow::anyhow!("Unknown driver {:?}",
-                                                     d.driver)),
-            });
+            r.push(Box::new(sop::Sop::new(&d.path, &d.env)
+                            .context("Creating sop backend")?));
         }
         Ok(r)
     }

@@ -1,34 +1,7 @@
 {
   "drivers": [
     {
-      "driver": "sq",
-      "path": "/path/to/sq"
-    },
-    {
-      "driver": "sop",
-      "env": {
-        "GNUPG_BIN": "/usr/bin/gpg"
-      },
-      "path": "glue/gpg"
-    },
-    {
-      "driver": "sop",
-      "env": {
-        "GNUPG_BIN": "/usr/bin/gpg1"
-      },
-      "path": "glue/gpg"
-    },
-    {
-      "driver": "rnp",
-      "path": "/path/to/rnp/and/rnpkeys"
-    },
-    {
-      "driver": "dkgpg",
-      "path": "/path/to/dkgpg/distribution"
-    },
-    {
-      "driver": "sop",
-      "path": "glue/sopgpy"
+      "path": "/usr/bin/sqop"
     }
   ],
   "rlimits": {
