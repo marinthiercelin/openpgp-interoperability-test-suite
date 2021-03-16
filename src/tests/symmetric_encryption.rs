@@ -209,8 +209,9 @@ impl Test for SEIPSupport {
     fn description(&self) -> String {
         "This tests support for the Symmetrically Encrypted Integrity \
          Protected Data Packet (Tag 18) and verifies that modifications to \
-         the ciphertext are detected.  It uses Sequoia to generate the \
-         artifacts.".into()
+         the ciphertext are detected.  To avoid creating a decryption \
+         oracle, implementations must respond with a uniform error message \
+         to tampering.".into()
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
@@ -338,6 +339,66 @@ impl ConsumerTest for SEIPSupport {
             panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
         }
         t.push(make("Tampered MDC", &packets.to_vec()?,
+                    Some(Err("Security concern: Tampering must be prevented."
+                             .into())))?);
+
+        // Truncated MDC.
+        let mut packets = PacketPile::from_bytes(&buf)?;
+        if let Some(Packet::SEIP(seip)) = packets.path_ref_mut(&[1]) {
+            let tampered = if let Body::Unprocessed(ciphertext) = seip.body() {
+                let mut body = ciphertext.clone();
+                let l = body.len();
+                body.truncate(l - 1);
+                Body::Unprocessed(body)
+            } else {
+                panic!("Unexpected packet body");
+                // XXX: panic!("Unexpected packet body: {:?}", seip.body());
+            };
+            seip.set_body(tampered);
+        } else {
+            panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
+        }
+        t.push(make("Truncated MDC", &packets.to_vec()?,
+                    Some(Err("Security concern: Tampering must be prevented."
+                             .into())))?);
+
+        // MDC with bad CTB.
+        let mut packets = PacketPile::from_bytes(&buf)?;
+        if let Some(Packet::SEIP(seip)) = packets.path_ref_mut(&[1]) {
+            let tampered = if let Body::Unprocessed(ciphertext) = seip.body() {
+                let mut body = ciphertext.clone();
+                let l = body.len();
+                body[l - 22] ^= 0x01;
+                Body::Unprocessed(body)
+            } else {
+                panic!("Unexpected packet body");
+                // XXX: panic!("Unexpected packet body: {:?}", seip.body());
+            };
+            seip.set_body(tampered);
+        } else {
+            panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
+        }
+        t.push(make("MDC with bad CTB", &packets.to_vec()?,
+                    Some(Err("Security concern: Tampering must be prevented."
+                             .into())))?);
+
+        // MDC with bad length.
+        let mut packets = PacketPile::from_bytes(&buf)?;
+        if let Some(Packet::SEIP(seip)) = packets.path_ref_mut(&[1]) {
+            let tampered = if let Body::Unprocessed(ciphertext) = seip.body() {
+                let mut body = ciphertext.clone();
+                let l = body.len();
+                body[l - 21] ^= 0x01;
+                Body::Unprocessed(body)
+            } else {
+                panic!("Unexpected packet body");
+                // XXX: panic!("Unexpected packet body: {:?}", seip.body());
+            };
+            seip.set_body(tampered);
+        } else {
+            panic!("Unexpected packet at [1]: {:?}", packets.path_ref(&[1]));
+        }
+        t.push(make("MDC with bad length", &packets.to_vec()?,
                     Some(Err("Security concern: Tampering must be prevented."
                              .into())))?);
 
