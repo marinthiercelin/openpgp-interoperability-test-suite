@@ -35,6 +35,7 @@ mod detached_primary;
 mod binding_signature_subpackets;
 mod im_my_own_grandpa;
 mod temporary_validity;
+mod mock_mceliece;
 
 fn make_test<I, P>(test: &str, packets: I,
              expectation: Option<Expectation>)
@@ -561,6 +562,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
         binding_signature_subpackets::BindingSignatureSubpackets::new()?));
     plan.add(Box::new(im_my_own_grandpa::ImMyOwnGrandpa::new()?));
     plan.add(Box::new(temporary_validity::TemporaryValidity::new()?));
+    plan.add(Box::new(mock_mceliece::MockMcEliece::new()?));
 
     revoked_key::schedule(plan)?;
     Ok(())
