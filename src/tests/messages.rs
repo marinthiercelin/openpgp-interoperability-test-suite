@@ -20,6 +20,7 @@ use crate::{
 
 mod unknown_packets;
 mod marker;
+mod trust;
 
 /// Tests various conforming, but unusual message structures.
 struct MessageStructure {
@@ -218,6 +219,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     plan.add(Box::new(MessageStructure::new()?));
     plan.add(Box::new(RecursionDepth::new(7)?));
     plan.add(Box::new(marker::MarkerPacket::new()?));
+    plan.add(Box::new(trust::TrustPacket::new()?));
     plan.add(Box::new(unknown_packets::UnknownPackets::new()?));
     Ok(())
 }
