@@ -1,5 +1,7 @@
 use std::time::{Duration, SystemTime};
 
+use anyhow::Context;
+
 use sequoia_openpgp as openpgp;
 use openpgp::{
     armor,
@@ -36,11 +38,13 @@ use crate::{
 
 /// Explores how detached primary keys are handled.
 pub struct DetachedPrimary {
+    cert: Data,
 }
 
 impl DetachedPrimary {
     pub fn new() -> Result<DetachedPrimary> {
         Ok(DetachedPrimary {
+            cert: Self::make_cert()?,
         })
     }
 
@@ -48,8 +52,8 @@ impl DetachedPrimary {
         "Hello World :)".as_bytes()
     }
 
-    // Returns the Bob certificate modified to have a signing subkey.
-    fn cert(&self) -> Result<Data> {
+    /// Returns the Bob certificate modified to have a signing subkey.
+    fn make_cert() -> Result<Data> {
         let half_a_year_ago =
             SystemTime::now() - Duration::new(60 * 60 * 24 * 365 / 2, 0);
 
@@ -129,6 +133,10 @@ impl Test for DetachedPrimary {
           signature with the resulting key structure.  The signature \
           is over the string <code>{}</code>.</p>",
           String::from_utf8(self.message().into()).unwrap())
+    }
+
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![("Cert".into(), self.cert.clone())]
     }
 
     fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
@@ -297,8 +305,10 @@ impl ConsumerTest for DetachedPrimary {
 
     fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        let sig = pgp.sign_detached(artifact, self.message())?;
+        let sig = pgp.sign_detached(artifact, self.message())
+            .context("Signing failed")?;
         pgp.new_context()?
-            .verify_detached(&self.cert()?, self.message(), &sig)
+            .verify_detached(&self.cert, self.message(), &sig)
+            .context("Verification failed")
     }
 }
