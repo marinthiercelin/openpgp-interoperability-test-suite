@@ -333,7 +333,7 @@ impl ConsumerTest for TemporaryValidity {
         ])
     }
 
-    fn consume(&self, i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let cert = &*self.certs[i / 4];
         // XXX: Unfortunately, we need to use verify_raw for now

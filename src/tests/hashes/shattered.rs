@@ -71,7 +71,7 @@ impl ConsumerTest for Shattered {
 
     }
 
-    fn consume(&self, i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let message = match i {
             0 => b"Hello World :)",

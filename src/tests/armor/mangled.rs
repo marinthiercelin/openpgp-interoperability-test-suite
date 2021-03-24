@@ -264,7 +264,7 @@ impl ConsumerTest for MangledArmoredKey {
         mangle_armor(data::certificate("bob-secret.pgp"))
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let ciphertext = pgp.encrypt(data::certificate("bob.pgp"),
                                      self.message())
@@ -326,7 +326,7 @@ impl ConsumerTest for MangledArmoredCert {
         mangle_armor(data::certificate("bob.pgp"))
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let ciphertext = pgp.encrypt(artifact, self.message())
             .context("Encryption failed")?;
@@ -406,7 +406,7 @@ impl ConsumerTest for MangledArmoredCiphertext {
         mangle_armor(sink)
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
             .context("Decryption failed")
@@ -487,7 +487,7 @@ impl ConsumerTest for MangledArmoredSignature {
         mangle_armor(sink)
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.verify_detached(data::certificate("bob.pgp"), self.message(),
                             artifact)

@@ -44,7 +44,7 @@ type Expectation = std::result::Result<String, String>;
 /// Checks that artifacts can be used by all implementations.
 pub trait ConsumerTest : Test {
     fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>>;
-    fn consume(&self, i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data>;
     fn check_consumer(&self, _i: usize, _artifact: &[u8])
                       -> Result<()> {
@@ -61,8 +61,8 @@ pub trait ConsumerTest : Test {
 
             let mut results = Vec::new();
             for consumer in implementations.iter() {
-                let mut c = consumer.new_context()?;
-                let plaintext = self.consume(i, c.as_mut(), &artifact.data);
+                let c = consumer.new_context()?;
+                let plaintext = self.consume(i, c.as_ref(), &artifact.data);
                 let mut a = match plaintext {
                     Ok(p) =>
                         Artifact::ok(c.version()?.to_string(), p),
@@ -103,11 +103,11 @@ pub trait ConsumerTest : Test {
 /// Checks that artifacts produced by one implementation can be used
 /// by another.
 pub trait ProducerConsumerTest : Test {
-    fn produce(&self, pgp: &mut dyn OpenPGP) -> Result<Data>;
+    fn produce(&self, pgp: &dyn OpenPGP) -> Result<Data>;
     fn check_producer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn consume(&self,
-               producer: &mut dyn OpenPGP,
-               consumer: &mut dyn OpenPGP,
+               producer: &dyn OpenPGP,
+               consumer: &dyn OpenPGP,
                artifact: &[u8]) -> Result<Data>;
     fn check_consumer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn expectation(&self) -> Option<Expectation> {
@@ -119,8 +119,8 @@ pub trait ProducerConsumerTest : Test {
 
         for producer in implementations.iter() {
             let expectation = self.expectation();
-            let mut p = producer.new_context()?;
-            let mut artifact = match self.produce(p.as_mut()) {
+            let p = producer.new_context()?;
+            let mut artifact = match self.produce(p.as_ref()) {
                 Ok(d) => Artifact::ok(p.version()?.to_string(), d),
                 Err(e) => Artifact::err(p.version()?.to_string(),
                                         Default::default(), e),
@@ -134,10 +134,10 @@ pub trait ProducerConsumerTest : Test {
             let mut results = Vec::new();
             if artifact.error.len() == 0 {
                 for consumer in implementations.iter() {
-                    let mut p = producer.new_context()?;
-                    let mut c = consumer.new_context()?;
+                    let p = producer.new_context()?;
+                    let c = consumer.new_context()?;
                     let plaintext =
-                        self.consume(p.as_mut(), c.as_mut(),
+                        self.consume(p.as_ref(), c.as_ref(),
                                      &artifact.data);
                     let mut a = match plaintext {
                         Ok(p) =>

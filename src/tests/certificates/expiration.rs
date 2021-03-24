@@ -327,7 +327,7 @@ impl ConsumerTest for CertExpiration {
         ])
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let ciphertext = pgp.encrypt(artifact, self.message())?;
         pgp.new_context()?

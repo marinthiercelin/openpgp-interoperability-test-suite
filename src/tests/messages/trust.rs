@@ -138,7 +138,7 @@ impl ConsumerTest for TrustPacket {
         }])
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         // Peek at the data to decide what to do.
         let pp = openpgp::PacketPile::from_bytes(artifact)?;

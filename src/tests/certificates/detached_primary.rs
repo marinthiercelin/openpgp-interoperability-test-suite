@@ -303,7 +303,7 @@ impl ConsumerTest for DetachedPrimary {
         ])
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let sig = pgp.sign_detached(artifact, self.message())
             .context("Signing failed")?;

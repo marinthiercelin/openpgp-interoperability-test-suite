@@ -140,7 +140,7 @@ impl ConsumerTest for RecipientIDs {
         Ok(t)
     }
 
-    fn consume(&self, _i: usize, pgp: &mut dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         pgp.decrypt(data::certificate("bob-secret.pgp"), artifact)
     }

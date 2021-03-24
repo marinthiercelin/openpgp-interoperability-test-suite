@@ -104,7 +104,7 @@ impl Test for EncryptDecryptRoundtrip {
 }
 
 impl ProducerConsumerTest for EncryptDecryptRoundtrip {
-    fn produce(&self, pgp: &mut dyn OpenPGP)
+    fn produce(&self, pgp: &dyn OpenPGP)
                -> Result<Data> {
         pgp.encrypt(&self.cert, &self.message)
     }
@@ -171,8 +171,8 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
     }
 
     fn consume(&self,
-               _producer: &mut dyn OpenPGP,
-               consumer: &mut dyn OpenPGP,
+               _producer: &dyn OpenPGP,
+               consumer: &dyn OpenPGP,
                artifact: &[u8])
                -> Result<Data> {
         consumer.decrypt(&self.key, &artifact)
