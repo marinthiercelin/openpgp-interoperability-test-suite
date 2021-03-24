@@ -60,8 +60,7 @@ pub trait ConsumerTest : Test {
             let artifact = Artifact::ok(description, data);
 
             let mut results = Vec::new();
-            for consumer in implementations.iter() {
-                let c = consumer.new_context()?;
+            for c in implementations.iter() {
                 let plaintext = self.consume(i, c.as_ref(), &artifact.data);
                 let mut a = match plaintext {
                     Ok(p) =>
@@ -117,9 +116,8 @@ pub trait ProducerConsumerTest : Test {
     {
         let mut test_results = Vec::new();
 
-        for producer in implementations.iter() {
+        for p in implementations.iter() {
             let expectation = self.expectation();
-            let p = producer.new_context()?;
             let mut artifact = match self.produce(p.as_ref()) {
                 Ok(d) => Artifact::ok(p.version()?.to_string(), d),
                 Err(e) => Artifact::err(p.version()?.to_string(),
@@ -133,9 +131,7 @@ pub trait ProducerConsumerTest : Test {
 
             let mut results = Vec::new();
             if artifact.error.len() == 0 {
-                for consumer in implementations.iter() {
-                    let p = producer.new_context()?;
-                    let c = consumer.new_context()?;
+                for c in implementations.iter() {
                     let plaintext =
                         self.consume(p.as_ref(), c.as_ref(),
                                      &artifact.data);

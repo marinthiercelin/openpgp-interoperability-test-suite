@@ -307,8 +307,7 @@ impl ConsumerTest for DetachedPrimary {
                -> Result<Data> {
         let sig = pgp.sign_detached(artifact, self.message())
             .context("Signing failed")?;
-        pgp.new_context()?
-            .verify_detached(&self.cert, self.message(), &sig)
+        pgp.verify_detached(&self.cert, self.message(), &sig)
             .context("Verification failed")
     }
 }

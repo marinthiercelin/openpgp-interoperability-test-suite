@@ -201,8 +201,7 @@ impl ConsumerTest for PerturbedCerts {
     fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let ciphertext = pgp.encrypt(artifact, self.message())?;
-        pgp.new_context()?
-            .decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
+        pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
     }
 
     fn check_consumer(&self, _i: usize, artifact: &[u8])

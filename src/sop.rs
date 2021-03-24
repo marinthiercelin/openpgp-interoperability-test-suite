@@ -434,11 +434,6 @@ impl crate::OpenPGP for Sop {
         self
     }
 
-    fn new_context(&self) -> Result<Box<dyn crate::OpenPGP>> {
-        Self::new(&self.sop, &self.env)
-            .map(|i| -> Box<dyn crate::OpenPGP> { Box::new(i) })
-    }
-
     fn version(&self) -> Result<crate::Version> {
         Sop::version(self)
     }

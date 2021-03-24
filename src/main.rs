@@ -125,7 +125,6 @@ impl<'de> serde::Deserialize<'de> for Data {
 /// interface.
 pub trait OpenPGP: std::fmt::Debug {
     fn sop(&self) -> &Sop;
-    fn new_context(&self) -> Result<Box<dyn OpenPGP>>;
     fn version(&self) -> Result<Version>;
     fn encrypt(&self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
     fn decrypt(&self, recipient: &[u8], ciphertext: &[u8]) -> Result<Data>;
