@@ -127,17 +127,17 @@ pub trait OpenPGP: std::fmt::Debug {
     fn sop(&self) -> &Sop;
     fn new_context(&self) -> Result<Box<dyn OpenPGP>>;
     fn version(&self) -> Result<Version>;
-    fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
-    fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8]) -> Result<Data>;
-    fn sign_detached(&mut self, _signer: &[u8], _data: &[u8]) -> Result<Data> {
+    fn encrypt(&self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
+    fn decrypt(&self, recipient: &[u8], ciphertext: &[u8]) -> Result<Data>;
+    fn sign_detached(&self, _signer: &[u8], _data: &[u8]) -> Result<Data> {
         Err(Error::NotImplemented.into())
     }
-    fn verify_detached(&mut self, _signer: &[u8], _data: &[u8], _sig: &[u8])
+    fn verify_detached(&self, _signer: &[u8], _data: &[u8], _sig: &[u8])
                        -> Result<Data>
     {
         Err(Error::NotImplemented.into())
     }
-    fn generate_key(&mut self, _userids: &[&str]) -> Result<Data> {
+    fn generate_key(&self, _userids: &[&str]) -> Result<Data> {
         Err(Error::NotImplemented.into())
     }
 }

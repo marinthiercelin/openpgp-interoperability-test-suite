@@ -443,30 +443,30 @@ impl crate::OpenPGP for Sop {
         Sop::version(self)
     }
 
-    fn encrypt(&mut self, recipient: &[u8], plaintext: &[u8])
+    fn encrypt(&self, recipient: &[u8], plaintext: &[u8])
                -> Result<Data> {
         Sop::encrypt(self, false, EncryptAs::Binary, None, None,
                      vec![recipient], plaintext)
     }
 
-    fn decrypt(&mut self, recipient: &[u8], ciphertext: &[u8])
+    fn decrypt(&self, recipient: &[u8], ciphertext: &[u8])
                -> Result<Data> {
         Sop::decrypt_raw(self, None, None, None, None, None, None, None,
                          vec![recipient], ciphertext)
     }
 
-    fn sign_detached(&mut self, signer: &[u8], data: &[u8])
+    fn sign_detached(&self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
         Sop::sign(self, false, SignAs::Binary, vec![signer], data)
     }
 
-    fn verify_detached(&mut self, signer: &[u8], data: &[u8],
+    fn verify_detached(&self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
         Sop::verify_raw(self, None, None, sig, vec![signer], data)
     }
 
-    fn generate_key(&mut self, userids: &[&str]) -> Result<Data> {
+    fn generate_key(&self, userids: &[&str]) -> Result<Data> {
         Sop::generate_key(self, false, userids.iter().cloned())
     }
 }
