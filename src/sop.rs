@@ -159,18 +159,21 @@ impl Sop {
     }
 
     /// Creates Detached Signatures.
-    pub fn sign<'k>(&self,
-                    no_armor: bool,
-                    as_: SignAs,
-                    keys: impl IntoIterator<Item = &'k [u8]>,
-                    data: &[u8])
-                    -> Result<Data> {
+    pub fn sign<'k, AS>(&self,
+                        no_armor: bool,
+                        as_: AS,
+                        keys: impl IntoIterator<Item = &'k [u8]>,
+                        data: &[u8])
+                        -> Result<Data>
+    where AS: Into<Option<SignAs>>,
+    {
         let mut tmp = Vec::new();
         let mut args = vec!["sign".to_string()];
         if no_armor {
             args.push("--no-armor".into());
         }
 
+        let as_ = as_.into().unwrap_or_default();
         if let SignAs::Binary = as_ {
             // This is the default.  Omit it as a courtesy to
             // implementations that do not implement this parameter.
@@ -239,20 +242,24 @@ impl Sop {
     }
 
     /// Encrypts a Message.
-    pub fn encrypt<'p, 's, 'c>(&self,
-                               no_armor: bool,
-                               as_: EncryptAs,
-                               with_password: impl IntoIterator<Item = &'p str>,
-                               sign_with: impl IntoIterator<Item = &'s [u8]>,
-                               certs: impl IntoIterator<Item = &'c [u8]>,
-                               plaintext: &[u8])
-                               -> Result<Data> {
+    pub fn encrypt<'p, 's, 'c, AS>(
+        &self,
+        no_armor: bool,
+        as_: AS,
+        with_password: impl IntoIterator<Item = &'p str>,
+        sign_with: impl IntoIterator<Item = &'s [u8]>,
+        certs: impl IntoIterator<Item = &'c [u8]>,
+        plaintext: &[u8])
+        -> Result<Data>
+    where AS: Into<Option<EncryptAs>>,
+    {
         let mut tmp = Vec::new();
         let mut args = vec!["encrypt".to_string()];
         if no_armor {
             args.push("--no-armor".into());
         }
 
+        let as_ = as_.into().unwrap_or_default();
         if let EncryptAs::Binary = as_ {
             // This is the default.  Omit it as a courtesy to
             // implementations that do not implement this parameter.
@@ -407,9 +414,12 @@ impl Sop {
     }
 
     /// Converts binary OpenPGP data to ASCII
-    pub fn armor(&self, label: ArmorKind, data: &[u8]) -> Result<Data> {
+    pub fn armor<L>(&self, label: L, data: &[u8]) -> Result<Data>
+        where L: Into<Option<ArmorKind>>,
+    {
         let mut args = vec!["armor".to_string()];
 
+        let label = label.into().unwrap_or_default();
         if let ArmorKind::Auto = label {
             // This is the default.  Omit it as a courtesy to
             // implementations that do not implement this parameter.
@@ -440,7 +450,7 @@ impl crate::OpenPGP for Sop {
 
     fn encrypt(&self, recipient: &[u8], plaintext: &[u8])
                -> Result<Data> {
-        Sop::encrypt(self, false, EncryptAs::Binary, None, None,
+        Sop::encrypt(self, false, None, None, None,
                      vec![recipient], plaintext)
     }
 
@@ -452,7 +462,7 @@ impl crate::OpenPGP for Sop {
 
     fn sign_detached(&self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
-        Sop::sign(self, false, SignAs::Binary, vec![signer], data)
+        Sop::sign(self, false, None, vec![signer], data)
     }
 
     fn verify_detached(&self, signer: &[u8], data: &[u8],
@@ -518,6 +528,12 @@ pub enum SignAs {
     Text,
 }
 
+impl Default for SignAs {
+    fn default() -> Self {
+        SignAs::Binary
+    }
+}
+
 impl std::str::FromStr for SignAs {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self> {
@@ -544,6 +560,12 @@ pub enum EncryptAs {
     Binary,
     Text,
     MIME,
+}
+
+impl Default for EncryptAs {
+    fn default() -> Self {
+        EncryptAs::Binary
+    }
 }
 
 impl std::str::FromStr for EncryptAs {
@@ -576,6 +598,12 @@ pub enum ArmorKind {
     Key,
     Cert,
     Message,
+}
+
+impl Default for ArmorKind {
+    fn default() -> Self {
+        ArmorKind::Auto
+    }
 }
 
 impl std::str::FromStr for ArmorKind {
