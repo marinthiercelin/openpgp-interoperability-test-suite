@@ -43,7 +43,7 @@ impl Test for GenerateThenEncryptDecryptRoundtrip {
         finally <i>P</i> to decrypt the message.".into()
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix> {
+    fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix> {
         ProducerConsumerTest::run(self, implementations)
     }
 }

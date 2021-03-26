@@ -2,7 +2,6 @@ use rayon::prelude::*;
 
 use crate::{
     Config,
-    OpenPGP,
     Result,
     progress_bar::ProgressBarHandle,
     tests::{
@@ -41,7 +40,7 @@ impl<'a> TestPlan<'a> {
         }
     }
 
-    pub fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    pub fn run(&self, implementations: &[crate::Sop])
                -> Result<Results>
     {
         let pb = ProgressBarHandle::new(

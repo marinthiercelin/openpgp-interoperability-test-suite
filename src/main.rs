@@ -169,11 +169,11 @@ impl Config {
         Ok(())
     }
 
-    fn implementations(&self) -> Result<Vec<Box<dyn OpenPGP + Sync>>> {
-        let mut r: Vec<Box<dyn OpenPGP + Sync>> = Vec::new();
+    fn implementations(&self) -> Result<Vec<crate::Sop>> {
+        let mut r: Vec<crate::Sop> = Vec::new();
         for d in self.drivers.iter() {
-            r.push(Box::new(sop::Sop::new(&d.path, &d.env)
-                            .context("Creating sop backend")?));
+            r.push(sop::Sop::new(&d.path, &d.env)
+                   .context("Creating sop backend")?);
         }
         Ok(r)
     }

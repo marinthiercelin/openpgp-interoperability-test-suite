@@ -41,7 +41,7 @@ impl Test for Shattered {
     }
 
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }

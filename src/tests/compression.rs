@@ -43,7 +43,7 @@ impl Test for CompressionSupport {
         vec![("Certificate".into(), data::certificate("bob.pgp").into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }

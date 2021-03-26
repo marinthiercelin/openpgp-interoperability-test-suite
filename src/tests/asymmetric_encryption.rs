@@ -98,7 +98,7 @@ impl Test for EncryptDecryptRoundtrip {
         vec![("Certificate".into(), self.cert.clone().into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix> {
+    fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix> {
         ProducerConsumerTest::run(self, implementations)
     }
 }

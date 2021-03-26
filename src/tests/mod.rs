@@ -35,7 +35,7 @@ pub trait Test {
     fn artifacts(&self) -> Vec<(String, Data)> {
         Vec::with_capacity(0)
     }
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>;
+    fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix>;
 }
 
 /// States the expected result of a test.
@@ -50,7 +50,7 @@ pub trait ConsumerTest : Test {
                       -> Result<()> {
         Ok(())
     }
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>
+    fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix>
     {
         let mut test_results = Vec::new();
 
@@ -61,7 +61,7 @@ pub trait ConsumerTest : Test {
 
             let mut results = Vec::new();
             for c in implementations.iter() {
-                let plaintext = self.consume(i, c.as_ref(), &artifact.data);
+                let plaintext = self.consume(i, c, &artifact.data);
                 let mut a = match plaintext {
                     Ok(p) =>
                         Artifact::ok(c.version()?.to_string(), p),
@@ -112,13 +112,13 @@ pub trait ProducerConsumerTest : Test {
     fn expectation(&self) -> Option<Expectation> {
         Some(Ok("Interoperability concern.".into()))
     }
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix>
+    fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix>
     {
         let mut test_results = Vec::new();
 
         for p in implementations.iter() {
             let expectation = self.expectation();
-            let mut artifact = match self.produce(p.as_ref()) {
+            let mut artifact = match self.produce(p) {
                 Ok(d) => Artifact::ok(p.version()?.to_string(), d),
                 Err(e) => Artifact::err(p.version()?.to_string(),
                                         Default::default(), e),
@@ -133,7 +133,7 @@ pub trait ProducerConsumerTest : Test {
             if artifact.error.len() == 0 {
                 for c in implementations.iter() {
                     let plaintext =
-                        self.consume(p.as_ref(), c.as_ref(),
+                        self.consume(p, c,
                                      &artifact.data);
                     let mut a = match plaintext {
                         Ok(p) =>

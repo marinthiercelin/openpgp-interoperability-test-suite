@@ -253,7 +253,7 @@ impl Test for MangledArmoredKey {
           String::from_utf8(self.message().into()).unwrap())
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
@@ -315,7 +315,7 @@ impl Test for MangledArmoredCert {
           String::from_utf8(self.message().into()).unwrap())
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
@@ -377,7 +377,7 @@ impl Test for MangledArmoredCiphertext {
           String::from_utf8(self.message().into()).unwrap())
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
@@ -455,7 +455,7 @@ impl Test for MangledArmoredSignature {
           String::from_utf8(self.message().into()).unwrap())
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }

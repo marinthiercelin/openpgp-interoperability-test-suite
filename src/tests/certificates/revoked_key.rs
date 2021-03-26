@@ -268,7 +268,7 @@ Timeline:   v
         vec![("Certificate".into(), self.key().into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }

@@ -111,7 +111,7 @@ impl Test for EncryptionKeyFlags {
             self.keyid_a, self.keyid_b)
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
@@ -341,7 +341,7 @@ impl Test for PrimaryKeyFlags {
             .into()
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }

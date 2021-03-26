@@ -73,7 +73,7 @@ impl Test for SymmetricEncryptionSupport {
         vec![("Certificate".into(), data::certificate("bob.pgp").into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
@@ -218,7 +218,7 @@ impl Test for SEIPSupport {
         vec![("Certificate".into(), data::certificate("bob-secret.pgp").into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }

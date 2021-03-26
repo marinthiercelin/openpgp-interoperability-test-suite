@@ -54,7 +54,7 @@ impl Test for DetachedSignatureSubpacket {
         vec![("Certificate".into(), data::certificate("bob.pgp").into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
@@ -682,7 +682,7 @@ impl Test for DetachedSignVerifyRoundtrip {
         vec![("Certificate".into(), self.cert.clone().into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>]) -> Result<TestMatrix> {
+    fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix> {
         ProducerConsumerTest::run(self, implementations)
     }
 }
@@ -850,7 +850,7 @@ impl Test for LineBreakNormalizationTest {
         vec![("Certificate".into(), data::certificate("bob.pgp").into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }

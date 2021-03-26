@@ -47,7 +47,7 @@ impl Test for MessageStructure {
         vec![("Certificate".into(), data::certificate("bob-secret.pgp").into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
@@ -158,7 +158,7 @@ impl Test for RecursionDepth {
         vec![("Certificate".into(), data::certificate("bob-secret.pgp").into())]
     }
 
-    fn run(&self, implementations: &[Box<dyn OpenPGP + Sync>])
+    fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)
     }
