@@ -40,6 +40,18 @@ impl<'a> TestPlan<'a> {
         }
     }
 
+    /// Retains only the tests specified by the predicate.
+    ///
+    /// Prunes empty sections.
+    pub fn retain_tests<F>(&mut self, mut f: F)
+    where F: FnMut(&dyn Test) -> bool,
+    {
+        for (_section, tests) in &mut self.toc {
+            tests.retain(|t| f(t.as_ref()));
+        }
+        self.toc.retain(|(_section, tests)| ! tests.is_empty());
+    }
+
     pub fn run(&self, implementations: &[crate::Sop])
                -> Result<Results>
     {

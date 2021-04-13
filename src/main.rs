@@ -190,6 +190,11 @@ pub struct Cli {
     #[structopt(long)]
     json_in: Option<PathBuf>,
 
+    /// Prunes the tests, retaining those matching the given regular
+    /// expression.
+    #[structopt(long)]
+    retain_tests: Option<String>,
+
     /// Write results to a JSON file.
     #[structopt(long)]
     json_out: Option<PathBuf>,
@@ -207,8 +212,15 @@ fn main() -> anyhow::Result<()> {
             Err(anyhow::anyhow!("Neither --json-out nor --html-out is given."));
     }
 
+    let retain_tests = if let Some(r) = cli.retain_tests.as_ref() {
+        Some(regex::RegexBuilder::new(r).case_insensitive(true).build()?)
+    } else {
+        None
+    };
+
     let results = if let Some(p) = cli.json_in.as_ref() {
         serde_json::from_reader(fs::File::open(p)?)?
+        // XXX prune results
     } else {
         let c: Config =
             serde_json::from_reader(
@@ -226,6 +238,14 @@ fn main() -> anyhow::Result<()> {
 
         let mut plan = plan::TestPlan::new(&c);
         tests::schedule(&mut plan)?;
+
+        if let Some(r) = retain_tests {
+            plan.retain_tests(|t| {
+                r.is_match(&t.title())
+                    || r.is_match(&t.description())
+            });
+        }
+
         plan.run(&implementations[..])?
     };
 

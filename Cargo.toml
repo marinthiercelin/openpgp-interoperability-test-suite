@@ -21,6 +21,7 @@ chrono = { version = "0.4", features = ["serde"] }
 indicatif = { version = "0.12" }
 lazy_static = "1.4"
 rayon = "1.2"
+regex = "1"
 rlimit = "0.2.1"
 sequoia-openpgp = "1"
 serde = { version = "1.0", features = ["derive"] }
