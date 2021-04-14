@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>{{title}}</title>
     <style>
+      main {
+	  min-height: 95vh;
+      }
+
       @media (max-width: 2000px) {
 	  main {
 	      margin: 3em auto;
@@ -35,10 +39,11 @@
       }
 
       footer {
+	  margin-top: 2em;
 	  border-top: 1px solid black;
       }
 
-      p, pre, section > div {
+      p, pre, div.chart, div.description {
 	  max-width: 800px;
       }
 
@@ -107,6 +112,12 @@
 	  background-color: #eee;
       }
 
+      /* Search functionality.  */
+      input#search-input {
+	  width: 800px;
+	  font-size: 150%;
+      }
+
       /* Chart code courtesy of https://codepen.io/Victa/pen/xDqbf */
       .chart {
 	  position: relative;
@@ -172,7 +183,7 @@
   </head>
   <body>
    <main>
-   <section>
+   <section id="introduction">
     <h1>{{title}}</h1>
     <p>
       These are the results of running the OpenPGP interoperability
@@ -193,6 +204,13 @@
     </p>
    </section>
    <section>
+     <input id="search-input" name="search" autocomplete="off" spellcheck="false"
+	    placeholder="Search results, try 'SHA1'..." type="search">
+     <div id="search-note"></div>
+     <script>
+     </script>
+   </section>
+   <section class="hide-on-search">
     <h1><a name="summary"><a name="test-summary" href="#test-summary">Test Summary</a></a></h1>
     <p>
       These charts summarize the results.  Reducing the wealth of
@@ -246,7 +264,8 @@
       </ul>
     </div>
    </section>
-    <nav>
+   <nav>
+     <div class="hide-on-search">
       <h1>Table of Contents</h1>
       <ol>
 	<li><a href="#test-summary">Test Summary</a></li>
@@ -268,18 +287,23 @@
 	<li><a href="#hall-of-fame">Hall of Fame</a></li>
 	<li><a href="#configuration">Configuration</a></li>
       </ol>
-    </nav>
-   <section>
+     </div>
+     <div class="show-on-search" hidden="hidden">
+       <h1>Search results</h1>
+       <ul id="search-results"></ul>
+     </div>
+   </nav>
+   <section class="hide-on-search">
     {% include "how-to.inc.html" %}
    </section>
    <section>
     <h1><a name="test-results" href="#test-results">Test Results</a></h1>
     {{body | safe}}
    </section>
-   <section>
+   <section class="hide-on-search">
     {% include "hall-of-fame.inc.html" %}
    </section>
-   <section>
+   <section class="hide-on-search">
     <h1><a name="configuration" href="#configuration">Configuration</a></h1>
     <p>
       This is the configuration used to produce this report:
@@ -295,5 +319,10 @@
     </p>
    </footer>
    </main>
+   <script>
+     (() => {
+	 {% include "search.js" %}
+     })();
+   </script>
   </body>
 </html>

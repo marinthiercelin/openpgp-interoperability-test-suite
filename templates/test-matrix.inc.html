@@ -1,7 +1,8 @@
+<div class="test-result">
 <h3><a name="{{slug}}" href="#{{slug}}">{{title}}</a></h3>
-<p>
+<div class="description">
   {{description | safe}}
-</p>
+</div>
 {%- if artifacts -%}
 <p>
   Additional artifacts:
@@ -84,3 +85,4 @@
   </tr>
   {%- endfor -%}
 </table>
+</div>
