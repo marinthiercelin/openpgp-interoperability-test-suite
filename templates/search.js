@@ -8,6 +8,7 @@ function escapeRegExp(string) {
 const term = document.getElementById("search-input");
 const note = document.getElementById("search-note");
 const results = document.getElementById("search-results");
+const index = {};
 
 // Initialize on demand.
 let initialized = false;
@@ -27,7 +28,54 @@ function initialize() {
     const nav = document.querySelector("nav");
     nav.style.width = `${nav.clientWidth}px`;
 
+    // Now build the search index.
+    document.querySelectorAll(".test-result").forEach((e) => {
+        const test_title = e.querySelector("h3 a");
+        const description = e.querySelector(".description");
+        const title = test_title.textContent;
+	const slug = test_title.getAttribute("name");
+
+	const new_terms = new Set();
+	const segments = [
+	    normalize_text(title, new_terms),
+	];
+	const walk = (e) => {
+	    if (e.data) {
+		segments.push(normalize_text(e.data, new_terms));
+	    } else {
+		e.childNodes.forEach(walk)
+	    }
+	};
+	description.childNodes.forEach(walk);
+	new_terms.forEach((t) => segments.push(t));
+
+	const full_text = segments.join(" ");
+	index[slug] = full_text;
+
+	if (false) {
+	    const d = document.createElement("p");
+	    d.textContent = full_text;
+	    e.appendChild(d);
+	}
+    });
+
     initialized = true;
+}
+
+const normalize_punctuation = /[:,*+?^${}()<>|[\]\\'"`]/g;
+const normalize_whitespace = /\s+/g;
+function normalize_text(t, new_terms) {
+    const normalized = t
+	  .replace(normalize_punctuation, " ")
+	  .replace(normalize_whitespace, " ")
+	  .trim();
+
+    for (const m of normalized.matchAll(/\b.*[-].*\b/g)) {
+	new_terms.add(m[0].replace(/[-]/g, " "));
+	new_terms.add(m[0].replace(/[-]/g, ""));
+    }
+
+    return normalized;
 }
 
 function search_on() {
@@ -74,9 +122,10 @@ function filter_results() {
         if (test_title) {
             /* Found a test result.  */
 
-            const description = e.querySelector(".description");
             const title = test_title.textContent;
-            const matches = re.test(title) || re.test(description.innerHTML);
+	    const slug = test_title.getAttribute("name");
+
+            const matches = re.test(index[slug]);
             e.hidden = ! matches;
             current_section_matched |= matches;
 
