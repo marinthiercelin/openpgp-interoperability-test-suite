@@ -130,75 +130,245 @@ impl Sop {
     }
 
     /// Generates a Secret Key.
-    pub fn generate_key<'u>(&self,
-                            no_armor: bool,
-                            userids: impl IntoIterator<Item = &'u str>)
-                            -> Result<Data> {
+    pub fn generate_key(&self) -> GenerateKey {
+        GenerateKey {
+            sop: self,
+            no_armor: false,
+        }
+    }
+
+    /// Extracts a Certificate from a Secret Key.
+    pub fn extract_cert(&self) -> ExtractCert {
+        ExtractCert {
+            sop: self,
+            no_armor: false,
+        }
+    }
+
+    /// Creates Detached Signatures.
+    pub fn sign(&self) -> Sign {
+        Sign {
+            sop: self,
+            no_armor: false,
+            as_: Default::default(),
+            keys: Default::default(),
+        }
+    }
+
+    /// Verifies Detached Signatures.
+    pub fn verify(&self) -> Verify {
+        Verify {
+            sop: self,
+            not_before: None,
+            not_after: None,
+            certs: Default::default(),
+        }
+    }
+
+    /// Encrypts a Message.
+    pub fn encrypt(&self) -> Encrypt {
+        Encrypt {
+            sop: self,
+            no_armor: false,
+            as_: Default::default(),
+            passwords: Default::default(),
+            sign_with: Default::default(),
+            certs: Default::default(),
+        }
+    }
+
+    /// Decrypts a Message.
+    pub fn decrypt(&self) -> Decrypt {
+        Decrypt {
+            verify: self.verify(),
+            session_key_out: Default::default(),
+            session_keys: Default::default(),
+            passwords: Default::default(),
+            keys: Default::default(),
+        }
+    }
+
+    /// Converts binary OpenPGP data to ASCII.
+    pub fn armor(&self) -> Armor {
+        Armor {
+            sop: self,
+            label: Default::default(),
+        }
+    }
+
+    /// Converts ASCII OpenPGP data to binary.
+    pub fn dearmor(&self) -> Dearmor {
+        Dearmor {
+            sop: self,
+        }
+    }
+}
+
+/// Builder for [`Sop::generate_key`].
+pub struct GenerateKey<'s> {
+    sop: &'s Sop,
+    no_armor: bool,
+}
+
+impl GenerateKey<'_> {
+    /// Disables armor encoding.
+    pub fn no_armor(mut self) -> Self {
+        self.no_armor = true;
+        self
+    }
+
+    /// Generates a Secret Key.
+    /// Extracts the cert from `key`.
+    pub fn userids<'u>(self, userids: impl IntoIterator<Item = &'u str>)
+                   -> Result<Data> {
         let mut args = vec!["generate-key"];
-        if no_armor {
+        if self.no_armor {
             args.push("--no-armor");
         }
         for u in userids {
             args.push(u);
         }
-        let o = self.run(&args[..], &[])?;
+        let o = self.sop.run(&args[..], &[])?;
         Ok(o.stdout.clone().into())
     }
+}
 
-    /// Extracts a Certificate from a Secret Key.
-    pub fn extract_cert(&self,
-                        no_armor: bool,
-                        key: &[u8])
-                        -> Result<Data> {
+/// Builder for [`Sop::extract_cert`].
+pub struct ExtractCert<'s> {
+    sop: &'s Sop,
+    no_armor: bool,
+}
+
+impl ExtractCert<'_> {
+    /// Disables armor encoding.
+    pub fn no_armor(mut self) -> Self {
+        self.no_armor = true;
+        self
+    }
+
+    /// Extracts the cert from `key`.
+    pub fn key(self, key: &[u8]) -> Result<Data> {
         let mut args = vec!["extract-cert"];
-        if no_armor {
+        if self.no_armor {
             args.push("--no-armor");
         }
-        let o = self.run(&args[..], key)?;
+        let o = self.sop.run(&args[..], key)?;
         Ok(o.stdout.clone().into())
     }
+}
 
-    /// Creates Detached Signatures.
-    pub fn sign<'k, AS>(&self,
-                        no_armor: bool,
-                        as_: AS,
-                        keys: impl IntoIterator<Item = &'k [u8]>,
-                        data: &[u8])
-                        -> Result<Data>
-    where AS: Into<Option<SignAs>>,
-    {
+/// Builder for [`Sop::sign`].
+pub struct Sign<'s> {
+    sop: &'s Sop,
+    no_armor: bool,
+    as_: SignAs,
+    keys: Vec<&'s [u8]>,
+}
+
+impl<'s> Sign<'s> {
+    /// Disables armor encoding.
+    pub fn no_armor(mut self) -> Self {
+        self.no_armor = true;
+        self
+    }
+
+    /// Sets signature mode.
+    pub fn as_(mut self, as_: SignAs) -> Self {
+        self.as_ = as_;
+        self
+    }
+
+    /// Adds the signer key.
+    pub fn key(mut self, key: &'s [u8]) -> Self {
+        self.keys.push(key);
+        self
+    }
+
+    /// Adds the signer keys.
+    pub fn keys(mut self, keys: impl IntoIterator<Item = &'s [u8]>)
+                -> Self {
+        keys.into_iter().for_each(|k| self.keys.push(k));
+        self
+    }
+
+    /// Signs data.
+    pub fn data(self, data: &[u8]) -> Result<Data> {
         let mut tmp = Vec::new();
         let mut args = vec!["sign".to_string()];
-        if no_armor {
+        if self.no_armor {
             args.push("--no-armor".into());
         }
 
-        let as_ = as_.into().unwrap_or_default();
-        if let SignAs::Binary = as_ {
+        if let SignAs::Binary = self.as_ {
             // This is the default.  Omit it as a courtesy to
             // implementations that do not implement this parameter.
         } else {
             args.push("--as".into());
-            args.push(as_.to_string());
+            args.push(self.as_.to_string());
         }
 
-        for key in keys {
-            args.push(self.stash_bytes(key, &mut tmp)?);
+        for key in self.keys {
+            args.push(self.sop.stash_bytes(key, &mut tmp)?);
         }
 
-        let o = self.run(&args[..], data)?;
+        let o = self.sop.run(&args[..], data)?;
         Ok(o.stdout.clone().into())
     }
+}
 
-    /// Verifies Detached Signatures.
-    pub fn verify<'c>(&self,
-                      not_before: Option<DateTime<Utc>>,
-                      not_after: Option<DateTime<Utc>>,
-                      signatures: &[u8],
-                      certs: impl IntoIterator<Item = &'c [u8]>,
-                      data: &[u8])
-                      -> Result<Vec<Verification>> {
-        self.verify_raw(not_before, not_after, signatures, certs, data)
+/// Builder for [`Sop::verify`].
+pub struct Verify<'s> {
+    sop: &'s Sop,
+    not_before: Option<DateTime<Utc>>,
+    not_after: Option<DateTime<Utc>>,
+    certs: Vec<&'s [u8]>,
+}
+
+/// Builder for [`Sop::verify`].
+pub struct VerifySignatures<'s> {
+    verify: Verify<'s>,
+    signatures: &'s [u8],
+}
+
+impl<'s> Verify<'s> {
+    /// Makes SOP consider signatures before this date invalid.
+    pub fn not_before(mut self, t: DateTime<Utc>) -> Self {
+        self.not_before = Some(t);
+        self
+    }
+
+    /// Makes SOP consider signatures after this date invalid.
+    pub fn not_after(mut self, t: DateTime<Utc>) -> Self {
+        self.not_after = Some(t);
+        self
+    }
+
+    /// Adds the verification cert.
+    pub fn cert(mut self, cert: &'s [u8]) -> Self {
+        self.certs.push(cert);
+        self
+    }
+
+    /// Adds the verification certs.
+    pub fn certs(mut self, certs: impl IntoIterator<Item = &'s [u8]>)
+                -> Self {
+        certs.into_iter().for_each(|k| self.certs.push(k));
+        self
+    }
+
+    /// Provides the signatures.
+    pub fn signatures(self, signatures: &'s [u8]) -> VerifySignatures {
+        VerifySignatures {
+            verify: self,
+            signatures,
+        }
+    }
+}
+
+impl VerifySignatures<'_> {
+    /// Verifies the authenticity of `data`.
+    pub fn data(self, data: &[u8]) -> Result<Vec<Verification>> {
+        self.data_raw(data)
             .and_then(|data|
                       String::from_utf8(Vec::from(data)).map_err(Into::into))
             .and_then(|verifications| {
@@ -210,112 +380,215 @@ impl Sop {
             })
     }
 
-    /// Verifies Detached Signatures.
-    ///
-    /// This provides unparsed signature verification output.
-    pub fn verify_raw<'c>(&self,
-                          not_before: Option<DateTime<Utc>>,
-                          not_after: Option<DateTime<Utc>>,
-                          signatures: &[u8],
-                          certs: impl IntoIterator<Item = &'c [u8]>,
-                          data: &[u8])
-                          -> Result<Data> {
+    /// Verifies the authenticity of `data` returning the raw result.
+    pub fn data_raw(self, data: &[u8]) -> Result<Data> {
+        let sop = self.verify.sop;
         let mut tmp = Vec::new();
         let mut args = vec!["verify".to_string()];
-        if let Some(t) = not_before {
+        if let Some(t) = self.verify.not_before {
             args.push("--not-before".into());
             args.push(t.format("%+").to_string());
         }
-        if let Some(t) = not_after {
+        if let Some(t) = self.verify.not_after {
             args.push("--not-after".into());
             args.push(t.format("%+").to_string());
         }
 
-        args.push(self.stash_bytes(signatures, &mut tmp)?);
+        args.push(sop.stash_bytes(self.signatures, &mut tmp)?);
 
-        for cert in certs {
-            args.push(self.stash_bytes(cert, &mut tmp)?);
+        for cert in self.verify.certs {
+            args.push(sop.stash_bytes(cert, &mut tmp)?);
         }
 
-        let o = self.run(&args[..], data)?;
+        let o = sop.run(&args[..], data)?;
         Ok(o.stdout.clone().into())
     }
+}
 
-    /// Encrypts a Message.
-    pub fn encrypt<'p, 's, 'c, AS>(
-        &self,
-        no_armor: bool,
-        as_: AS,
-        with_password: impl IntoIterator<Item = &'p str>,
-        sign_with: impl IntoIterator<Item = &'s [u8]>,
-        certs: impl IntoIterator<Item = &'c [u8]>,
-        plaintext: &[u8])
-        -> Result<Data>
-    where AS: Into<Option<EncryptAs>>,
-    {
+/// Builder for [`Sop::encrypt`].
+pub struct Encrypt<'s> {
+    sop: &'s Sop,
+    no_armor: bool,
+    as_: EncryptAs,
+    passwords: Vec<&'s str>,
+    sign_with: Vec<&'s [u8]>,
+    certs: Vec<&'s [u8]>,
+}
+
+impl<'s> Encrypt<'s> {
+    /// Disables armor encoding.
+    pub fn no_armor(mut self) -> Self {
+        self.no_armor = true;
+        self
+    }
+
+    /// Sets encryption mode.
+    pub fn as_(mut self, as_: EncryptAs) -> Self {
+        self.as_ = as_;
+        self
+    }
+
+    /// Encrypts with the given password.
+    pub fn with_password(mut self, password: &'s str) -> Self {
+        self.passwords.push(password);
+        self
+    }
+
+    /// Encrypts with the given passwords.
+    pub fn with_passwords(mut self,
+                          passwords: impl IntoIterator<Item = &'s str>)
+                          -> Self {
+        passwords.into_iter().for_each(|k| self.passwords.push(k));
+        self
+    }
+
+    /// Encrypts with the given cert.
+    pub fn cert(mut self, cert: &'s [u8]) -> Self {
+        self.certs.push(cert);
+        self
+    }
+
+    /// Encrypts with the given certs.
+    pub fn certs(mut self, certs: impl IntoIterator<Item = &'s [u8]>)
+                -> Self {
+        certs.into_iter().for_each(|k| self.certs.push(k));
+        self
+    }
+
+    /// Encrypts data.
+    pub fn plaintext<P: AsRef<[u8]>>(self, plaintext: P) -> Result<Data> {
         let mut tmp = Vec::new();
         let mut args = vec!["encrypt".to_string()];
-        if no_armor {
+        if self.no_armor {
             args.push("--no-armor".into());
         }
 
-        let as_ = as_.into().unwrap_or_default();
-        if let EncryptAs::Binary = as_ {
+        if let EncryptAs::Binary = self.as_ {
             // This is the default.  Omit it as a courtesy to
             // implementations that do not implement this parameter.
         } else {
             args.push("--as".into());
-            args.push(as_.to_string());
+            args.push(self.as_.to_string());
         }
 
-        for p in with_password {
+        for p in self.passwords {
             args.push("--with-password".into());
             args.push(p.into());
         }
 
-        for key in sign_with {
+        for key in self.sign_with {
             args.push("--sign-with".into());
-            args.push(self.stash_bytes(key, &mut tmp)?);
+            args.push(self.sop.stash_bytes(key, &mut tmp)?);
         }
 
-        for cert in certs {
-            args.push(self.stash_bytes(cert, &mut tmp)?);
+        for cert in self.certs {
+            args.push(self.sop.stash_bytes(cert, &mut tmp)?);
         }
 
-        let o = self.run(&args[..], plaintext)?;
+        let o = self.sop.run(&args[..], plaintext)?;
         Ok(o.stdout.clone().into())
     }
+}
 
-    /// Decrypts a Message.
-    pub fn decrypt<'s, 'p, 'c, 'k>(
-        &self,
-        session_key_out: Option<&mut Option<Data>>,
-        with_session_key: impl IntoIterator<Item = &'s [u8]>,
-        with_password: impl IntoIterator<Item = &'p str>,
-        verify_with: impl IntoIterator<Item = &'c [u8]>,
-        verify_not_before: Option<DateTime<Utc>>,
-        verify_not_after: Option<DateTime<Utc>>,
-        keys: impl IntoIterator<Item = &'k [u8]>,
-        ciphertext: &[u8])
-        -> Result<(Vec<Verification>, Data)>
-    {
-        let mut verifications = None;
-        let plaintext =
-            self.decrypt_raw(session_key_out, with_session_key,
-                             with_password,
-                             Some(&mut verifications),
-                             verify_with,
-                             verify_not_before,
-                             verify_not_after,
-                             keys,
-                             ciphertext)?;
-        let verifications = String::from_utf8(
-            verifications.map(Vec::from).unwrap_or_else(Vec::new))
+/// Builder for [`Sop::decrypt`].
+pub struct Decrypt<'s> {
+    verify: Verify<'s>,
+    session_key_out: Option<&'s mut Option<Data>>,
+    session_keys: Vec<&'s [u8]>,
+    passwords: Vec<&'s str>,
+    keys: Vec<&'s [u8]>,
+}
+
+impl<'s> Decrypt<'s> {
+    /// Makes SOP consider signatures before this date invalid.
+    pub fn verify_not_before(mut self, t: DateTime<Utc>) -> Self {
+        self.verify.not_before = Some(t);
+        self
+    }
+
+    /// Makes SOP consider signatures after this date invalid.
+    pub fn verify_not_after(mut self, t: DateTime<Utc>) -> Self {
+        self.verify.not_after = Some(t);
+        self
+    }
+
+    /// Adds the verification cert.
+    pub fn verify_cert(mut self, cert: &'s [u8]) -> Self {
+        self.verify.certs.push(cert);
+        self
+    }
+
+    /// Adds the verification certs.
+    pub fn verify_certs(mut self, certs: impl IntoIterator<Item = &'s [u8]>)
+                        -> Self {
+        certs.into_iter().for_each(|k| self.verify.certs.push(k));
+        self
+    }
+
+    /// Writes the decrypted session key to the given location.
+    pub fn with_session_key_out(mut self,
+                            session_key_out: &'s mut Option<Data>)
+                            -> Self {
+        self.session_key_out = Some(session_key_out);
+        self
+    }
+
+    /// Tries to decrypt with the given session key.
+    pub fn with_session_key(mut self, session_key: &'s [u8]) -> Self {
+        self.session_keys.push(session_key);
+        self
+    }
+
+    /// Tries to decrypt with the given session keys.
+    pub fn with_session_keys(mut self,
+                          session_keys: impl IntoIterator<Item = &'s [u8]>)
+                          -> Self {
+        session_keys.into_iter().for_each(|k| self.session_keys.push(k));
+        self
+    }
+
+    /// Tries to decrypt with the given password.
+    pub fn with_password(mut self, password: &'s str) -> Self {
+        self.passwords.push(password);
+        self
+    }
+
+    /// Tries to decrypt with the given passwords.
+    pub fn with_passwords(mut self,
+                          passwords: impl IntoIterator<Item = &'s str>)
+                          -> Self {
+        passwords.into_iter().for_each(|k| self.passwords.push(k));
+        self
+    }
+
+    /// Adds the decryption key.
+    pub fn key(mut self, key: &'s [u8]) -> Self {
+        self.keys.push(key);
+        self
+    }
+
+    /// Adds the decryption keys.
+    pub fn keys(mut self, keys: impl IntoIterator<Item = &'s [u8]>)
+                -> Self {
+        keys.into_iter().for_each(|k| self.keys.push(k));
+        self
+    }
+
+    /// Decrypts `ciphertext`, returning verification results and
+    /// plaintexts.
+    pub fn ciphertext(self, ciphertext: &[u8])
+                      -> Result<(Vec<Verification>, Data)> {
+        let (verification_raw, plaintext) =
+            self.ciphertext_raw(ciphertext)?;
+
+        let verifications = String::from_utf8(verification_raw.into())
             .map_err(Into::into)
             .and_then(|verifications| -> Result<_> {
                 let mut r = Vec::new();
-                for v in verifications.trim_end().split('\n') {
-                    r.push(v.parse()?);
+                if ! verifications.is_empty() {
+                    for v in verifications.trim_end().split('\n') {
+                        r.push(v.parse()?);
+                    }
                 }
                 Ok(r)
             })?;
@@ -323,28 +596,16 @@ impl Sop {
         Ok((verifications, plaintext))
     }
 
-    /// Decrypts a Message.
-    ///
-    /// This provides unparsed signature verification output.
-    pub fn decrypt_raw<'s, 'p, 'c, 'k>(
-        &self,
-        session_key_out: Option<&mut Option<Data>>,
-        with_session_key: impl IntoIterator<Item = &'s [u8]>,
-        with_password: impl IntoIterator<Item = &'p str>,
-        verify_out_raw: Option<&mut Option<Data>>,
-        verify_with: impl IntoIterator<Item = &'c [u8]>,
-        verify_not_before: Option<DateTime<Utc>>,
-        verify_not_after: Option<DateTime<Utc>>,
-        keys: impl IntoIterator<Item = &'k [u8]>,
-        ciphertext: &[u8])
-        -> Result<Data>
-    {
+    /// Decrypts `ciphertext`, returning verification results and
+    /// plaintexts.
+    pub fn ciphertext_raw(self, ciphertext: &[u8]) -> Result<(Data, Data)> {
+        let sop = self.verify.sop;
         let mut tmp = Vec::new();
         let mut args = vec!["decrypt".to_string()];
 
         let session_key_out =
-            if let Some(out) = session_key_out {
-                let p = self.allocate_out_file(&mut tmp)?;
+            if let Some(out) = self.session_key_out {
+                let p = sop.allocate_out_file(&mut tmp)?;
                 args.push("--session-key-out".into());
                 args.push(p.clone());
                 Some((out, p))
@@ -352,45 +613,45 @@ impl Sop {
                 None
             };
 
-        for sk in with_session_key {
+        for sk in self.session_keys {
             args.push("--with-session-key".into());
             args.push(openpgp::fmt::hex::encode(sk));
         }
 
-        for p in with_password {
+        for p in self.passwords {
             args.push("--with-password".into());
             args.push(p.into());
         }
 
         let verify_out_raw =
-            if let Some(out) = verify_out_raw {
-                let p = self.allocate_out_file(&mut tmp)?;
+            if ! self.verify.certs.is_empty() {
+                let p = sop.allocate_out_file(&mut tmp)?;
                 args.push("--verify-out".into());
                 args.push(p.clone());
-                Some((out, p))
+                Some(p)
             } else {
                 None
             };
 
-        for cert in verify_with {
+        for cert in self.verify.certs {
             args.push("--verify-with".into());
-            args.push(self.stash_bytes(cert, &mut tmp)?);
+            args.push(sop.stash_bytes(cert, &mut tmp)?);
         }
 
-        if let Some(t) = verify_not_before {
+        if let Some(t) = self.verify.not_before {
             args.push("--verify-not-before".into());
             args.push(t.format("%+").to_string());
         }
-        if let Some(t) = verify_not_after {
+        if let Some(t) = self.verify.not_after {
             args.push("--verify-not-after".into());
             args.push(t.format("%+").to_string());
         }
 
-        for key in keys {
-            args.push(self.stash_bytes(key, &mut tmp)?);
+        for key in self.keys {
+            args.push(sop.stash_bytes(key, &mut tmp)?);
         }
 
-        let o = self.run(&args[..], ciphertext)?;
+        let o = sop.run(&args[..], ciphertext)?;
 
         if let Some((out, p)) = session_key_out {
             let bytes = std::fs::read(&p)
@@ -403,38 +664,59 @@ impl Sop {
             *out = Some(sk.into());
         }
 
-        if let Some((out, p)) = verify_out_raw {
-            let bytes = std::fs::read(&p)
-                .context("No verifications written to --verify-out")?;
-            std::fs::remove_file(p)?;
-            *out = Some(bytes.into());
-        }
+        let verify_raw =
+            if let Some(p) = verify_out_raw {
+                let bytes = std::fs::read(&p)
+                    .context("No verifications written to --verify-out")?;
+                std::fs::remove_file(p)?;
+                bytes.into()
+            } else {
+                Default::default()
+            };
 
-        Ok(o.stdout.clone().into())
+        Ok((verify_raw, o.stdout.clone().into()))
+    }
+}
+
+/// Builder for [`Sop::armor`].
+pub struct Armor<'s> {
+    sop: &'s Sop,
+    label: ArmorKind,
+}
+
+impl Armor<'_> {
+    /// Overrides automatic detection of label.
+    pub fn label(mut self, label: ArmorKind) -> Self {
+        self.label = label;
+        self
     }
 
-    /// Converts binary OpenPGP data to ASCII
-    pub fn armor<L>(&self, label: L, data: &[u8]) -> Result<Data>
-        where L: Into<Option<ArmorKind>>,
-    {
+    /// Armors `data`.
+    pub fn data(self, data: &[u8]) -> Result<Data> {
         let mut args = vec!["armor".to_string()];
 
-        let label = label.into().unwrap_or_default();
-        if let ArmorKind::Auto = label {
+        if let ArmorKind::Auto = self.label {
             // This is the default.  Omit it as a courtesy to
             // implementations that do not implement this parameter.
         } else {
             args.push("--label".into());
-            args.push(label.to_string());
+            args.push(self.label.to_string());
         }
 
-        let o = self.run(&args[..], data)?;
+        let o = self.sop.run(&args[..], data)?;
         Ok(o.stdout.clone().into())
     }
+}
 
-    /// Converts ASCII OpenPGP data to binary
-    pub fn dearmor(&self, data: &[u8]) -> Result<Data> {
-        let o = self.run(&["dearmor"], data)?;
+/// Builder for [`Sop::dearmor`].
+pub struct Dearmor<'s> {
+    sop: &'s Sop,
+}
+
+impl Dearmor<'_> {
+    /// Dearmors `data`.
+    pub fn data(self, data: &[u8]) -> Result<Data> {
+        let o = self.sop.run(&["dearmor"], data)?;
         Ok(o.stdout.clone().into())
     }
 }
@@ -450,29 +732,27 @@ impl crate::OpenPGP for Sop {
 
     fn encrypt(&self, recipient: &[u8], plaintext: &[u8])
                -> Result<Data> {
-        Sop::encrypt(self, false, None, None, None,
-                     vec![recipient], plaintext)
+        Sop::encrypt(self).cert(recipient).plaintext(plaintext)
     }
 
     fn decrypt(&self, recipient: &[u8], ciphertext: &[u8])
                -> Result<Data> {
-        Sop::decrypt_raw(self, None, None, None, None, None, None, None,
-                         vec![recipient], ciphertext)
+        Ok(Sop::decrypt(self).key(recipient).ciphertext_raw(ciphertext)?.1)
     }
 
     fn sign_detached(&self, signer: &[u8], data: &[u8])
                      -> Result<Data> {
-        Sop::sign(self, false, None, vec![signer], data)
+        Sop::sign(self).keys(vec![signer]).data(data)
     }
 
     fn verify_detached(&self, signer: &[u8], data: &[u8],
                        sig: &[u8])
                        -> Result<Data> {
-        Sop::verify_raw(self, None, None, sig, vec![signer], data)
+        Sop::verify(self).cert(signer).signatures(sig).data_raw(data)
     }
 
     fn generate_key(&self, userids: &[&str]) -> Result<Data> {
-        Sop::generate_key(self, false, userids.iter().cloned())
+        Sop::generate_key(self).userids(userids.iter().cloned())
     }
 }
 

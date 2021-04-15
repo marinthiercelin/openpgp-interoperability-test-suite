@@ -336,9 +336,10 @@ impl ConsumerTest for TemporaryValidity {
     fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let cert = &*self.certs[i / 4];
-        // XXX: Unfortunately, we need to use verify_raw for now
+        // XXX: Unfortunately, we need to use data_raw for now
         // because many implementations emit malformed time stamps
         // (and the DATE type is somewhat underspecified).
-        pgp.sop().verify_raw(None, None, artifact, vec![cert], self.message())
+        pgp.sop().verify().certs(vec![cert]).signatures(artifact)
+            .data_raw(self.message())
     }
 }
