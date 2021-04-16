@@ -18,7 +18,7 @@ mod templates;
 mod plan;
 mod progress_bar;
 
-mod sop;
+pub mod sop;
 pub use sop::Sop;
 
 /// Maximum size of artifacts included in the results.
@@ -172,7 +172,7 @@ impl Config {
     fn implementations(&self) -> Result<Vec<crate::Sop>> {
         let mut r: Vec<crate::Sop> = Vec::new();
         for d in self.drivers.iter() {
-            r.push(sop::Sop::new(&d.path, &d.env)
+            r.push(sop::Sop::with_env(&d.path, d.env.clone())
                    .context("Creating sop backend")?);
         }
         Ok(r)

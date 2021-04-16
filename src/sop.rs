@@ -1,3 +1,65 @@
+//! SOP interface for use in tests.
+//!
+//! This interface is used by the tests to drive the underlying SOP
+//! implementations.  It exposes the [SOP interface] in a robust and
+//! idiomatic way.  Every [subcommand] maps to a method on the [`Sop`]
+//! object, which returns a builder to further customize the
+//! operation.
+//!
+//! [SOP interface]: https://gitlab.com/dkg/openpgp-stateless-cli/-/blob/main/sop.md#introduction
+//! [subcommand]: https://gitlab.com/dkg/openpgp-stateless-cli/-/blob/main/sop.md#subcommands
+//!
+//! # Examples
+//!
+//! This is roughly equivalent to the [SOP examples].
+//!
+//! [SOP examples]: https://gitlab.com/dkg/openpgp-stateless-cli/-/blob/main/sop.md#examples
+//!
+//! ```rust,ignore
+//! fn sop_examples(sop: &Sop) -> Result<()> {
+//!     let alice_sec = sop
+//!         .generate_key()
+//!         .userids(vec!["Alice Lovelace <alice@openpgp.example>"])?;
+//!     let alice_pgp = sop
+//!         .extract_cert()
+//!         .key(&alice_sec)?;
+//!
+//!     let bob_sec = sop
+//!         .generate_key()
+//!         .userids(vec!["Bob Babbage <bob@openpgp.example>"])?;
+//!     let bob_pgp = sop
+//!         .extract_cert()
+//!         .key(&bob_sec)?;
+//!
+//!     let statement = "Hello World :)";
+//!     let statement_asc = sop
+//!         .sign()
+//!         .as_(SignAs::Text)
+//!         .key(&alice_sec)
+//!         .data(statement.as_bytes())?;
+//!     let verifications = sop
+//!         .verify()
+//!         .cert(&alice_pgp)
+//!         .signatures(&statement_asc)
+//!         .data(statement.as_bytes()).unwrap();
+//!     assert_eq!(verifications.len(), 1);
+//!
+//!     let ciphertext = sop
+//!         .encrypt()
+//!         .signer_key(&alice_sec)
+//!         .as_(EncryptAs::MIME)
+//!         .cert(&bob_pgp)
+//!         .plaintext(statement.as_bytes()).unwrap();
+//!     let plaintext = sop
+//!         .decrypt()
+//!         .key(&bob_sec)
+//!         .ciphertext(&ciphertext).unwrap();
+//!     assert_eq!(&plaintext.1[..], statement.as_bytes());
+//!
+//!     Ok(())
+//! }
+//! ```
+
 use std::collections::HashMap;
 use std::fmt;
 use std::process::{self, ExitStatus};
@@ -15,6 +77,7 @@ use crate::{Data, Version, Error, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
+/// SOP interface for use in tests.
 #[derive(Debug)]
 pub struct Sop {
     sop: PathBuf,
@@ -23,21 +86,140 @@ pub struct Sop {
 }
 
 impl Sop {
-    pub fn new<P: AsRef<Path>>(executable: P,
-                               env: &HashMap<String, String>)
-                               -> Result<Sop> {
+    /// Gets version information.
+    pub fn version(&self) -> Result<crate::Version> {
+        let o = self.run(&["version"], &[])?;
+        let stdout = String::from_utf8_lossy(&o.stdout);
+        let mut name =
+            stdout.trim().split(' ').nth(0).unwrap_or("unknown").to_string();
+        if name.to_lowercase().ends_with("-sop") {
+            name =
+                String::from_utf8(name.as_bytes()[..name.len() - 4].to_vec())
+                .unwrap();
+        }
+
+        let version =
+            stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
+        Ok(Version {
+            implementation: name,
+            version,
+        })
+    }
+
+    /// Generates a Secret Key.
+    ///
+    /// Customize the operation using the builder [`GenerateKey`].
+    pub fn generate_key(&self) -> GenerateKey {
+        GenerateKey {
+            sop: self,
+            no_armor: false,
+        }
+    }
+
+    /// Extracts a Certificate from a Secret Key.
+    ///
+    /// Customize the operation using the builder [`ExtractCert`].
+    pub fn extract_cert(&self) -> ExtractCert {
+        ExtractCert {
+            sop: self,
+            no_armor: false,
+        }
+    }
+
+    /// Creates Detached Signatures.
+    ///
+    /// Customize the operation using the builder [`Sign`].
+    pub fn sign(&self) -> Sign {
+        Sign {
+            sop: self,
+            no_armor: false,
+            as_: Default::default(),
+            keys: Default::default(),
+        }
+    }
+
+    /// Verifies Detached Signatures.
+    ///
+    /// Customize the operation using the builder [`Verify`].
+    pub fn verify(&self) -> Verify {
+        Verify {
+            sop: self,
+            not_before: None,
+            not_after: None,
+            certs: Default::default(),
+        }
+    }
+
+    /// Encrypts a Message.
+    ///
+    /// Customize the operation using the builder [`Encrypt`].
+    pub fn encrypt(&self) -> Encrypt {
+        Encrypt {
+            sop: self,
+            no_armor: false,
+            as_: Default::default(),
+            passwords: Default::default(),
+            sign_with: Default::default(),
+            certs: Default::default(),
+        }
+    }
+
+    /// Decrypts a Message.
+    ///
+    /// Customize the operation using the builder [`Decrypt`].
+    pub fn decrypt(&self) -> Decrypt {
+        Decrypt {
+            verify: self.verify(),
+            session_key_out: Default::default(),
+            session_keys: Default::default(),
+            passwords: Default::default(),
+            keys: Default::default(),
+        }
+    }
+
+    /// Converts binary OpenPGP data to ASCII.
+    ///
+    /// Customize the operation using the builder [`Armor`].
+    pub fn armor(&self) -> Armor {
+        Armor {
+            sop: self,
+            label: Default::default(),
+        }
+    }
+
+    /// Converts ASCII OpenPGP data to binary.
+    ///
+    /// Customize the operation using the builder [`Dearmor`].
+    pub fn dearmor(&self) -> Dearmor {
+        Dearmor {
+            sop: self,
+        }
+    }
+}
+
+/// Internal functions.  Do not use in tests.
+impl Sop {
+    pub fn new<P: AsRef<Path>>(executable: P) -> Result<Sop> {
+        Self::with_env(executable, Default::default())
+    }
+
+    pub fn with_env<P: AsRef<Path>>(executable: P,
+                                    env: HashMap<String, String>)
+                                    -> Result<Sop> {
         let homedir = TempDir::new()?;
         Ok(Sop {
             sop: executable.as_ref().into(),
-            env: env.clone(),
+            env,
             homedir,
         })
     }
 
     fn run<D, I, S>(&self, args: I, input: D) -> Result<process::Output>
         where D: AsRef<[u8]>,
-              I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr>
+              I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr> + fmt::Debug
     {
+        let args = args.into_iter().collect::<Vec<_>>();
+        dbg!(&args);
         let mut child = process::Command::new(&self.sop)
             .envs(&self.env)
             .args(args)
@@ -104,102 +286,6 @@ impl Drop for Sop {
                 std::mem::replace(&mut self.homedir, TempDir::new().unwrap());
             eprintln!("Leaving sop homedir {:?} for inspection",
                       homedir.into_path());
-        }
-    }
-}
-
-impl Sop {
-    /// Gets version information.
-    pub fn version(&self) -> Result<crate::Version> {
-        let o = self.run(&["version"], &[])?;
-        let stdout = String::from_utf8_lossy(&o.stdout);
-        let mut name =
-            stdout.trim().split(' ').nth(0).unwrap_or("unknown").to_string();
-        if name.to_lowercase().ends_with("-sop") {
-            name =
-                String::from_utf8(name.as_bytes()[..name.len() - 4].to_vec())
-                .unwrap();
-        }
-
-        let version =
-            stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
-        Ok(Version {
-            implementation: name,
-            version,
-        })
-    }
-
-    /// Generates a Secret Key.
-    pub fn generate_key(&self) -> GenerateKey {
-        GenerateKey {
-            sop: self,
-            no_armor: false,
-        }
-    }
-
-    /// Extracts a Certificate from a Secret Key.
-    pub fn extract_cert(&self) -> ExtractCert {
-        ExtractCert {
-            sop: self,
-            no_armor: false,
-        }
-    }
-
-    /// Creates Detached Signatures.
-    pub fn sign(&self) -> Sign {
-        Sign {
-            sop: self,
-            no_armor: false,
-            as_: Default::default(),
-            keys: Default::default(),
-        }
-    }
-
-    /// Verifies Detached Signatures.
-    pub fn verify(&self) -> Verify {
-        Verify {
-            sop: self,
-            not_before: None,
-            not_after: None,
-            certs: Default::default(),
-        }
-    }
-
-    /// Encrypts a Message.
-    pub fn encrypt(&self) -> Encrypt {
-        Encrypt {
-            sop: self,
-            no_armor: false,
-            as_: Default::default(),
-            passwords: Default::default(),
-            sign_with: Default::default(),
-            certs: Default::default(),
-        }
-    }
-
-    /// Decrypts a Message.
-    pub fn decrypt(&self) -> Decrypt {
-        Decrypt {
-            verify: self.verify(),
-            session_key_out: Default::default(),
-            session_keys: Default::default(),
-            passwords: Default::default(),
-            keys: Default::default(),
-        }
-    }
-
-    /// Converts binary OpenPGP data to ASCII.
-    pub fn armor(&self) -> Armor {
-        Armor {
-            sop: self,
-            label: Default::default(),
-        }
-    }
-
-    /// Converts ASCII OpenPGP data to binary.
-    pub fn dearmor(&self) -> Dearmor {
-        Dearmor {
-            sop: self,
         }
     }
 }
@@ -425,6 +511,19 @@ impl<'s> Encrypt<'s> {
     /// Sets encryption mode.
     pub fn as_(mut self, as_: EncryptAs) -> Self {
         self.as_ = as_;
+        self
+    }
+
+    /// Adds the signer key.
+    pub fn signer_key(mut self, key: &'s [u8]) -> Self {
+        self.sign_with.push(key);
+        self
+    }
+
+    /// Adds the signer keys.
+    pub fn signer_keys(mut self, keys: impl IntoIterator<Item = &'s [u8]>)
+                -> Self {
+        keys.into_iter().for_each(|k| self.sign_with.push(k));
         self
     }
 
@@ -1063,5 +1162,88 @@ impl From<ExitStatus> for SOPError {
         } else {
             unreachable!("On unix, there is either a status or a signal")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn find_sop() -> Result<Sop> {
+        for name in &[
+            "sqop",
+            "dkg-sop",
+            "gosop",
+            "pgpainless-sop",
+            "rnp-sop",
+        ] {
+            if let Ok(s) = which::which(name)
+                .map_err(Into::into)
+                .and_then(|p| Sop::new(p))
+            {
+                if let Ok(v) = s.version() {
+                    eprintln!("Using {} to run the tests.", v);
+                    return Ok(s);
+                }
+            }
+        }
+
+        Err(anyhow::anyhow!("Could not find SOP implementation for use in the tests"))
+    }
+
+    /// This is the example from the SOP spec:
+    ///
+    ///     sop generate-key "Alice Lovelace <alice@openpgp.example>" > alice.sec
+    ///     sop extract-cert < alice.sec > alice.pgp
+    ///
+    ///     sop sign --as=text alice.sec < statement.txt > statement.txt.asc
+    ///     sop verify announcement.txt.asc alice.pgp < announcement.txt
+    ///
+    ///     sop encrypt --sign-with=alice.sec --as=mime bob.pgp < msg.eml > encrypted.asc
+    ///     sop decrypt alice.sec < ciphertext.asc > cleartext.out
+    #[test]
+    fn sop_examples() -> Result<()> {
+        let sop = find_sop()?;
+
+        let alice_sec = sop
+            .generate_key()
+            .userids(vec!["Alice Lovelace <alice@openpgp.example>"])?;
+        let alice_pgp = sop
+            .extract_cert()
+            .key(&alice_sec)?;
+
+        let bob_sec = sop
+            .generate_key()
+            .userids(vec!["Bob Babbage <bob@openpgp.example>"])?;
+        let bob_pgp = sop
+            .extract_cert()
+            .key(&bob_sec)?;
+
+        let statement = "Hello World :)";
+        let statement_asc = sop
+            .sign()
+            .as_(SignAs::Text)
+            .key(&alice_sec)
+            .data(statement.as_bytes())?;
+        let verifications = sop
+            .verify()
+            .cert(&alice_pgp)
+            .signatures(&statement_asc)
+            .data(statement.as_bytes()).unwrap();
+        assert_eq!(verifications.len(), 1);
+
+        let ciphertext = sop
+            .encrypt()
+            .signer_key(&alice_sec)
+            .as_(EncryptAs::MIME)
+            .cert(&bob_pgp)
+            .plaintext(statement.as_bytes()).unwrap();
+        let plaintext = sop
+            .decrypt()
+            .key(&bob_sec)
+            .ciphertext(&ciphertext).unwrap();
+        assert_eq!(&plaintext.1[..], statement.as_bytes());
+
+        Ok(())
     }
 }
