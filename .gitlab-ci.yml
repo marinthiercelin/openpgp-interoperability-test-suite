@@ -1,0 +1,39 @@
+image: registry.gitlab.com/sequoia-pgp/build-docker-image/bullseye:latest
+
+test:
+  script:
+    - apt update -y -qq && apt install -y -qq --no-install-recommends sqop
+    - if [ -d target ]; then find target | wc --lines; du -sh target; fi
+    - if [ -d cargo ]; then find cargo | wc --lines; du -sh cargo; fi
+    - rustc --version
+    - cargo --version
+    - cargo test --all
+    - du -sh target
+    - du -sh cargo
+
+pages:
+  stage: deploy
+  script:
+    - if [ -d target ]; then find target | wc --lines; du -sh target; fi
+    - if [ -d cargo ]; then find cargo | wc --lines; du -sh cargo; fi
+    - rustc --version
+    - cargo --version
+    - cargo doc --no-deps
+    - mv target/doc public
+    - echo "/openpgp-interoperability-test-suite/ /openpgp-interoperability-test-suite/openpgp_interoperability_test_suite/index.html 302" > public/_redirects
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+
+cache:
+  paths:
+    - Cargo.lock
+    - target/
+    - cargo/
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
+  CARGO_FLAGS: --color always
+  CARGO_INCREMENTAL: 0
