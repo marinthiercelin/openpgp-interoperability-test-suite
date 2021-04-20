@@ -156,4 +156,7 @@ function filter_results() {
 
 term.addEventListener('input', filter_results);
 term.addEventListener('search', filter_results);
-term.focus();
+
+if (! window.location.hash) {
+    term.focus();
+}
