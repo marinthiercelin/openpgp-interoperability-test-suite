@@ -219,7 +219,6 @@ impl Sop {
               I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr> + fmt::Debug
     {
         let args = args.into_iter().collect::<Vec<_>>();
-        dbg!(&args);
         let mut child = process::Command::new(&self.sop)
             .envs(&self.env)
             .args(args)
