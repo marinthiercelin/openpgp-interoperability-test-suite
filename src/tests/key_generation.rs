@@ -86,7 +86,7 @@ impl ProducerConsumerTest for GenerateThenEncryptDecryptRoundtrip {
                artifact: &[u8])
                -> Result<Data> {
         let ciphertext = consumer.encrypt(&super::extract_cert(artifact)?,
-                                          b"Hello, World!")?;
+                                          crate::tests::MESSAGE)?;
         producer.decrypt(artifact, &ciphertext)
     }
 }

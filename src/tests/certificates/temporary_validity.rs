@@ -63,7 +63,7 @@ impl TemporaryValidity {
     }
 
     fn message(&self) -> &'static [u8] {
-        "Hello World :)".as_bytes()
+        crate::tests::MESSAGE
     }
 
     fn signature(&self, at: SystemTime) -> Result<Data> {

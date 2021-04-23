@@ -26,7 +26,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
                           from draft-bre-openpgp-samples-00, modified with the \
                           hash algorithm preference [{:?}].", hash),
                 openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into(), hash)?));
+                crate::tests::MESSAGE.to_vec().into(), hash)?));
     }
     plan.add(Box::new(shattered::Shattered::new()?));
 

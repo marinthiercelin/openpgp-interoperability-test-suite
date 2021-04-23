@@ -233,7 +233,7 @@ impl MangledArmoredKey {
     }
 
     fn message(&self) -> &'static [u8] {
-        "Hello World :)".as_bytes()
+        crate::tests::MESSAGE
     }
 }
 
@@ -295,7 +295,7 @@ impl MangledArmoredCert {
     }
 
     fn message(&self) -> &'static [u8] {
-        "Hello World :)".as_bytes()
+        crate::tests::MESSAGE
     }
 }
 
@@ -357,7 +357,7 @@ impl MangledArmoredCiphertext {
     }
 
     fn message(&self) -> &'static [u8] {
-        "Hello World :)".as_bytes()
+        crate::tests::MESSAGE
     }
 }
 
@@ -435,7 +435,7 @@ impl MangledArmoredSignature {
     }
 
     fn message(&self) -> &'static [u8] {
-        "Hello World :)".as_bytes()
+        crate::tests::MESSAGE
     }
 }
 

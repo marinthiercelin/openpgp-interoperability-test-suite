@@ -227,14 +227,14 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
             "Encrypt-Decrypt roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?,
-            b"Hello, world!".to_vec().into())?));
+            crate::tests::MESSAGE.to_vec().into())?));
     plan.add(Box::new(
         EncryptDecryptRoundtrip::new(
             "Encrypt-Decrypt roundtrip with key 'Bob'",
             "Encrypt-Decrypt roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-            b"Hello, world!".to_vec().into())?));
+            crate::tests::MESSAGE.to_vec().into())?));
 
     plan.add(Box::new(recipient_ids::RecipientIDs::new()?));
     Ok(())

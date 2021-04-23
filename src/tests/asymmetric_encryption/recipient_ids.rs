@@ -29,7 +29,7 @@ impl RecipientIDs {
     }
 
     fn message(&self) -> &'static [u8] {
-        "Hello Recipient :)".as_bytes()
+        crate::tests::MESSAGE
     }
 }
 

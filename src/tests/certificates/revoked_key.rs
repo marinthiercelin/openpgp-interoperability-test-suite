@@ -175,6 +175,14 @@ impl RevokedKey {
         Ok(RevokedKey { flavor, revoked, })
     }
 
+    /// Returns the message that is signed in this test.
+    ///
+    /// Note: This test uses pre-built artifacts that use a slightly
+    /// different message.
+    pub fn message(&self) -> &'static str {
+        "Hello, World"
+    }
+
     fn key(&self) -> &'static [u8] {
         let key = if let Flavor::SubkeySignsSubkeyRevoked = self.flavor {
             format!("{}.sk", self.revoked.tag())
@@ -215,7 +223,11 @@ verify a signature at different points in time.  Hard revocations of
 the key invalidate the signature at any point in time, whereas in the
 case of soft revocations, the keys can be re-legitimized.{3}<p>
 
-<p>In this particular test, the {2} is {0}.{4}</p>
+<p>
+  In this particular test, the {2} is {0}.
+  The signed message is <code>{4}</code>
+  {5}
+</p>
 
 <pre>
 Timeline:   v
@@ -254,6 +266,7 @@ Timeline:   v
                                     signatures should be considered valid \
                                     again.",
                 },
+                self.message(),
                 if let Flavor::PrimarySigns = self.flavor {
                     ""
                 } else {
@@ -311,7 +324,7 @@ impl ConsumerTest for RevokedKey {
 
     fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        pgp.verify_detached(self.key(), b"Hello, World", artifact)
+        pgp.verify_detached(self.key(), self.message().as_bytes(), artifact)
     }
 }
 

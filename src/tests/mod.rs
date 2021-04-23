@@ -25,6 +25,12 @@ mod ecc;
 mod packet_parser;
 mod armor;
 
+/// Message used in tests.
+///
+/// For consistency, all tests that sign/encrypt a message should use
+/// this statement.
+pub const MESSAGE: &[u8] = b"Hello World :)";
+
 /// A StandardPolicy for the tests to use.
 const P: &StandardPolicy = &StandardPolicy::new();
 

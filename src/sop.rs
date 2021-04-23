@@ -1219,17 +1219,17 @@ mod tests {
             .extract_cert()
             .key(&bob_sec)?;
 
-        let statement = "Hello World :)";
+        let statement = crate::tests::MESSAGE;
         let statement_asc = sop
             .sign()
             .as_(SignAs::Text)
             .key(&alice_sec)
-            .data(statement.as_bytes())?;
+            .data(statement)?;
         let verifications = sop
             .verify()
             .cert(&alice_pgp)
             .signatures(&statement_asc)
-            .data(statement.as_bytes()).unwrap();
+            .data(statement).unwrap();
         assert_eq!(verifications.len(), 1);
 
         let ciphertext = sop
@@ -1237,12 +1237,12 @@ mod tests {
             .signer_key(&alice_sec)
             .as_(EncryptAs::MIME)
             .cert(&bob_pgp)
-            .plaintext(statement.as_bytes()).unwrap();
+            .plaintext(statement).unwrap();
         let plaintext = sop
             .decrypt()
             .key(&bob_sec)
             .ciphertext(&ciphertext).unwrap();
-        assert_eq!(&plaintext.1[..], statement.as_bytes());
+        assert_eq!(&plaintext.1[..], statement);
 
         Ok(())
     }

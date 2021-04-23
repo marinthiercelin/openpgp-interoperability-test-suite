@@ -287,7 +287,7 @@ impl ConsumerTest for EncryptionKeyFlags {
     fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let pp = openpgp::PacketPile::from_bytes(
-            &pgp.encrypt(artifact, b"Hello World!")?
+            &pgp.encrypt(artifact, crate::tests::MESSAGE)?
         )?;
 
         let mut encrypted_to = Vec::new();
@@ -543,7 +543,7 @@ impl ConsumerTest for PrimaryKeyFlags {
 
     fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        let ciphertext = pgp.encrypt(&super::extract_cert(artifact)?, b"Hello World!")?;
+        let ciphertext = pgp.encrypt(&super::extract_cert(artifact)?, crate::tests::MESSAGE)?;
         pgp.decrypt(data::certificate("bob-secret.pgp"), &ciphertext)
     }
 }

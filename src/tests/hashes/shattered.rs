@@ -74,7 +74,7 @@ impl ConsumerTest for Shattered {
     fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
         let message = match i {
-            0 => b"Hello World :)",
+            0 => crate::tests::MESSAGE,
             1 | 3 => data::message("shattered-1.pdf"),
             2 | 4 => data::message("shattered-2.pdf"),
             _ => unreachable!(),

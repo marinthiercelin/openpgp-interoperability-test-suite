@@ -35,7 +35,7 @@ impl UnknownPackets {
     }
 
     fn message(&self) -> &'static [u8] {
-        "Hello World :)".as_bytes()
+        crate::tests::MESSAGE
     }
 }
 

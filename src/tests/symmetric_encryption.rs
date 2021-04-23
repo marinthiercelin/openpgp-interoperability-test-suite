@@ -427,7 +427,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
                           draft-bre-openpgp-samples-00, modified with the \
                           symmetric algorithm preference [{:?}].", cipher),
                 openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into(), cipher, None)?));
+                crate::tests::MESSAGE.to_vec().into(), cipher, None)?));
     }
 
     for &aead_algo in &[EAX, OCB] {
@@ -440,7 +440,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
                           symmetric algorithm preference [AES256], \
                           AEAD algorithm preference [{:?}].", aead_algo),
                 openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-                b"Hello, world!".to_vec().into(), AES256,
+                crate::tests::MESSAGE.to_vec().into(), AES256,
                 Some(aead_algo))?));
     }
 
