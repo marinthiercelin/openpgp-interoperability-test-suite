@@ -27,10 +27,6 @@ impl RecipientIDs {
         Ok(RecipientIDs {
         })
     }
-
-    fn message(&self) -> &'static [u8] {
-        crate::tests::MESSAGE
-    }
 }
 
 impl Test for RecipientIDs {
@@ -39,7 +35,7 @@ impl Test for RecipientIDs {
     }
 
     fn description(&self) -> String {
-        "<p>Tests variations of recipient ids.".into()
+        "<p>Tests variations of recipient ids.</p>".into()
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
@@ -74,7 +70,7 @@ impl ConsumerTest for RecipientIDs {
             .symmetric_algo(SymmetricAlgorithm::AES256)
             .build()?;
         let mut message = LiteralWriter::new(message).build()?;
-        message.write_all(self.message())?;
+        message.write_all(crate::tests::MESSAGE)?;
         message.finalize()?;
         t.push(("Encryption subkey's KeyID".into(),
                 buf.into(),
@@ -93,7 +89,7 @@ impl ConsumerTest for RecipientIDs {
             .symmetric_algo(SymmetricAlgorithm::AES256)
             .build()?;
         let mut message = LiteralWriter::new(message).build()?;
-        message.write_all(self.message())?;
+        message.write_all(crate::tests::MESSAGE)?;
         message.finalize()?;
         t.push(("Wildcard KeyID".into(),
                 buf.into(),
@@ -112,7 +108,7 @@ impl ConsumerTest for RecipientIDs {
             .symmetric_algo(SymmetricAlgorithm::AES256)
             .build()?;
         let mut message = LiteralWriter::new(message).build()?;
-        message.write_all(self.message())?;
+        message.write_all(crate::tests::MESSAGE)?;
         message.finalize()?;
         t.push(("Certificate KeyID".into(),
                 buf.into(),
@@ -131,7 +127,7 @@ impl ConsumerTest for RecipientIDs {
             .symmetric_algo(SymmetricAlgorithm::AES256)
             .build()?;
         let mut message = LiteralWriter::new(message).build()?;
-        message.write_all(self.message())?;
+        message.write_all(crate::tests::MESSAGE)?;
         message.finalize()?;
         t.push(("Fictitious KeyID".into(),
                 buf.into(),
@@ -146,11 +142,11 @@ impl ConsumerTest for RecipientIDs {
     }
 
     fn check_consumer(&self, _i: usize, artifact: &[u8]) -> Result<()> {
-        if &artifact[..] == self.message() {
+        if &artifact[..] == crate::tests::MESSAGE {
             Ok(())
         } else {
             Err(anyhow::anyhow!("Expected {:?}, got {:?}",
-                                self.message(), artifact))
+                                crate::tests::MESSAGE, artifact))
         }
     }
 
