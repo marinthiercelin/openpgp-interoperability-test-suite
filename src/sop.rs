@@ -313,7 +313,7 @@ impl GenerateKey<'_> {
             args.push(u);
         }
         let o = self.sop.run(&args[..], &[])?;
-        Ok(o.stdout.clone().into())
+        Ok(o.stdout.into())
     }
 }
 
@@ -337,7 +337,7 @@ impl ExtractCert<'_> {
             args.push("--no-armor");
         }
         let o = self.sop.run(&args[..], key)?;
-        Ok(o.stdout.clone().into())
+        Ok(o.stdout.into())
     }
 }
 
@@ -396,7 +396,7 @@ impl<'s> Sign<'s> {
         }
 
         let o = self.sop.run(&args[..], data)?;
-        Ok(o.stdout.clone().into())
+        Ok(o.stdout.into())
     }
 }
 
@@ -485,7 +485,7 @@ impl VerifySignatures<'_> {
         }
 
         let o = sop.run(&args[..], data)?;
-        Ok(o.stdout.clone().into())
+        Ok(o.stdout.into())
     }
 }
 
@@ -583,7 +583,7 @@ impl<'s> Encrypt<'s> {
         }
 
         let o = self.sop.run(&args[..], plaintext)?;
-        Ok(o.stdout.clone().into())
+        Ok(o.stdout.into())
     }
 }
 
@@ -771,7 +771,7 @@ impl<'s> Decrypt<'s> {
                 Default::default()
             };
 
-        Ok((verify_raw, o.stdout.clone().into()))
+        Ok((verify_raw, o.stdout.into()))
     }
 }
 
@@ -801,7 +801,7 @@ impl Armor<'_> {
         }
 
         let o = self.sop.run(&args[..], data)?;
-        Ok(o.stdout.clone().into())
+        Ok(o.stdout.into())
     }
 }
 
@@ -814,7 +814,7 @@ impl Dearmor<'_> {
     /// Dearmors `data`.
     pub fn data(self, data: &[u8]) -> Result<Data> {
         let o = self.sop.run(&["dearmor"], data)?;
-        Ok(o.stdout.clone().into())
+        Ok(o.stdout.into())
     }
 }
 
