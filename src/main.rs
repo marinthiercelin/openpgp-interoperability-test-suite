@@ -128,17 +128,10 @@ pub trait OpenPGP: std::fmt::Debug {
     fn version(&self) -> Result<Version>;
     fn encrypt(&self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
     fn decrypt(&self, recipient: &[u8], ciphertext: &[u8]) -> Result<Data>;
-    fn sign_detached(&self, _signer: &[u8], _data: &[u8]) -> Result<Data> {
-        Err(Error::NotImplemented.into())
-    }
+    fn sign_detached(&self, _signer: &[u8], _data: &[u8]) -> Result<Data>;
     fn verify_detached(&self, _signer: &[u8], _data: &[u8], _sig: &[u8])
-                       -> Result<Data>
-    {
-        Err(Error::NotImplemented.into())
-    }
-    fn generate_key(&self, _userids: &[&str]) -> Result<Data> {
-        Err(Error::NotImplemented.into())
-    }
+                       -> Result<Data>;
+    fn generate_key(&self, _userids: &[&str]) -> Result<Data>;
 }
 
 /// Test suite configuration.
@@ -267,14 +260,6 @@ fn main() -> anyhow::Result<()> {
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    /// Not implemented by the driver.
-    #[error("This is not implemented by the driver.")]
-    NotImplemented,
-
-    /// This should not happen.
-    #[error("This should not happen.")]
-    InternalDriverError,
-
     /// Unspecified engine error.
     #[error("{}\nstdout:\n~~~snip~~~\n{}~~~snip~~~\nstderr:\n~~~snip~~~\n{}~~~snip~~~\n",
            _0, _1, _2)]
