@@ -303,7 +303,6 @@ impl GenerateKey<'_> {
     }
 
     /// Generates a Secret Key.
-    /// Extracts the cert from `key`.
     pub fn userids<'u>(self, userids: impl IntoIterator<Item = &'u str>)
                    -> Result<Data> {
         let mut args = vec!["generate-key"];
