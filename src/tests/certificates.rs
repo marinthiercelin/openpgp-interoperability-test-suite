@@ -44,7 +44,7 @@ fn make_test<I, P>(test: &str, packets: I,
           P: Borrow<openpgp::Packet>,
 {
     use openpgp::Packet;
-    use openpgp::serialize::Serialize;
+    use openpgp::armor;
 
     let packets = packets.into_iter().collect::<Vec<_>>();
     let has_secrets = packets.iter().any(|p| match p.borrow() {
@@ -52,22 +52,13 @@ fn make_test<I, P>(test: &str, packets: I,
         _ => false,
     });
 
-    let mut buf = Vec::new();
-    {
-        use openpgp::armor;
-        let mut w =
-            armor::Writer::new(&mut buf,
-                               if has_secrets {
-                                   armor::Kind::SecretKey
-                               } else {
-                                   armor::Kind::PublicKey
-                               })?;
-        for p in packets {
-            p.borrow().serialize(&mut w)?;
-        }
-        w.finalize()?;
-    }
-    Ok((test.into(), buf.into(), expectation))
+    super::make_test(test, packets,
+                     if has_secrets {
+                         armor::Kind::SecretKey
+                     } else {
+                         armor::Kind::PublicKey
+                     },
+                     expectation)
 }
 
 /// Tests how implementation interpret encryption keyflags.

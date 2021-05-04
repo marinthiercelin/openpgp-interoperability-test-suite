@@ -372,3 +372,26 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     packet_parser::schedule(plan)?;
     Ok(())
 }
+
+/// Turns a sequence of packets into an armored data stream.
+pub fn make_test<I, P>(test: &str, packets: I,
+                       label: openpgp::armor::Kind,
+                       expectation: Option<Expectation>)
+                       -> Result<(String, Data, Option<Expectation>)>
+where I: IntoIterator<Item = P>,
+      P: std::borrow::Borrow<openpgp::Packet>,
+{
+    use openpgp::serialize::Serialize;
+
+    let mut buf = Vec::new();
+    {
+        use openpgp::armor;
+        let mut w =
+            armor::Writer::new(&mut buf, label)?;
+        for p in packets {
+            p.borrow().serialize(&mut w)?;
+        }
+        w.finalize()?;
+    }
+    Ok((test.into(), buf.into(), expectation))
+}
