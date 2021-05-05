@@ -64,7 +64,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::process::{self, ExitStatus};
 use std::os::unix::process::ExitStatusExt;
-use std::io::Write;
+use std::io::{self, Write};
 
 use std::path::{Path, PathBuf};
 use tempfile::{TempDir, NamedTempFile};
@@ -73,7 +73,7 @@ use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 
-use crate::{Data, Version, Error, Result};
+use crate::{Data, Version, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -214,7 +214,8 @@ impl Sop {
         })
     }
 
-    fn run<D, I, S>(&self, args: I, input: D) -> Result<process::Output>
+    fn run<D, I, S>(&self, args: I, input: D)
+                    -> std::result::Result<process::Output, ErrorWithOutput>
         where D: AsRef<[u8]>,
               I: IntoIterator<Item=S>, S: AsRef<std::ffi::OsStr> + fmt::Debug
     {
@@ -231,19 +232,11 @@ impl Sop {
         let o = child.wait_with_output()?;
 
         if let Err(e) = write_result {
-            Err(Error::EngineError(
-                e.into(),
-                String::from_utf8_lossy(&o.stdout).to_string(),
-                String::from_utf8_lossy(&o.stderr).to_string())
-                .into())
+            Err(ErrorWithOutput::new(e, o))
         } else if o.status.success() {
             Ok(o)
         } else {
-            Err(Error::EngineError(
-                SOPError::from(o.status),
-                String::from_utf8_lossy(&o.stdout).to_string(),
-                String::from_utf8_lossy(&o.stderr).to_string())
-                .into())
+            Err(ErrorWithOutput::new(o.status, o))
         }
     }
 
@@ -1160,6 +1153,49 @@ impl From<ExitStatus> for SOPError {
         } else {
             unreachable!("On unix, there is either a status or a signal")
         }
+    }
+}
+
+/// A [`SOPError`] with data written to stdout and stderr.
+///
+/// This is used by [`Sop::run`] to communicate both the processes
+/// output and any error condition.
+#[derive(thiserror::Error, Debug)]
+#[error("{}\nstdout:\n~~~snip~~~\n{}~~~snip~~~\nstderr:\n~~~snip~~~\n{}~~~snip~~~\n",
+        source,
+        String::from_utf8_lossy(stdout),
+        String::from_utf8_lossy(stderr))]
+pub struct ErrorWithOutput {
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+    source: SOPError,
+}
+
+impl ErrorWithOutput {
+    fn new(source: impl Into<SOPError>, output: process::Output)
+           -> Self {
+        Self {
+            stdout: output.stdout,
+            stderr: output.stderr,
+            source: source.into(),
+        }
+    }
+}
+
+impl From<io::Error> for ErrorWithOutput {
+    fn from(e: io::Error) -> Self {
+        Self {
+            stdout: Default::default(),
+            stderr: Default::default(),
+            source: SOPError::IoError(e),
+        }
+    }
+}
+
+impl std::ops::Deref for ErrorWithOutput {
+    type Target = SOPError;
+    fn deref(&self) -> &Self::Target {
+        &self.source
     }
 }
 

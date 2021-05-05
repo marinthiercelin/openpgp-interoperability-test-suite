@@ -257,11 +257,3 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    /// Unspecified engine error.
-    #[error("{}\nstdout:\n~~~snip~~~\n{}~~~snip~~~\nstderr:\n~~~snip~~~\n{}~~~snip~~~\n",
-           _0, _1, _2)]
-    EngineError(#[source] sop::SOPError, String, String),
-}
