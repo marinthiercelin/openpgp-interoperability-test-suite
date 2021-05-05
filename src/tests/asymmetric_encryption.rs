@@ -21,6 +21,7 @@ use crate::{
 };
 
 mod recipient_ids;
+mod corner_cases;
 
 /// Roundtrip tests check whether consume(produce(x)) yields x.
 pub struct EncryptDecryptRoundtrip {
@@ -237,5 +238,6 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
             crate::tests::MESSAGE.to_vec().into())?));
 
     plan.add(Box::new(recipient_ids::RecipientIDs::new()?));
+    plan.add(Box::new(corner_cases::RSAEncryption::new()));
     Ok(())
 }

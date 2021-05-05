@@ -846,6 +846,7 @@ impl crate::OpenPGP for Sop {
     }
 }
 
+#[derive(Debug)]
 pub struct Verification {
     pub timestamp: DateTime<Utc>,
     pub signer: openpgp::Fingerprint,
