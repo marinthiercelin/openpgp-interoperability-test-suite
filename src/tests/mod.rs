@@ -374,11 +374,12 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
 }
 
 /// Turns a sequence of packets into an armored data stream.
-pub fn make_test<I, P>(test: &str, packets: I,
-                       label: openpgp::armor::Kind,
-                       expectation: Option<Expectation>)
-                       -> Result<(String, Data, Option<Expectation>)>
-where I: IntoIterator<Item = P>,
+pub fn make_test<T, I, P>(test: T, packets: I,
+                          label: openpgp::armor::Kind,
+                          expectation: Option<Expectation>)
+                          -> Result<(String, Data, Option<Expectation>)>
+where T: AsRef<str>,
+      I: IntoIterator<Item = P>,
       P: std::borrow::Borrow<openpgp::Packet>,
 {
     use openpgp::serialize::Serialize;
@@ -393,5 +394,5 @@ where I: IntoIterator<Item = P>,
         }
         w.finalize()?;
     }
-    Ok((test.into(), buf.into(), expectation))
+    Ok((test.as_ref().into(), buf.into(), expectation))
 }
