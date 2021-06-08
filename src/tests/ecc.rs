@@ -16,6 +16,8 @@ use crate::{
     },
 };
 
+mod unclamped_cv25519;
+
 /// Tests how implementations handle different EdDSA signature
 /// encodings.
 struct EdDSASignatureEncoding {
@@ -93,5 +95,6 @@ impl ConsumerTest for EdDSASignatureEncoding {
 pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     plan.add_section("Elliptic Curve Cryptography");
     plan.add(Box::new(EdDSASignatureEncoding::new()?));
+    plan.add(Box::new(unclamped_cv25519::UnclampedCv25519::new()?));
     Ok(())
 }

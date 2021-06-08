@@ -37,9 +37,9 @@ mod im_my_own_grandpa;
 mod temporary_validity;
 mod mock_mceliece;
 
-fn make_test<T, I, P>(test: T, packets: I,
-                      expectation: Option<Expectation>)
-                      -> Result<(String, Data, Option<Expectation>)>
+pub fn make_test<T, I, P>(test: T, packets: I,
+                          expectation: Option<Expectation>)
+                          -> Result<(String, Data, Option<Expectation>)>
     where T: AsRef<str>,
           I: IntoIterator<Item = P>,
           P: Borrow<openpgp::Packet>,
