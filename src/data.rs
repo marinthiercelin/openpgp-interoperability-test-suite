@@ -5,27 +5,32 @@
 
 use std::collections::BTreeMap;
 
+lazy_static::lazy_static! {
+    static ref FILES: BTreeMap<&'static str, &'static [u8]> = {
+        let mut m: BTreeMap<&'static str, &'static [u8]> =
+            Default::default();
+
+        macro_rules! add {
+            ( $key: expr, $path: expr ) => {
+                m.insert($key, include_bytes!($path))
+            }
+        }
+        include!(concat!(env!("OUT_DIR"), "/data.index.rs.inc"));
+
+        // Sanity checks.
+        assert!(m.contains_key("certificates/alice.pgp"));
+        assert!(m.contains_key("certificates/bob-secret.pgp"));
+        m
+    };
+}
+
+/// Returns an iterator over all files.
+pub fn files() -> impl Iterator<Item = (&'static str, &'static [u8])> {
+    FILES.iter().map(|(k, v)| (*k, *v))
+}
+
 /// Returns the content of the given file below `data`.
 pub fn file(name: &str) -> &'static [u8] {
-    lazy_static::lazy_static! {
-        static ref FILES: BTreeMap<&'static str, &'static [u8]> = {
-            let mut m: BTreeMap<&'static str, &'static [u8]> =
-                Default::default();
-
-            macro_rules! add {
-                ( $key: expr, $path: expr ) => {
-                    m.insert($key, include_bytes!($path))
-                }
-            }
-            include!(concat!(env!("OUT_DIR"), "/data.index.rs.inc"));
-
-            // Sanity checks.
-            assert!(m.contains_key("certificates/alice.pgp"));
-            assert!(m.contains_key("certificates/bob-secret.pgp"));
-            m
-        };
-    }
-
     FILES.get(name).unwrap_or_else(|| panic!("No such file {:?}", name))
 }
 
