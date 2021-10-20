@@ -68,48 +68,57 @@ impl Test for UnclampedCv25519 {
     }
 }
 
+// function pointers:
+type BytesModifier = fn(b: &mut Vec<u8>);
+
+fn set_low_bit(b: &mut Vec<u8>) {
+    // Set a verboten bit.
+    b[31] |= 1;
+}
+fn modify_key(key:&openpgp::Cert, func:BytesModifier) -> Result<openpgp::Cert>  {
+    let subkey = key.keys().subkeys().next().unwrap().key();
+    let scalar = match subkey.optional_secret().unwrap() {
+        key::SecretKeyMaterial::Unencrypted(m) => m.map(|mpis| {
+            match mpis {
+                mpi::SecretKeyMaterial::ECDH { scalar } => {
+                    // OpenPGP stores the secret in reverse order.
+                    const CURVE25519_SIZE: usize = 32;
+                    const FIRST: usize = CURVE25519_SIZE - 1;
+                    const LAST: usize = 0;
+
+                    let mut s = scalar.value().to_vec();
+                    assert_eq!(s[FIRST] & ! 0b1111_1000, 0);
+                    assert_eq!(s[LAST] & 0b1100_0000, 0b0100_0000);
+
+                    func(&mut s);
+
+                    mpi::SecretKeyMaterial::ECDH {
+                        scalar: mpi::MPI::from(s.to_vec()).into(),
+                    }
+                },
+                o => panic!("unexpected key material: {:?}", o),
+            }
+        }),
+        o => panic!("expected unencrypted material: {:?}", o),
+    };
+
+    let subkey_out =
+        subkey.clone().add_secret(scalar.into()).0;
+    return key.clone().insert_packets(Some(Packet::from(subkey_out)));
+}
+
+
 impl ConsumerTest for UnclampedCv25519 {
     fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
         let key =
             openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?;
 
-        let subkey = key.keys().subkeys().next().unwrap().key();
-        let unclamped_scalar = match subkey.optional_secret().unwrap() {
-            key::SecretKeyMaterial::Unencrypted(m) => m.map(|mpis| {
-                match mpis {
-                    mpi::SecretKeyMaterial::ECDH { scalar } => {
-                        // OpenPGP stores the secret in reverse order.
-                        const CURVE25519_SIZE: usize = 32;
-                        const FIRST: usize = CURVE25519_SIZE - 1;
-                        const LAST: usize = 0;
-
-                        let mut s = scalar.value().to_vec();
-                        assert_eq!(s[FIRST] & ! 0b1111_1000, 0);
-                        assert_eq!(s[LAST] & 0b1100_0000, 0b0100_0000);
-
-                        // Set a verboten bit.
-                        s[FIRST] |= 1;
-
-                        mpi::SecretKeyMaterial::ECDH {
-                            scalar: mpi::MPI::from(s.to_vec()).into(),
-                        }
-                    },
-                    o => panic!("unexpected key material: {:?}", o),
-                }
-            }),
-            o => panic!("expected unencrypted material: {:?}", o),
-        };
-
-        let unclamped_subkey =
-            subkey.clone().add_secret(unclamped_scalar.into()).0;
-        let unclamped =
-            key.clone().insert_packets(Some(Packet::from(unclamped_subkey)))?;
-
+        let low_unclamped = modify_key(&key, set_low_bit)?;
         use crate::tests::certificates::make_test as make;
         Ok(vec![
             make("Base case", key.into_packets(),
                  Some(Ok("Interoperability concern".into())))?,
-            make("Unclamped secret", unclamped.into_packets(),
+            make("Secret with LSB set", low_unclamped.into_packets(),
                  None)?,
         ])
     }
