@@ -79,6 +79,10 @@ fn set_high_bit(b: &mut Vec<u8>) {
     // Set a verboten bit.
     b[0] |= 0b1000_0000;
 }
+fn clear_254_bit(b: &mut Vec<u8>) {
+    // clear a bit that is supposed to be set:
+    b[0] &= ! 0b0100_0000;
+}
 
 fn modify_key(key:&openpgp::Cert, func:BytesModifier) -> Result<openpgp::Cert>  {
     let subkey = key.keys().subkeys().next().unwrap().key();
@@ -120,6 +124,7 @@ impl ConsumerTest for UnclampedCv25519 {
 
         let low_unclamped = modify_key(&key, set_low_bit)?;
         let high_unclamped = modify_key(&key, set_high_bit)?;
+        let cleared_unclamped = modify_key(&key, clear_254_bit)?;
         use crate::tests::certificates::make_test as make;
         Ok(vec![
             make("Base case", key.into_packets(),
@@ -127,6 +132,8 @@ impl ConsumerTest for UnclampedCv25519 {
             make("Secret with LSB set", low_unclamped.into_packets(),
                  None)?,
             make("Secret with MSB set", high_unclamped.into_packets(),
+                 None)?,
+            make("Secret with 2^254 bit cleared", cleared_unclamped.into_packets(),
                  None)?,
         ])
     }
