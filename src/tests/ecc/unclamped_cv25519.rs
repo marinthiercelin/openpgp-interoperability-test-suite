@@ -75,6 +75,11 @@ fn set_low_bit(b: &mut Vec<u8>) {
     // Set a verboten bit.
     b[31] |= 1;
 }
+fn set_high_bit(b: &mut Vec<u8>) {
+    // Set a verboten bit.
+    b[0] |= 0b1000_0000;
+}
+
 fn modify_key(key:&openpgp::Cert, func:BytesModifier) -> Result<openpgp::Cert>  {
     let subkey = key.keys().subkeys().next().unwrap().key();
     let scalar = match subkey.optional_secret().unwrap() {
@@ -114,11 +119,14 @@ impl ConsumerTest for UnclampedCv25519 {
             openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?;
 
         let low_unclamped = modify_key(&key, set_low_bit)?;
+        let high_unclamped = modify_key(&key, set_high_bit)?;
         use crate::tests::certificates::make_test as make;
         Ok(vec![
             make("Base case", key.into_packets(),
                  Some(Ok("Interoperability concern".into())))?,
             make("Secret with LSB set", low_unclamped.into_packets(),
+                 None)?,
+            make("Secret with MSB set", high_unclamped.into_packets(),
                  None)?,
         ])
     }
