@@ -40,8 +40,8 @@ impl EncryptDecryptRoundtrip {
         Ok(EncryptDecryptRoundtrip {
             title: title.into(),
             description: description.into(),
-            cert: cert.to_vec()?,
-            key: cert.as_tsk().to_vec()?,
+            cert: cert.armored().to_vec()?,
+            key: cert.as_tsk().armored().to_vec()?,
             cipher: None,
             aead: None,
             message,
@@ -71,8 +71,8 @@ impl EncryptDecryptRoundtrip {
             .key().clone().parts_into_secret()?.into_keypair()?;
         let new_sig = uid.bind(&mut primary_keypair, &cert, builder)?;
         let cert = cert.insert_packets(Some(new_sig))?;
-        let key = cert.as_tsk().to_vec()?;
-        let cert = cert.to_vec()?;
+        let key = cert.as_tsk().armored().to_vec()?;
+        let cert = cert.armored().to_vec()?;
 
         Ok(EncryptDecryptRoundtrip {
             title: title.into(),

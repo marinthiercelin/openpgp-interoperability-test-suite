@@ -1,6 +1,14 @@
+use std::io::Write;
+
 use sequoia_openpgp as openpgp;
-use openpgp::parse::Parse;
-use openpgp::serialize::SerializeInto;
+use openpgp::{
+    armor,
+    parse::Parse,
+    serialize::{
+        SerializeInto,
+        stream::*,
+    },
+};
 
 use crate::{
     Data,
@@ -78,11 +86,22 @@ impl ConsumerTest for EdDSASignatureEncoding {
         sig_0x40.insert(0x35, 0x40); // 0x40-pad R.
         assert_eq!(sig_0x40.len(), sig_0x40[1] as usize + 2 /* CTB + length */);
 
+        let armored = |p: Vec<u8>| -> Result<Data> {
+            let mut b = Vec::new();
+            let stack = Message::new(&mut b);
+            let mut stack = Armorer::new(stack)
+                .kind(armor::Kind::Signature)
+                .build()?;
+            stack.write_all(&p)?;
+            stack.finalize()?;
+            Ok(b.into())
+        };
+
         Ok(vec![
-            ("MPI encoding".into(), sig.to_vec()?.into(),
+            ("MPI encoding".into(), armored(sig.to_vec()?)?,
              Some(Ok("MPI encoding must be supported.".into()))),
-            ("S 0-padded".into(), sig_0.into(), None),
-            ("R 0x40-prefixed".into(), sig_0x40.into(), None),
+            ("S 0-padded".into(), armored(sig_0)?, None),
+            ("R 0x40-prefixed".into(), armored(sig_0x40)?, None),
         ])
     }
 

@@ -110,6 +110,7 @@ impl ConsumerTest for SymmetricEncryptionSupport {
                 let msg = format!("Encrypted using {:?}.", cipher)
                     .into_bytes().into();
                 let stack = Message::new(&mut b);
+                let stack = Armorer::new(stack).build()?;
                 let stack = match
                     Encryptor::for_recipients(stack, vec![recipient])
                         .symmetric_algo(cipher)
@@ -150,7 +151,8 @@ impl ConsumerTest for SymmetricEncryptionSupport {
 
             let mut b = Vec::new();
             {
-                let mut stack = Message::new(&mut b);
+                let stack = Message::new(&mut b);
+                let mut stack = Armorer::new(stack).build()?;
 
                 // PKESK packet with a fake session key.
                 let session_key = vec![0, 1, 2, 3, 4, 5, 6, 7,

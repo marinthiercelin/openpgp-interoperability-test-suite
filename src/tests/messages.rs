@@ -82,7 +82,8 @@ impl ConsumerTest for MessageStructure {
 
             let mut b = Vec::new();
             {
-                let mut stack = Message::new(&mut b);
+                let stack = Message::new(&mut b);
+                let mut stack = Armorer::new(stack).build()?;
 
                 for layer in structure.chars() {
                     match layer {
@@ -189,6 +190,7 @@ impl ConsumerTest for RecursionDepth {
                     .nth(0).unwrap().key().into();
 
                 let stack = Message::new(&mut b);
+                let stack = Armorer::new(stack).build()?;
                 let mut stack =
                     Encryptor::for_recipients(stack, vec![r]).build()?;
 
