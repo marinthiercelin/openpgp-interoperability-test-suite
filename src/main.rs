@@ -48,7 +48,8 @@ impl serde::Serialize for Implementation {
 }
 
 /// (Backend, Version)-tuple supporting multiple versions per backend.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Version {
     pub implementation: String,
     pub version: String,

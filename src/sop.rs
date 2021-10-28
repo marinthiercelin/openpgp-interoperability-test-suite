@@ -81,6 +81,7 @@ const KEEP_HOMEDIRS: bool = false;
 #[derive(Debug)]
 pub struct Sop {
     sop: PathBuf,
+    version: crate::Version,
     env: HashMap<String, String>,
     homedir: TempDir,
 }
@@ -88,22 +89,7 @@ pub struct Sop {
 impl Sop {
     /// Gets version information.
     pub fn version(&self) -> Result<crate::Version> {
-        let o = self.run(&["version"], &[])?;
-        let stdout = String::from_utf8_lossy(&o.stdout);
-        let mut name =
-            stdout.trim().split(' ').nth(0).unwrap_or("unknown").to_string();
-        if name.to_lowercase().ends_with("-sop") {
-            name =
-                String::from_utf8(name.as_bytes()[..name.len() - 4].to_vec())
-                .unwrap();
-        }
-
-        let version =
-            stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
-        Ok(Version {
-            implementation: name,
-            version,
-        })
+        Ok(self.version.clone())
     }
 
     /// Generates a Secret Key.
@@ -207,10 +193,33 @@ impl Sop {
                                     env: HashMap<String, String>)
                                     -> Result<Sop> {
         let homedir = TempDir::new()?;
-        Ok(Sop {
+        let mut sop = Sop {
             sop: executable.as_ref().into(),
+            version: Default::default(),
             env,
             homedir,
+        };
+        sop.version = sop._version()?;
+        Ok(sop)
+    }
+
+    /// Gets version information.
+    fn _version(&self) -> Result<crate::Version> {
+        let o = self.run(&["version"], &[])?;
+        let stdout = String::from_utf8_lossy(&o.stdout);
+        let mut name =
+            stdout.trim().split(' ').nth(0).unwrap_or("unknown").to_string();
+        if name.to_lowercase().ends_with("-sop") {
+            name =
+                String::from_utf8(name.as_bytes()[..name.len() - 4].to_vec())
+                .unwrap();
+        }
+
+        let version =
+            stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
+        Ok(Version {
+            implementation: name,
+            version,
         })
     }
 
