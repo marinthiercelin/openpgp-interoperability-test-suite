@@ -1,0 +1,173 @@
+#+TITLE: OpenPGP Interoperability Test Suite
+#+AUTHOR: Justus Winter <justus@sequoia-pgp.org>
+#+DATE: IETF 110, 2021-03-11
+#+OPTIONS: H:1 toc:nil num:t
+#+OPTIONS: tex:t
+#+startup: beamer
+#+LATEX_CLASS: beamer
+#+LATEX_CLASS_OPTIONS: [presentation]
+#+LATEX_HEADER: \usepackage[normalem]{ulem}
+#+LATEX_HEADER: \usepackage{pifont}
+#+LATEX_HEADER: \usepackage[export]{adjustbox}
+#+LATEX_HEADER: \newcommand{\cmark}{\ding{51}}
+#+LATEX_HEADER: \newcommand{\xmark}{\ding{55}}
+#+LaTeX_HEADER: \hypersetup{linktoc = all, colorlinks = true}
+#+BEAMER_HEADER: \title[OpenPGP Interoperability Test Suite]{A common OpenPGP Interoperability Test Suite}
+#+BEAMER_HEADER: \titlegraphic{\url{https://tests.sequoia-pgp.org}\\ \vspace{3mm} \url{https://sequoia-pgp.org/talks/2021-03-ietf/openpgp-interoperability-test-suite.pdf}}
+#+BEAMER_THEME: Madrid
+#+COLUMNS: %45ITEM %10BEAMER_ENV(Env) %10BEAMER_ACT(Act) %4BEAMER_COL(Col) %8BEAMER_OPT(Opt)
+
+* A little Context, please?
+  - OpenPGP developer for >5 years
+  - Nowadays employed by the pEp foundation
+  - An old idea whose time has come...
+
+\center\includegraphics[width=.7\linewidth, frame]{./common-openpgp-testsuite.1.pdf}
+
+* The Why?
+** A block                                                            :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.5
+   :END:
+
+Benefits...
+\vspace{1cm}
+  - ... for us
+    - validate our implementation
+    - improve the ecosystem
+\vspace{1cm}
+  - ... for other implementations
+    - free tests
+
+** A block                                                            :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.5
+   :END:
+
+\vspace{1.75cm}
+  - ... for users
+    - better software
+    - increased interoperability
+\vspace{1cm}
+  - ... for the working group
+    - what's implemented
+    - what's underspecified
+
+* The How?
+** A block                                                            :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.4
+   :END:
+
+  - black box
+    - consumer tests
+    - producer-consumer tests
+
+  - common interface
+    - [[https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli-02][Stateless OpenPGP interface]]
+
+\vspace{1cm}
+\small
+$ sqop generate-key >me.pgp
+
+$ sqop encrypt me.pgp
+
+$ sqop decrypt me.pgp
+
+** A screenshot                                                       :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.6
+   :END:
+
+\center\includegraphics[width=\linewidth]{./sample-test.pdf}
+
+* About those consumer tests...?
+
+\center\includegraphics[width=\linewidth]{./ecc.pdf}
+
+* And the producer-consumer tests...?
+
+\center\includegraphics[width=\linewidth]{./keygen.pdf}
+
+* Any Results?
+** A screenshot                                                       :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.5
+   :END:
+
+  - circa 80 tests
+  - around 412 test vectors
+  - found at least 78 bugs in 9 implementations
+
+** A screenshot                                                       :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.5
+   :END:
+
+  - improved implementations
+  - improved our understanding of the ecosystem
+  - highlights areas where implementations lack guidance
+
+* The Good, the Bad, the Ugly?
+** A block                                                            :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.4
+   :END:
+
+  - good: algorithm support
+  - bad:
+    - subpackets [[https://tests.sequoia-pgp.org/#Detached_signature_with_Subpackets][1]], [[https://tests.sequoia-pgp.org/#Binding_signature_subpackets][2]]
+    - timestamps [[https://tests.sequoia-pgp.org/#Detached_signature_with_Subpackets][1]], [[https://tests.sequoia-pgp.org/#Temporary_validity][2]], [[https://tests.sequoia-pgp.org/#Key_revocation_test__primary_key_signs_and_is_revoked__revoked__superseded][3]]
+    - unknown packets [[https://tests.sequoia-pgp.org/#Detached_signatures_with_unknown_packets][1]], [[https://tests.sequoia-pgp.org/#Perturbed_certificates][2]], [[https://tests.sequoia-pgp.org/#Messages_with_unknown_packets][3]]
+    - expirations [[https://tests.sequoia-pgp.org/#Primary_key_binding_signatures][1]], [[https://tests.sequoia-pgp.org/#Certificate_expiration][2]]
+    - revocations [[https://tests.sequoia-pgp.org/#Temporary_validity][1]], [[https://tests.sequoia-pgp.org/#Key_revocation_test__primary_key_signs_and_is_revoked__revoked__superseded][2]]
+    - robustness [[https://tests.sequoia-pgp.org/#Perturbed_certificates][1]]
+    - ASCII Armor [[https://tests.sequoia-pgp.org/#Concatenated_ASCII_Armor_Keyring][1]], [[https://tests.sequoia-pgp.org/#Mangled_ASCII_Armor][2]]
+  - ugly:
+    - weak algorithms [[https://tests.sequoia-pgp.org/#Detached_Sign-Verify_roundtrip_with_key__Bob___MD5][1]], [[https://tests.sequoia-pgp.org/#Detached_Sign-Verify_roundtrip_with_key__Bob___SHA1][2]], [[https://tests.sequoia-pgp.org/#Detached_Sign-Verify_roundtrip_with_key__Bob___RipeMD][3]], [[https://tests.sequoia-pgp.org/#Signature_over_the_shattered_collision][4]]
+
+** A screenshot                                                       :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.6
+   :END:
+
+\center\includegraphics[width=\linewidth]{./summary.pdf}
+
+\footnotesize\raggedright Figure: Percent of tests where an implementation agrees with the expectations
+on all test vectors.
+
+* Join the Fun?
+** A block                                                            :BMCOL:
+   :PROPERTIES:
+   :BEAMER_col: 0.4
+   :END:
+
+  - add tests
+    - talk to me
+    - open an [[https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/-/issues][issue]]
+  - add an implementation
+    - AWESOME!
+    - implement the [[https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli-02][Stateless OpenPGP interface]]
+    - talk to me
+  - argue semantics
+    - talk to me
+    - open an [[https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/-/issues][issue]]
+    - discuss on openpgp@ietf.org
+
+** run test suite                                                     :BMCOL:
+   :PROPERTIES:
+   :BEAMER_env: block
+   :BEAMER_col: 0.6
+   :END:
+
+   $ git clone https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite
+
+   $ less README.md # optional; YOLO
+
+   $ apt install sqop # optional
+
+   $ cp config.json.dist config.json
+
+   $ editor config.json
+
+   $ cargo run -\phantom{}- -\phantom{}-html-out results.html
