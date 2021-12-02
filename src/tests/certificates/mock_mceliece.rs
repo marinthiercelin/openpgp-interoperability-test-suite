@@ -66,7 +66,6 @@ impl Test for MockMcEliece {
 
     fn description(&self) -> String {
         format!("\
-
 <p>Explores how robust the certificate canonicalization is to huge
 encryption subkeys that cannot be MPI encoded.  While these keys are
 not functional, we can check whether they can coexist with classical

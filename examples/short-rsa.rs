@@ -89,7 +89,7 @@ fn main() -> openpgp::Result<()> {
                 message.finalize().unwrap();
             }
         }
-    };
+    }
 
     for _ in 0..WORKER_THREADS - 1 {
         let signer = signer.clone();
