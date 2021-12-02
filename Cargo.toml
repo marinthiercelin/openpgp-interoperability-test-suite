@@ -21,6 +21,7 @@ base64 = "0.13"
 chrono = { version = "0.4", features = ["serde"] }
 indicatif = { version = "0.12" }
 lazy_static = "1.4"
+nettle = "7"
 rayon = "1.2"
 regex = "1"
 rlimit = "0.2.1"
