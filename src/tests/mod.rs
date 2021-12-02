@@ -337,8 +337,12 @@ impl PartialOrd for Scores {
 pub fn extract_cert(key: &[u8]) -> Result<Data> {
     use openpgp::Packet;
     use openpgp::parse::{Parse, PacketParser, PacketParserResult};
-    use openpgp::serialize::Serialize;
+    use openpgp::serialize::{Serialize, stream::*};
     let mut cert = Vec::new();
+    let sink = Message::new(&mut cert);
+    let mut sink = Armorer::new(sink)
+        .kind(openpgp::armor::Kind::PublicKey)
+        .build()?;
 
     let mut ppr = PacketParser::from_bytes(key)?;
     while let PacketParserResult::Some(pp) = ppr {
@@ -347,13 +351,14 @@ pub fn extract_cert(key: &[u8]) -> Result<Data> {
         match packet {
             Packet::SecretKey(k) =>
                 Packet::PublicKey(k.parts_into_public())
-                    .serialize(&mut cert)?,
+                    .serialize(&mut sink)?,
             Packet::SecretSubkey(k) =>
                 Packet::PublicSubkey(k.parts_into_public())
-                    .serialize(&mut cert)?,
-            p => p.serialize(&mut cert)?,
+                    .serialize(&mut sink)?,
+            p => p.serialize(&mut sink)?,
         }
     }
+    sink.finalize()?;
 
     Ok(cert.into())
 }
