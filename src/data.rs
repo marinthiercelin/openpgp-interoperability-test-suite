@@ -30,16 +30,18 @@ pub fn files() -> impl Iterator<Item = (&'static str, &'static [u8])> {
 }
 
 /// Returns the content of the given file below `data`.
-pub fn file(name: &str) -> &'static [u8] {
-    FILES.get(name).unwrap_or_else(|| panic!("No such file {:?}", name))
+pub fn file(name: &str) -> Option<&'static [u8]> {
+    FILES.get(name).cloned()
 }
 
 /// Returns the content of the given file below `data/certificates`.
 pub fn certificate(name: &str) -> &'static [u8] {
     file(&format!("certificates/{}", name))
+        .unwrap_or_else(|| panic!("No such certificate {:?}", name))
 }
 
 /// Returns the content of the given file below `data/messages`.
 pub fn message(name: &str) -> &'static [u8] {
     file(&format!("messages/{}", name))
+        .unwrap_or_else(|| panic!("No such message {:?}", name))
 }

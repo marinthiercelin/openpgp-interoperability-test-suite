@@ -190,6 +190,7 @@ impl RevokedKey {
             self.revoked.tag().to_string()
         };
         crate::data::file(&format!("revoked-key/revoked-key-cert-{}.pgp", key))
+            .unwrap()
     }
 
     fn sig(&self, t: &str) -> Data {
@@ -199,6 +200,7 @@ impl RevokedKey {
             format!("{}.sk", t)
         };
         crate::data::file(&format!("revoked-key/revoked-key-sig-{}.pgp", sig))
+            .unwrap()
             .into()
     }
 }
