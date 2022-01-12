@@ -213,7 +213,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
                 AES192 | AES256 =>
                     Some(Ok("AES should be supported".into())),
                 _ =>
-                    Some(Ok("Interoperability concern.".into())),
+                    None, // Don't judge.
             }
         } else {
             Some(Ok("Interoperability concern.".into()))
