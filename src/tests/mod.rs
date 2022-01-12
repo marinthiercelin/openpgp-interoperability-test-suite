@@ -31,6 +31,12 @@ mod armor;
 /// this statement.
 pub const MESSAGE: &[u8] = b"Hello World :)";
 
+/// Password used in tests.
+///
+/// For consistency, all tests that encrypt a message should use this
+/// password.
+pub const PASSWORD: &str = "password";
+
 /// A StandardPolicy for the tests to use.
 const P: &StandardPolicy = &StandardPolicy::new();
 

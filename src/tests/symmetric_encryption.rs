@@ -23,6 +23,8 @@ use crate::{
     },
 };
 
+mod password_interop;
+
 const CIPHERS: &[SymmetricAlgorithm] = {
     use openpgp::types::SymmetricAlgorithm::*;
     &[
@@ -446,6 +448,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
                 Some(aead_algo))?));
     }
 
+    plan.add(Box::new(password_interop::PasswordEncryptionInterop::new()?));
     plan.add(Box::new(SEIPSupport::new()?));
 
     Ok(())
