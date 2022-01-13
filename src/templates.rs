@@ -153,7 +153,6 @@ fn json2data(v: tera::Value) -> Vec<u8> {
 fn pgp2string(v: tera::Value,
               _: std::collections::HashMap<String, tera::Value>)
               -> tera::Result<tera::Value> {
-    use tera::Value;
     let mut bytes = json2data(v);
 
     let armored = bytes.get(0).map(|b| b & 0x80 == 0).unwrap_or(false);
@@ -170,30 +169,29 @@ fn pgp2string(v: tera::Value,
         }
         bytes = armored;
     }
-    let mut res = String::new();
-    for b in bytes {
-        match b {
-            32..=126 => res.push(b as char),
-            _ => res.push_str(&format!("&#{};", b)),
-        }
-    }
-    Ok(Value::String(res))
+    Ok(escape(&bytes))
 }
 
 fn bin2string(v: tera::Value,
               _: std::collections::HashMap<String, tera::Value>)
               -> tera::Result<tera::Value> {
-    use tera::Value;
-    let bytes = json2data(v);
+    Ok(escape(&json2data(v)))
+}
 
-    let mut res = String::new();
+/// Escapes string for use in a HTML attribute.
+///
+/// Unfortunately, tera's escaping seems insufficient for that,
+/// because newlines are not escaped.  Instead, we need to do the
+/// escaping ourselves and use "| safe" in the template.
+fn escape(bytes: &[u8]) -> tera::Value {
+    let mut res = String::with_capacity(bytes.len() * 2);
     for b in bytes {
         match b {
-            32 | 33 | 35..=38 | 40..=126 => res.push(b as char),
+            32 | 33 | 35..=37 | 40..=126 => res.push(*b as char),
             _ => res.push_str(&format!("&#{};", b)),
         }
     }
-    Ok(Value::String(res))
+    tera::Value::String(res)
 }
 
 fn score2class(v: tera::Value,
