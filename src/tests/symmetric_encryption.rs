@@ -24,6 +24,7 @@ use crate::{
 };
 
 mod password_interop;
+mod s2ks;
 
 const CIPHERS: &[SymmetricAlgorithm] = {
     use openpgp::types::SymmetricAlgorithm::*;
@@ -449,6 +450,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     }
 
     plan.add(Box::new(password_interop::PasswordEncryptionInterop::new()?));
+    plan.add(Box::new(s2ks::S2KSupport::new()?));
     plan.add(Box::new(SEIPSupport::new()?));
 
     Ok(())
