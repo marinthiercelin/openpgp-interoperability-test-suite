@@ -15,6 +15,7 @@ use crate::{
     },
 };
 
+/// Applies a series of textual transformations to armored data.
 fn mangle_armor<D>(data: D)
                    -> Result<Vec<(String, Data, Option<Expectation>)>>
 where D: AsRef<[u8]>,
@@ -74,6 +75,102 @@ where D: AsRef<[u8]>,
              join(l.iter(), "\n")
          },
          Some(Ok("Interoperability concern".into()))),
+
+        ("Version header key".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Version: FooPGP 2000");
+             join(l.iter(), "\n")
+         },
+         Some(Ok("Interoperability concern".into()))),
+
+        ("Version header key w/o value".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Version: ");
+             join(l.iter(), "\n")
+         },
+         Some(Ok("Interoperability concern".into()))),
+
+        ("Version header key w/o space".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Version:FooPGP 2000");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Version header key w/o space, value".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Version:");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("MessageID header key".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "MessageID: vtB!m)V#q@!~LM>\\=^od\"a]R5]iejb2W");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Too long MessageID header key".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "MessageID: ! \"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Hash header key".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Hash: SHA256");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Hash header key, two hashes".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Hash: SHA256, RipeMD160");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Hash header key, unknown hash".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Hash: UnknownHash256");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("SaltedHash header key".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "SaltedHash: SHA256:kJn9ODTIN54nxrZgzTQDkA");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Charset header key".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Charset: UTF-8");
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Charset header key w/unknown".into(),
+         {
+             let mut l = datal.clone();
+             l.insert(1, "Charset: ThisIsNotACharset");
+             join(l.iter(), "\n")
+         },
+         None),
 
         ("Unknown header key".into(),
          {
@@ -216,6 +313,14 @@ where D: AsRef<[u8]>,
          {
              let mut l = datal.clone();
              l[datal.len() - 2] = "=AAAA".into();
+             join(l.iter(), "\n")
+         },
+         None),
+
+        ("Malformed checksum".into(),
+         {
+             let mut l = datal.clone();
+             l[datal.len() - 2] = "=AAA".into();
              join(l.iter(), "\n")
          },
          None),
