@@ -21,6 +21,7 @@ use crate::{
 mod unknown_packets;
 mod marker;
 mod trust;
+mod malformed;
 
 /// Tests various conforming, but unusual message structures.
 struct MessageStructure {
@@ -223,5 +224,6 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     plan.add(Box::new(marker::MarkerPacket::new()?));
     plan.add(Box::new(trust::TrustPacket::new()?));
     plan.add(Box::new(unknown_packets::UnknownPackets::new()?));
+    plan.add(Box::new(malformed::Malformed::new()?));
     Ok(())
 }
