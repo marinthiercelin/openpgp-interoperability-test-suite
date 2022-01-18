@@ -47,8 +47,11 @@ impl Test for DetachedSignatureSubpacket {
     }
 
     fn description(&self) -> String {
-        "Tests how implementations constrain the validity of \
-         signatures depending on the given subpackets.".into()
+        format!(
+            "Tests how implementations constrain the validity of \
+             signatures depending on the given subpackets.  \
+             The test signs the message {:?}.",
+            String::from_utf8_lossy(&self.message))
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
