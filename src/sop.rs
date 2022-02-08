@@ -566,7 +566,7 @@ impl<'s> Encrypt<'s> {
 
         for p in self.passwords {
             args.push("--with-password".into());
-            args.push(p.into());
+            args.push(self.sop.stash_bytes(p.as_bytes(), &mut tmp)?);
         }
 
         for key in self.sign_with {
@@ -708,12 +708,13 @@ impl<'s> Decrypt<'s> {
 
         for sk in self.session_keys {
             args.push("--with-session-key".into());
-            args.push(openpgp::fmt::hex::encode(sk));
+            args.push(sop.stash_bytes(
+                openpgp::fmt::hex::encode(sk).as_bytes(), &mut tmp)?);
         }
 
         for p in self.passwords {
             args.push("--with-password".into());
-            args.push(p.into());
+            args.push(sop.stash_bytes(p.as_bytes(), &mut tmp)?);
         }
 
         let verify_out_raw =
