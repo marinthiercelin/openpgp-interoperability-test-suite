@@ -50,14 +50,11 @@ impl serde::Serialize for Implementation {
 /// (Backend, Version)-tuple supporting multiple versions per backend.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[derive(serde::Deserialize, serde::Serialize)]
-pub struct Version {
-    pub implementation: String,
-    pub version: String,
-}
+pub struct Version(String);
 
 impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}/{}", self.implementation, self.version)
+        write!(f, "{}", self.0)
     }
 }
 

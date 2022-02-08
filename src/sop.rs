@@ -205,22 +205,16 @@ impl Sop {
 
     /// Gets version information.
     fn _version(&self) -> Result<crate::Version> {
-        let o = self.run(&["version"], &[])?;
-        let stdout = String::from_utf8_lossy(&o.stdout);
-        let mut name =
-            stdout.trim().split(' ').nth(0).unwrap_or("unknown").to_string();
-        if name.to_lowercase().ends_with("-sop") {
-            name =
-                String::from_utf8(name.as_bytes()[..name.len() - 4].to_vec())
-                .unwrap();
+        if let Ok(o) = self.run(&["version", "--extended"], &[]) {
+            Ok(Version(String::from_utf8_lossy(&o.stdout)
+                       .trim()
+                       .replace("\n", "/")))
+        } else {
+            let o = self.run(&["version"], &[])?;
+            Ok(Version(String::from_utf8_lossy(&o.stdout)
+                       .trim()
+                       .into()))
         }
-
-        let version =
-            stdout.trim().split(' ').nth(1).unwrap_or("unknown").to_string();
-        Ok(Version {
-            implementation: name,
-            version,
-        })
     }
 
     fn run<D, I, S>(&self, args: I, input: D)
