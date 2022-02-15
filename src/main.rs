@@ -1,6 +1,7 @@
 use std::fmt;
 use std::fs;
 use std::{
+    collections::HashMap,
     path::PathBuf,
 };
 
@@ -160,10 +161,16 @@ impl Config {
         Ok(())
     }
 
-    fn implementations(&self) -> Result<Vec<crate::Sop>> {
+    fn implementations(&self, env_override: HashMap<String, String>)
+                       -> Result<Vec<crate::Sop>>
+    {
         let mut r: Vec<crate::Sop> = Vec::new();
         for d in self.drivers.iter() {
-            r.push(sop::Sop::with_env(&d.path, d.env.clone())
+            let mut env = d.env.clone();
+            for (k, v) in env_override.iter() {
+                env.insert(k.into(), v.into());
+            }
+            r.push(sop::Sop::with_env(&d.path, env)
                    .context("Creating sop backend")?);
         }
         Ok(r)
@@ -213,12 +220,23 @@ fn main() -> anyhow::Result<()> {
         serde_json::from_reader(fs::File::open(p)?)?
         // XXX prune results
     } else {
+        // Create a common temporary directory.  We will clean this
+        // up, so that even if SOP implementations fail to do so
+        // (e.g. because they crash), all resources will be reclaimed
+        // (notably, this should prevent gpg-agents from hanging
+        // around).
+        let tmpdir = tempfile::TempDir::new()?;
+
         let c: Config =
             serde_json::from_reader(
                 fs::File::open(cli.config).context("Opening config file")?
             ).context("Reading config file")?;
         c.set_rlimits().context("Setting resource limits")?;
-        let implementations = c.implementations()
+        let implementations = c.implementations(
+            vec![
+                ("TMPDIR".to_string(),
+                 tmpdir.path().to_str().unwrap().to_string())
+            ].into_iter().collect())
             .context("Setting up implementations")?;
 
         eprintln!("Configured engines:");
