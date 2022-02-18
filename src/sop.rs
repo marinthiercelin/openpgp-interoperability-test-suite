@@ -205,16 +205,40 @@ impl Sop {
 
     /// Gets version information.
     fn _version(&self) -> Result<Version> {
-        if let Ok(o) = self.run(&["version", "--extended"], &[]) {
-            Ok(Version(String::from_utf8_lossy(&o.stdout)
-                       .trim()
-                       .replace("\n", "/")))
-        } else {
-            let o = self.run(&["version"], &[])?;
-            Ok(Version(String::from_utf8_lossy(&o.stdout)
-                       .trim()
-                       .into()))
+        let o = self.run(&["version"], &[])?;
+        let frontend = String::from_utf8_lossy(&o.stdout)
+            .trim().to_string();
+
+        let mut backend = self.run(&["version", "--backend"], &[])
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().into())
+            .ok();
+
+        // Did they just ignore the --backend?
+        if backend.as_ref() == Some(&frontend) {
+            backend = None;
         }
+
+        let mut extended = self.run(&["version", "--extended"], &[])
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().into())
+            .ok();
+
+        // Did they just ignore the --extended?
+        if extended.as_ref() == Some(&frontend) {
+            extended = None;
+        }
+
+        let summary = if let Some(b) = &backend {
+            format!("{}/{}", frontend, b)
+        } else {
+            frontend.clone()
+        };
+
+        Ok(Version {
+            frontend,
+            backend,
+            extended,
+            summary,
+        })
     }
 
     fn run<D, I, S>(&self, args: I, input: D)
@@ -853,11 +877,18 @@ impl crate::OpenPGP for Sop {
 /// (Backend, Version)-tuple supporting multiple versions per backend.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[derive(serde::Deserialize, serde::Serialize)]
-pub struct Version(String);
+pub struct Version {
+    frontend: String,
+    backend: Option<String>,
+    extended: Option<String>,
+    /// Combines frontend and backend.  Used when either is not
+    /// descriptive enough but when extended is too verbose.
+    summary: String,
+}
 
 impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.summary)
     }
 }
 

@@ -51,6 +51,7 @@ pub struct Report {
     body: String,
     summary: Vec<(String, Scores)>,
     configuration: Config,
+    implementations: Vec<crate::sop::Version>,
 }
 
 impl Report {
@@ -80,6 +81,7 @@ impl Report {
             body,
             summary: summary.for_rendering(),
             configuration: results.configuration,
+            implementations: results.implementations,
         })
     }
 }

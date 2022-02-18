@@ -285,6 +285,7 @@
 	  </ol>
 	</li>
 	<li><a href="#hall-of-fame">Hall of Fame</a></li>
+	<li><a href="#versions">Versions</a></li>
 	<li><a href="#configuration">Configuration</a></li>
       </ol>
      </div>
@@ -302,6 +303,17 @@
    </section>
    <section class="hide-on-search">
     {% include "hall-of-fame.inc.html" %}
+   </section>
+   <section class="hide-on-search">
+    <h1><a name="versions" href="#versions">Versions</a></h1>
+    <p>
+      These are the SOP implementations used in this report:
+    </p>
+    <ul>
+    {%- for i in implementations -%}
+    <li><pre>{% if i.extended %}{{ i.extended }}{% else %}{{ i.summary }}{% endif %}</pre></li>
+    {%- endfor -%}
+    </ul>
    </section>
    <section class="hide-on-search">
     <h1><a name="configuration" href="#configuration">Configuration</a></h1>

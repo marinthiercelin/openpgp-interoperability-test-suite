@@ -77,6 +77,9 @@ impl<'a> TestPlan<'a> {
             timestamp: chrono::offset::Utc::now(),
             configuration: self.configuration.clone(),
             results,
+            implementations:
+            implementations.iter().map(|i| i.version())
+                .collect::<Result<_>>()?,
         })
     }
 }
@@ -89,4 +92,5 @@ pub struct Results {
     pub timestamp: chrono::DateTime<chrono::offset::Utc>,
     pub configuration: Config,
     pub results: Vec<(String, Vec<TestMatrix>)>,
+    pub implementations: Vec<crate::sop::Version>,
 }
