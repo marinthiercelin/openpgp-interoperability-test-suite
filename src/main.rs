@@ -1,4 +1,3 @@
-use std::fmt;
 use std::fs;
 use std::{
     collections::HashMap,
@@ -24,17 +23,6 @@ pub use sop::Sop;
 
 /// Maximum size of artifacts included in the results.
 pub const MAXIMUM_ARTIFACT_SIZE: usize = 50_000;
-
-/// (Backend, Version)-tuple supporting multiple versions per backend.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct Version(String);
-
-impl fmt::Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 
 /// Chunks of data.
 #[derive(Clone, Debug, Default)]
@@ -101,7 +89,7 @@ impl<'de> serde::Deserialize<'de> for Data {
 /// interface.
 pub trait OpenPGP: std::fmt::Debug {
     fn sop(&self) -> &Sop;
-    fn version(&self) -> Result<Version>;
+    fn version(&self) -> Result<sop::Version>;
     fn encrypt(&self, recipient: &[u8], plaintext: &[u8]) -> Result<Data>;
     fn decrypt(&self, recipient: &[u8], ciphertext: &[u8]) -> Result<Data>;
     fn sign_detached(&self, _signer: &[u8], _data: &[u8]) -> Result<Data>;

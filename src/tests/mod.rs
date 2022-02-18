@@ -9,7 +9,7 @@ use crate::{
     Data,
     OpenPGP,
     Result,
-    Version,
+    sop::Version,
     plan::TestPlan,
 };
 

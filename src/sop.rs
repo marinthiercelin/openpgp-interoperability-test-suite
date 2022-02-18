@@ -73,7 +73,7 @@ use anyhow::Context;
 
 use sequoia_openpgp as openpgp;
 
-use crate::{Data, Version, Result};
+use crate::{Data, Result};
 
 const KEEP_HOMEDIRS: bool = false;
 
@@ -81,14 +81,14 @@ const KEEP_HOMEDIRS: bool = false;
 #[derive(Debug)]
 pub struct Sop {
     sop: PathBuf,
-    version: crate::Version,
+    version: Version,
     env: HashMap<String, String>,
     homedir: TempDir,
 }
 
 impl Sop {
     /// Gets version information.
-    pub fn version(&self) -> Result<crate::Version> {
+    pub fn version(&self) -> Result<Version> {
         Ok(self.version.clone())
     }
 
@@ -204,7 +204,7 @@ impl Sop {
     }
 
     /// Gets version information.
-    fn _version(&self) -> Result<crate::Version> {
+    fn _version(&self) -> Result<Version> {
         if let Ok(o) = self.run(&["version", "--extended"], &[]) {
             Ok(Version(String::from_utf8_lossy(&o.stdout)
                        .trim()
@@ -820,7 +820,7 @@ impl crate::OpenPGP for Sop {
         self
     }
 
-    fn version(&self) -> Result<crate::Version> {
+    fn version(&self) -> Result<Version> {
         Sop::version(self)
     }
 
@@ -847,6 +847,17 @@ impl crate::OpenPGP for Sop {
 
     fn generate_key(&self, userids: &[&str]) -> Result<Data> {
         Sop::generate_key(self).userids(userids.iter().cloned())
+    }
+}
+
+/// (Backend, Version)-tuple supporting multiple versions per backend.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct Version(String);
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
