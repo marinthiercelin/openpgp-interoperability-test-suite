@@ -25,29 +25,6 @@ pub use sop::Sop;
 /// Maximum size of artifacts included in the results.
 pub const MAXIMUM_ARTIFACT_SIZE: usize = 50_000;
 
-/// Backends supported by the test suite.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize)]
-pub enum Implementation {
-    Sop(String),
-}
-
-impl fmt::Display for Implementation {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Implementation::Sop(s) => f.write_str(&s),
-        }
-    }
-}
-
-impl serde::Serialize for Implementation {
-    fn serialize<S>(&self, serializer: S)
-                    -> std::result::Result<S::Ok, S::Error>
-        where S: serde::Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-
 /// (Backend, Version)-tuple supporting multiple versions per backend.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[derive(serde::Deserialize, serde::Serialize)]
