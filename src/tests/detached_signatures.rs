@@ -609,6 +609,29 @@ impl ConsumerTest for DetachedSignatureSubpacket {
                                           b"value", None)), true)?)?;
                 make(test, builder, None)?
             },
+
+            // Signer's User-ID
+            {
+                let test = "Signer's User-ID without a match";
+                let mut builder = SignatureBuilder::new(SignatureType::Binary);
+                let unmatched_user_id = "Uli Unmatched <uli@openpgp.example>";
+
+                builder.hashed_area_mut().clear();
+                builder.hashed_area_mut().add(
+                Subpacket::new(SubpacketValue::SignatureCreationTime(
+                    now.try_into()?), false)?)?;
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::IssuerFingerprint(
+                        issuer_fp.clone()), false)?)?;
+                builder.unhashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::Issuer(issuer.clone()),
+                        false)?)?;
+                builder.hashed_area_mut().add(
+                    Subpacket::new(SubpacketValue::SignersUserID(
+                        unmatched_user_id.as_bytes().to_vec()),
+                            false)?)?;
+                make(test, builder, None)?
+            },
         ])
     }
 
