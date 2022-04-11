@@ -1,5 +1,6 @@
 use sequoia_openpgp as openpgp;
 use openpgp::parse::Parse;
+use openpgp::types::HashAlgorithm;
 
 use crate::{
     Result,
@@ -10,14 +11,20 @@ use crate::{
     },
 };
 
+pub const HASHES: &[HashAlgorithm] = {
+    use HashAlgorithm::*;
+    &[
+        MD5, SHA1, RipeMD,
+        SHA256, SHA384, SHA512, SHA224,
+    ]
+};
+
 mod shattered;
 
 pub fn schedule(plan: &mut TestPlan) -> Result<()> {
-    use openpgp::types::HashAlgorithm::*;
-
     plan.add_section("Hash Algorithms");
 
-    for &hash in &[MD5, SHA1, RipeMD, SHA256, SHA384, SHA512, SHA224] {
+    for &hash in HASHES {
         plan.add(Box::new(
             DetachedSignVerifyRoundtrip::with_hash(
                 &format!("Detached Sign-Verify roundtrip with key 'Bob', {:?}",

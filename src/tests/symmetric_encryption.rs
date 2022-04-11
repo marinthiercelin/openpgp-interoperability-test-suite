@@ -26,7 +26,7 @@ use crate::{
 mod password_interop;
 mod s2ks;
 
-const CIPHERS: &[SymmetricAlgorithm] = {
+pub const CIPHERS: &[SymmetricAlgorithm] = {
     use openpgp::types::SymmetricAlgorithm::*;
     &[
         IDEA, TripleDES, CAST5, Blowfish,
