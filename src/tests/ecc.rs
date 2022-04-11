@@ -24,6 +24,7 @@ use crate::{
     },
 };
 
+mod ecdh_parameters;
 mod unclamped_cv25519;
 
 /// Tests how implementations handle different EdDSA signature
@@ -115,5 +116,6 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     plan.add_section("Elliptic Curve Cryptography");
     plan.add(Box::new(EdDSASignatureEncoding::new()?));
     plan.add(Box::new(unclamped_cv25519::UnclampedCv25519::new()?));
+    plan.add(Box::new(ecdh_parameters::ECDHParameters::new()?));
     Ok(())
 }
