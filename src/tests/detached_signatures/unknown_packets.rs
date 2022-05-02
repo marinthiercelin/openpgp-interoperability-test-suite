@@ -48,7 +48,10 @@ impl Test for UnknownPackets {
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
-        vec![("Certificate".into(), data::certificate("bob.pgp").into())]
+        vec![
+            ("Bob's certificate".into(), data::certificate("bob.pgp").into()),
+            ("Ricarda's certificate".into(), data::certificate("ricarda.pgp").into()),
+        ]
     }
 
 
@@ -66,29 +69,40 @@ impl ConsumerTest for UnknownPackets {
         let primary_signer =
             primary.clone().parts_into_secret()?.into_keypair()?;
 
+        let cert_ricarda =
+            openpgp::Cert::from_bytes(data::certificate("ricarda-secret.pgp"))?;
+        let ricarda_signer =
+            cert_ricarda.with_policy(crate::tests::P, None)?
+            .keys().secret().for_signing().next().unwrap()
+            .key().clone().into_keypair()?;
+
         let mut sig = Vec::new();
         {
             let message = Message::new(&mut sig);
             let mut signer = Signer::new(message, primary_signer)
+                .add_signer(ricarda_signer)
                 .detached()
                 .build()?;
             signer.write_all(crate::tests::MESSAGE)?;
             signer.finalize()?;
         }
 
-        let sig4 = openpgp::PacketPile::from_bytes(&sig)?
+        let pp = openpgp::PacketPile::from_bytes(&sig)?
             .into_children().collect::<Vec<_>>();
-        assert_eq!(sig4.len(), 1);
-        let sig4 = sig4[0].clone();
+        assert_eq!(pp.len(), 2);
+        let sig4 = pp[0].clone();
         assert_eq!(sig4.tag(), Tag::Signature);
         assert_eq!(sig4.kind(), Some(Tag::Signature));
+        let sig4_r = pp[1].clone();
+        assert_eq!(sig4_r.tag(), Tag::Signature);
+        assert_eq!(sig4_r.kind(), Some(Tag::Signature));
 
         // Make a fictitious v23 signature.
         sig[3] = 23;
-        let sig23 = openpgp::PacketPile::from_bytes(&sig)?
+        let pp = openpgp::PacketPile::from_bytes(&sig)?
             .into_children().collect::<Vec<_>>();
-        assert_eq!(sig23.len(), 1);
-        let sig23 = sig23[0].clone();
+        assert_eq!(pp.len(), 2);
+        let sig23 = pp[0].clone();
         assert_eq!(sig23.tag(), Tag::Signature);
         assert_eq!(sig23.kind(), None);
 
@@ -104,8 +118,23 @@ impl ConsumerTest for UnknownPackets {
         }
 
         Ok(vec![
-            make_test("SIG4 SIG4",
-                      vec![sig4.clone(), sig4.clone()],
+            make_test("SIG4_bob",
+                      vec![sig4.clone()],
+                      Some(Ok("Base case".into())))?,
+            make_test("SIG4_ricarda",
+                      vec![sig4_r.clone()],
+                      Some(Ok("Base case".into())))?,
+            make_test("SIG4_b SIG4_r, use Bob's cert",
+                      vec![sig4.clone(), sig4_r.clone()],
+                      Some(Ok("Base case".into())))?,
+            make_test("SIG4_b SIG4_r, use Ricarda's cert",
+                      vec![sig4.clone(), sig4_r.clone()],
+                      Some(Ok("Base case".into())))?,
+            make_test("SIG4_r SIG4_b, use Bob's cert",
+                      vec![sig4_r.clone(), sig4.clone()],
+                      Some(Ok("Base case".into())))?,
+            make_test("SIG4_r SIG4_b, use Ricarda's cert",
+                      vec![sig4_r.clone(), sig4.clone()],
                       Some(Ok("Base case".into())))?,
             make_test("SIG4 SIG23",
                       vec![sig4.clone(), sig23.clone()],
@@ -117,9 +146,21 @@ impl ConsumerTest for UnknownPackets {
 
     }
 
-    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
+    fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        pgp.verify_detached(data::certificate("bob.pgp"), crate::tests::MESSAGE,
-                            artifact)
+        let verify_with_cert = match i {
+            0..=5 => if i % 2 == 0 {
+                data::certificate("bob.pgp")
+            } else {
+                data::certificate("ricarda.pgp")
+            },
+            _ => data::certificate("bob.pgp"),
+        };
+
+        pgp.sop()
+            .verify()
+            .cert(verify_with_cert)
+            .signatures(artifact)
+            .data_raw(crate::tests::MESSAGE)
     }
 }
