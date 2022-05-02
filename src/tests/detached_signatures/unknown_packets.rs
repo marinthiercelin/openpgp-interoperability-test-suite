@@ -33,10 +33,6 @@ impl UnknownPackets {
         Ok(UnknownPackets {
         })
     }
-
-    fn message(&self) -> &'static [u8] {
-        crate::tests::MESSAGE
-    }
 }
 
 impl Test for UnknownPackets {
@@ -76,7 +72,7 @@ impl ConsumerTest for UnknownPackets {
             let mut signer = Signer::new(message, primary_signer)
                 .detached()
                 .build()?;
-            signer.write_all(self.message())?;
+            signer.write_all(crate::tests::MESSAGE)?;
             signer.finalize()?;
         }
 
@@ -123,7 +119,7 @@ impl ConsumerTest for UnknownPackets {
 
     fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        pgp.verify_detached(data::certificate("bob.pgp"), self.message(),
+        pgp.verify_detached(data::certificate("bob.pgp"), crate::tests::MESSAGE,
                             artifact)
     }
 }
