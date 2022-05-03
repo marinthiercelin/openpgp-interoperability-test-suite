@@ -33,6 +33,7 @@ pub struct EncryptDecryptRoundtrip {
     cipher: Option<openpgp::types::SymmetricAlgorithm>,
     aead: Option<openpgp::types::AEADAlgorithm>,
     message: Data,
+    default_expectation: Option<std::result::Result<String, String>>,
 }
 
 impl EncryptDecryptRoundtrip {
@@ -46,6 +47,7 @@ impl EncryptDecryptRoundtrip {
             cipher: None,
             aead: None,
             message,
+            default_expectation: Some(Ok("Interoperability concern.".into())),
         })
     }
 
@@ -83,6 +85,7 @@ impl EncryptDecryptRoundtrip {
             cipher: Some(cipher),
             aead,
             message,
+            default_expectation: Some(Ok("Interoperability concern.".into())),
         })
     }
 }
@@ -97,7 +100,10 @@ impl Test for EncryptDecryptRoundtrip {
     }
 
     fn artifacts(&self) -> Vec<(String, Data)> {
-        vec![("Certificate".into(), self.cert.clone().into())]
+        vec![
+            ("Certificate".into(), self.cert.clone().into()),
+            ("Key".into(), self.key.clone().into()),
+        ]
     }
 
     fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix> {
@@ -216,7 +222,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
                     None, // Don't judge.
             }
         } else {
-            Some(Ok("Interoperability concern.".into()))
+            self.default_expectation.clone()
         }
     }
 }
@@ -237,6 +243,18 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
              draft-bre-openpgp-samples-00.",
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
             crate::tests::MESSAGE.to_vec().into())?));
+    plan.add(Box::new(
+        EncryptDecryptRoundtrip {
+            title: "Encrypt-Decrypt roundtrip with key 'John'".into(),
+            description:
+            "Encrypt-Decrypt roundtrip using the v3 'John' key.".into(),
+            cert: data::certificate("john.pgp").into(),
+            key: data::certificate("john-secret.pgp").into(),
+            cipher: None,
+            aead: None,
+            message: crate::tests::MESSAGE.to_vec().into(),
+            default_expectation: None,
+        }));
 
     plan.add(Box::new(recipient_ids::RecipientIDs::new()?));
     plan.add(Box::new(corner_cases::RSAEncryption::new()));
