@@ -36,7 +36,7 @@ impl ConcatenatedArmorKeyring {
     }
 
     fn signature(&self) -> Result<Vec<u8>> {
-        // Sign with Bob's subkey.
+        // Sign with Bob's primary key.
         let cert =
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?;
         let signing_keypair =
