@@ -75,7 +75,6 @@ impl ConsumerTest for MessageStructure {
             "ese",
             "ses",
             "ecc",
-            "ees",
             "ess",
             "esss",
         ] {
