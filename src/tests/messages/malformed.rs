@@ -108,6 +108,95 @@ impl ConsumerTest for Malformed {
                 buf.into(),
                 Some(Ok("Compatibility concern.".into()))));
 
+        // Zero-length compressed data stream.
+        for &algo in &[CompressionAlgorithm::Uncompressed,
+                       CompressionAlgorithm::Zip,
+                       CompressionAlgorithm::Zlib,
+                       CompressionAlgorithm::BZip2]
+        {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+            let mut buf = Vec::new();
+            let message = Message::new(&mut buf);
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+            let message = Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?;
+            let mut message =
+                ArbitraryWriter::new(message, Tag::CompressedData)?;
+            message.write_all(&[algo.into()])?;
+            // Peel it off.
+            let message = message.finalize_one()?.unwrap();
+            let mut message = LiteralWriter::new(message).build()?;
+            message.write_all(MESSAGE)?;
+            message.finalize()?;
+            t.push((format!("0-length {} data stream", algo),
+                    buf.into(),
+                    Some(Err("Malformed message.".into()))));
+        }
+
+        // Empty compressed data stream.
+        let cipher = SymmetricAlgorithm::default();
+        let sk = SessionKey::new(cipher.key_size()?);
+        let mut buf = Vec::new();
+        let message = Message::new(&mut buf);
+        let message = Armorer::new(message)
+            .add_header("Comment",
+                        format!("Plaintext is {:?}",
+                                String::from_utf8_lossy(MESSAGE)))
+            .add_header("Comment",
+                        format!("Encrypted using {}", cipher))
+            .add_header("Comment",
+                        format!("Session key: {}", hex::encode(&sk)))
+            .build()?;
+        let message = Encryptor::with_session_key(message, cipher, sk)?
+            .add_recipients(vec![&recipient])
+            .build()?;
+        let message = Compressor::new(message).build()?;
+        // Peel it off without writing anything to it.
+        let message = message.finalize_one()?.unwrap();
+        let mut message = LiteralWriter::new(message).build()?;
+        message.write_all(MESSAGE)?;
+        message.finalize()?;
+        t.push(("Empty compressed data stream".into(),
+                buf.into(),
+                Some(Err("Malformed message.".into()))));
+
+        // Compressed marker packet.
+        let cipher = SymmetricAlgorithm::default();
+        let sk = SessionKey::new(cipher.key_size()?);
+        let mut buf = Vec::new();
+        let message = Message::new(&mut buf);
+        let message = Armorer::new(message)
+            .add_header("Comment",
+                        format!("Plaintext is {:?}",
+                                String::from_utf8_lossy(MESSAGE)))
+            .add_header("Comment",
+                        format!("Encrypted using {}", cipher))
+            .add_header("Comment",
+                        format!("Session key: {}", hex::encode(&sk)))
+            .build()?;
+        let message = Encryptor::with_session_key(message, cipher, sk)?
+            .add_recipients(vec![&recipient])
+            .build()?;
+        let mut message = Compressor::new(message).build()?;
+        Packet::Marker(Default::default()).serialize(&mut message)?;
+        let message = message.finalize_one()?.unwrap();
+        let mut message = LiteralWriter::new(message).build()?;
+        message.write_all(MESSAGE)?;
+        message.finalize()?;
+        t.push(("Compressed marker packet".into(),
+                buf.into(),
+                Some(Err("Malformed message.".into()))));
+
         // Two messages, concatenated.
         let cipher = SymmetricAlgorithm::default();
         let sk = SessionKey::new(cipher.key_size()?);
