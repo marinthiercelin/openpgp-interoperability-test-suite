@@ -244,6 +244,13 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
             openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
             crate::tests::MESSAGE.to_vec().into())?));
     plan.add(Box::new(
+        EncryptDecryptRoundtrip::new(
+            "Encrypt-Decrypt roundtrip with key 'Carol'",
+            "Encrypt-Decrypt roundtrip using the 'Carol' key from \
+             draft-bre-openpgp-samples-00.",
+            openpgp::Cert::from_bytes(data::certificate("carol-secret.pgp"))?,
+            crate::tests::MESSAGE.to_vec().into())?));
+    plan.add(Box::new(
         EncryptDecryptRoundtrip {
             title: "Encrypt-Decrypt roundtrip with key 'John'".into(),
             description:
