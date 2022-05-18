@@ -46,6 +46,7 @@ impl Test for Malformed {
         format!(
             "This is a collection of messages that are malformed, i.e. \
              they do not conform to the OpenPGP Message grammar. \
+             All messages are passed to 'sop decrypt bob-secret.pgp'. \
              When a single Literal Data packet is used in a test vector, \
              the usual plaintext {:?} is used, but when two Literal \
              Data Packets are present, {:?} and {:?} is used so that \
