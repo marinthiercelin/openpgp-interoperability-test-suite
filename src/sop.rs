@@ -1280,7 +1280,7 @@ mod tests {
     ///     sop sign --as=text alice.sec < statement.txt > statement.txt.asc
     ///     sop verify announcement.txt.asc alice.pgp < announcement.txt
     ///
-    ///     sop encrypt --sign-with=alice.sec --as=mime bob.pgp < msg.eml > encrypted.asc
+    ///     sop encrypt --sign-with=alice.sec bob.pgp < msg.eml > encrypted.asc
     ///     sop decrypt alice.sec < ciphertext.asc > cleartext.out
     #[test]
     fn sop_examples() -> Result<()> {
@@ -1316,7 +1316,6 @@ mod tests {
         let ciphertext = sop
             .encrypt()
             .signer_key(&alice_sec)
-            .as_(EncryptAs::MIME)
             .cert(&bob_pgp)
             .plaintext(statement).unwrap();
         let plaintext = sop
