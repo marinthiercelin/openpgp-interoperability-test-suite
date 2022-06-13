@@ -1300,7 +1300,7 @@ mod tests {
             .extract_cert()
             .key(&bob_sec)?;
 
-        let statement = crate::tests::MESSAGE;
+        let statement = b"Hello World :)";
         let statement_asc = sop
             .sign()
             .as_(SignAs::Text)
