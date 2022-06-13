@@ -13,7 +13,6 @@ use crate::{
     tests::{
         P,
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -30,7 +29,7 @@ impl TrustPacket {
     }
 }
 
-impl Test for TrustPacket {
+impl crate::plan::Runnable<TestMatrix> for TrustPacket {
     fn title(&self) -> String {
         "Trust Packet".into()
     }

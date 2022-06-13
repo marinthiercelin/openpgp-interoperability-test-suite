@@ -11,10 +11,9 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ProducerConsumerTest,
     },
@@ -90,7 +89,7 @@ impl EncryptDecryptRoundtrip {
     }
 }
 
-impl Test for EncryptDecryptRoundtrip {
+impl crate::plan::Runnable<TestMatrix> for EncryptDecryptRoundtrip {
     fn title(&self) -> String {
         self.title.clone()
     }

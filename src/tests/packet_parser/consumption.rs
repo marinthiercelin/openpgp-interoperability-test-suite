@@ -15,7 +15,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -65,7 +64,7 @@ impl PacketConsumption {
     }
 }
 
-impl Test for PacketConsumption {
+impl crate::plan::Runnable<TestMatrix> for PacketConsumption {
     fn title(&self) -> String {
         "Packet excess consumption".into()
     }

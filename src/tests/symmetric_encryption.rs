@@ -13,10 +13,9 @@ use crate::{
     Data,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
         asymmetric_encryption::EncryptDecryptRoundtrip,
@@ -62,7 +61,7 @@ impl SymmetricEncryptionSupport {
     }
 }
 
-impl Test for SymmetricEncryptionSupport {
+impl crate::plan::Runnable<TestMatrix> for SymmetricEncryptionSupport {
     fn title(&self) -> String {
         "Symmetric Encryption Algorithm support".into()
     }
@@ -206,7 +205,7 @@ impl SEIPSupport {
     }
 }
 
-impl Test for SEIPSupport {
+impl crate::plan::Runnable<TestMatrix> for SEIPSupport {
     fn title(&self) -> String {
         "SEIP packet support".into()
     }

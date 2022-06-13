@@ -6,7 +6,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -23,7 +22,7 @@ impl Shattered {
     }
 }
 
-impl Test for Shattered {
+impl crate::plan::Runnable<TestMatrix> for Shattered {
     fn title(&self) -> String {
         "Signature over the shattered collision".into()
     }

@@ -8,6 +8,7 @@ use crate::{
     tests::{
         Scores,
         Summary,
+        TestMatrix,
     },
     plan::Results,
 };
@@ -55,7 +56,7 @@ pub struct Report {
 }
 
 impl Report {
-    pub fn new(results: Results) -> Result<Report> {
+    pub fn new(results: Results<TestMatrix>) -> Result<Report> {
         let mut toc = Vec::new();
         let mut body = String::new();
         let mut summary = Summary::default();

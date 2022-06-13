@@ -5,7 +5,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -22,7 +21,7 @@ impl ECDHKDFFingerprint {
     }
 }
 
-impl Test for ECDHKDFFingerprint {
+impl crate::plan::Runnable<TestMatrix> for ECDHKDFFingerprint {
     fn title(&self) -> String {
         "ECDH KDF using recipient fingerprint".into()
     }

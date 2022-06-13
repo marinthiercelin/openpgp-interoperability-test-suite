@@ -16,10 +16,9 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -98,7 +97,7 @@ impl PacketBoundaries {
     }
 }
 
-impl Test for PacketBoundaries {
+impl crate::plan::Runnable<TestMatrix> for PacketBoundaries {
     fn title(&self) -> String {
         "Packet boundaries".into()
     }

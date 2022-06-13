@@ -17,10 +17,9 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -85,7 +84,7 @@ impl EncryptionKeyFlags {
     }
 }
 
-impl Test for EncryptionKeyFlags {
+impl crate::plan::Runnable<TestMatrix> for EncryptionKeyFlags {
     fn title(&self) -> String {
         "Interpretation of encryption keyflags".into()
     }
@@ -316,7 +315,7 @@ impl PrimaryKeyFlags {
     }
 }
 
-impl Test for PrimaryKeyFlags {
+impl crate::plan::Runnable<TestMatrix> for PrimaryKeyFlags {
     fn title(&self) -> String {
         "Interpretation of primary key flags".into()
     }

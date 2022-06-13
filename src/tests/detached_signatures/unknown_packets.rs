@@ -18,7 +18,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -35,7 +34,7 @@ impl UnknownPackets {
     }
 }
 
-impl Test for UnknownPackets {
+impl crate::plan::Runnable<TestMatrix> for UnknownPackets {
     fn title(&self) -> String {
         "Detached signatures with unknown packets".into()
     }

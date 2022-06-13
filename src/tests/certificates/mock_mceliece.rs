@@ -21,7 +21,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -59,7 +58,7 @@ impl MockMcEliece {
     }
 }
 
-impl Test for MockMcEliece {
+impl crate::plan::Runnable<TestMatrix> for MockMcEliece {
     fn title(&self) -> String {
         "Mock PQ subkey".into()
     }

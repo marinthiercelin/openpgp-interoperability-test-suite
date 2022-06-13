@@ -10,7 +10,10 @@ use crate::{
     OpenPGP,
     Result,
     sop::Version,
-    plan::TestPlan,
+    plan::{
+        Plan,
+        Runnable,
+    },
 };
 
 mod asymmetric_encryption;
@@ -41,20 +44,14 @@ pub const PASSWORD: &str = "password";
 const P: &StandardPolicy = &StandardPolicy::new();
 
 /// Metadata for the tests.
-pub trait Test {
-    fn title(&self) -> String;
-    fn description(&self) -> String;
-    fn artifacts(&self) -> Vec<(String, Data)> {
-        Vec::with_capacity(0)
-    }
-    fn run(&self, implementations: &[crate::Sop]) -> Result<TestMatrix>;
+pub trait Test: Runnable<TestMatrix> {
 }
 
 /// States the expected result of a test.
 type Expectation = std::result::Result<String, String>;
 
 /// Checks that artifacts can be used by all implementations.
-pub trait ConsumerTest : Test {
+pub trait ConsumerTest: Runnable<TestMatrix> {
     fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>>;
     fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data>;
@@ -113,7 +110,7 @@ pub trait ConsumerTest : Test {
 
 /// Checks that artifacts produced by one implementation can be used
 /// by another.
-pub trait ProducerConsumerTest : Test {
+pub trait ProducerConsumerTest: Runnable<TestMatrix> {
     fn produce(&self, pgp: &dyn OpenPGP) -> Result<Data>;
     fn check_producer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
     fn consume(&self,
@@ -368,6 +365,8 @@ pub fn extract_cert(key: &[u8]) -> Result<Data> {
 
     Ok(cert.into())
 }
+
+pub type TestPlan<'a> = Plan<'a, TestMatrix>;
 
 pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     asymmetric_encryption::schedule(plan)?;

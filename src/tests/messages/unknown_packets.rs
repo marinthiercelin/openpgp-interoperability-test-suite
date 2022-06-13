@@ -16,7 +16,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -33,7 +32,7 @@ impl UnknownPackets {
     }
 }
 
-impl Test for UnknownPackets {
+impl crate::plan::Runnable<TestMatrix> for UnknownPackets {
     fn title(&self) -> String {
         "Messages with unknown packets".into()
     }

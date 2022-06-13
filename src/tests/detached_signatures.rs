@@ -16,10 +16,9 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
         ProducerConsumerTest,
@@ -41,7 +40,7 @@ impl DetachedSignatureSubpacket {
     }
 }
 
-impl Test for DetachedSignatureSubpacket {
+impl crate::plan::Runnable<TestMatrix> for DetachedSignatureSubpacket {
     fn title(&self) -> String {
         "Detached signature with Subpackets".into()
     }
@@ -696,7 +695,7 @@ impl DetachedSignVerifyRoundtrip {
     }
 }
 
-impl Test for DetachedSignVerifyRoundtrip {
+impl crate::plan::Runnable<TestMatrix> for DetachedSignVerifyRoundtrip {
     fn title(&self) -> String {
         self.title.clone()
     }
@@ -855,7 +854,7 @@ impl LineBreakNormalizationTest {
     }
 }
 
-impl Test for LineBreakNormalizationTest {
+impl crate::plan::Runnable<TestMatrix> for LineBreakNormalizationTest {
     fn title(&self) -> String {
         "Detached signatures: Linebreak normalization".into()
     }

@@ -16,7 +16,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -52,7 +51,7 @@ impl UnclampedCv25519 {
     }
 }
 
-impl Test for UnclampedCv25519 {
+impl crate::plan::Runnable<TestMatrix> for UnclampedCv25519 {
     fn title(&self) -> String {
         "Unclamped Cv25519 secrets".into()
     }

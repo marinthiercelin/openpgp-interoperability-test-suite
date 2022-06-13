@@ -23,7 +23,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -67,7 +66,7 @@ impl RSAKeySizes {
     }
 }
 
-impl Test for RSAKeySizes {
+impl crate::plan::Runnable<TestMatrix> for RSAKeySizes {
     fn title(&self) -> String {
         "RSA key sizes".into()
     }

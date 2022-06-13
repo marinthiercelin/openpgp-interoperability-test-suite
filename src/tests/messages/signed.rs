@@ -18,7 +18,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -48,7 +47,7 @@ impl Signed {
     }
 }
 
-impl Test for Signed {
+impl crate::plan::Runnable<TestMatrix> for Signed {
     fn title(&self) -> String {
         "Signed messages".into()
     }

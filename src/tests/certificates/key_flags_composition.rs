@@ -24,7 +24,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -66,7 +65,7 @@ impl KeyFlagsComposition {
     }
 }
 
-impl Test for KeyFlagsComposition {
+impl crate::plan::Runnable<TestMatrix> for KeyFlagsComposition {
     fn title(&self) -> String {
         "Key Flags Composition".into()
     }

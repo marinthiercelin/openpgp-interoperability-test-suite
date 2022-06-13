@@ -15,7 +15,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -57,7 +56,7 @@ impl ConcatenatedArmorKeyring {
     }
 }
 
-impl Test for ConcatenatedArmorKeyring {
+impl crate::plan::Runnable<TestMatrix> for ConcatenatedArmorKeyring {
     fn title(&self) -> String {
         "Concatenated ASCII Armor Keyring".into()
     }

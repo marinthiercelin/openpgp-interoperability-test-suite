@@ -9,10 +9,9 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -35,7 +34,7 @@ impl MessageStructure {
     }
 }
 
-impl Test for MessageStructure {
+impl crate::plan::Runnable<TestMatrix> for MessageStructure {
     fn title(&self) -> String {
         "Unusual Message Structure".into()
     }
@@ -145,7 +144,7 @@ impl RecursionDepth {
     }
 }
 
-impl Test for RecursionDepth {
+impl crate::plan::Runnable<TestMatrix> for RecursionDepth {
     fn title(&self) -> String {
         "Maximum recursion depth".into()
     }

@@ -15,10 +15,9 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -40,7 +39,7 @@ impl EdDSASignatureEncoding {
     }
 }
 
-impl Test for EdDSASignatureEncoding {
+impl crate::plan::Runnable<TestMatrix> for EdDSASignatureEncoding {
     fn title(&self) -> String {
         "EdDSA signature encodings".into()
     }

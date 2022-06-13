@@ -12,7 +12,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -29,7 +28,7 @@ impl RecipientIDs {
     }
 }
 
-impl Test for RecipientIDs {
+impl crate::plan::Runnable<TestMatrix> for RecipientIDs {
     fn title(&self) -> String {
         "Recipient IDs".into()
     }

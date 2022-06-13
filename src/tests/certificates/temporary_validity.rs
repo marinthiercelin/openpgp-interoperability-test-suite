@@ -29,7 +29,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -223,7 +222,7 @@ impl TemporaryValidity {
     }
 }
 
-impl Test for TemporaryValidity {
+impl crate::plan::Runnable<TestMatrix> for TemporaryValidity {
     fn title(&self) -> String {
         "Temporary validity".into()
     }

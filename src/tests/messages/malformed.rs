@@ -17,7 +17,6 @@ use crate::{
     tests::{
         MESSAGE,
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -37,7 +36,7 @@ impl Malformed {
     }
 }
 
-impl Test for Malformed {
+impl crate::plan::Runnable<TestMatrix> for Malformed {
     fn title(&self) -> String {
         "Malformed messages".into()
     }

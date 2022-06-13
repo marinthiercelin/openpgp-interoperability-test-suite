@@ -13,7 +13,6 @@ use crate::{
     tests::{
         P,
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -30,7 +29,7 @@ impl MarkerPacket {
     }
 }
 
-impl Test for MarkerPacket {
+impl crate::plan::Runnable<TestMatrix> for MarkerPacket {
     fn title(&self) -> String {
         "Marker Packet".into()
     }

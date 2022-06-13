@@ -13,7 +13,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -35,7 +34,7 @@ impl ECDHParameters {
     }
 }
 
-impl Test for ECDHParameters {
+impl crate::plan::Runnable<TestMatrix> for ECDHParameters {
     fn title(&self) -> String {
         "ECDH Parameters".into()
     }

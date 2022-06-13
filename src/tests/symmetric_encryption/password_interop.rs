@@ -4,7 +4,6 @@ use crate::{
     Result,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ProducerConsumerTest,
     },
@@ -20,7 +19,7 @@ impl PasswordEncryptionInterop {
     }
 }
 
-impl Test for PasswordEncryptionInterop {
+impl crate::plan::Runnable<TestMatrix> for PasswordEncryptionInterop {
     fn title(&self) -> String {
         "Password-based encryption".into()
     }

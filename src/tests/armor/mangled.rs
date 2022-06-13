@@ -10,7 +10,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -342,7 +341,7 @@ impl MangledArmoredKey {
     }
 }
 
-impl Test for MangledArmoredKey {
+impl crate::plan::Runnable<TestMatrix> for MangledArmoredKey {
     fn title(&self) -> String {
         "Mangled ASCII Armored Key".into()
     }
@@ -404,7 +403,7 @@ impl MangledArmoredCert {
     }
 }
 
-impl Test for MangledArmoredCert {
+impl crate::plan::Runnable<TestMatrix> for MangledArmoredCert {
     fn title(&self) -> String {
         "Mangled ASCII Armor".into()
     }
@@ -466,7 +465,7 @@ impl MangledArmoredCiphertext {
     }
 }
 
-impl Test for MangledArmoredCiphertext {
+impl crate::plan::Runnable<TestMatrix> for MangledArmoredCiphertext {
     fn title(&self) -> String {
         "Mangled ASCII Armored Ciphertexts".into()
     }
@@ -544,7 +543,7 @@ impl MangledArmoredSignature {
     }
 }
 
-impl Test for MangledArmoredSignature {
+impl crate::plan::Runnable<TestMatrix> for MangledArmoredSignature {
     fn title(&self) -> String {
         "Mangled ASCII Armored Signatures".into()
     }

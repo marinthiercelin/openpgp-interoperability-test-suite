@@ -15,7 +15,7 @@ use openpgp::{
 mod data;
 mod tests;
 mod templates;
-mod plan;
+pub mod plan;
 mod progress_bar;
 
 pub mod sop;
@@ -210,7 +210,7 @@ fn main() -> anyhow::Result<()> {
                       i.version().context(format!("Could not run {:?}", i))?);
         }
 
-        let mut plan = plan::TestPlan::new(&c);
+        let mut plan = tests::TestPlan::new(&c);
         tests::schedule(&mut plan)?;
 
         if let Some(r) = retain_tests {

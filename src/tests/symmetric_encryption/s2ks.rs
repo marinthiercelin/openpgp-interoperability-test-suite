@@ -16,7 +16,6 @@ use crate::{
         PASSWORD,
         MESSAGE,
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -34,7 +33,7 @@ impl S2KSupport {
     }
 }
 
-impl Test for S2KSupport {
+impl crate::plan::Runnable<TestMatrix> for S2KSupport {
     fn title(&self) -> String {
         "S2K mechanisms".into()
     }

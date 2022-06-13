@@ -30,7 +30,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -73,7 +72,7 @@ impl PrimaryKeyBinding {
     }
 }
 
-impl Test for PrimaryKeyBinding {
+impl crate::plan::Runnable<TestMatrix> for PrimaryKeyBinding {
     fn title(&self) -> String {
         "Primary key binding signatures".into()
     }

@@ -9,10 +9,9 @@ use crate::{
     OpenPGP,
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -29,7 +28,7 @@ impl CompressionSupport {
     }
 }
 
-impl Test for CompressionSupport {
+impl crate::plan::Runnable<TestMatrix> for CompressionSupport {
     fn title(&self) -> String {
         "Compression Algorithm support".into()
     }

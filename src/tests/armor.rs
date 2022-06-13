@@ -1,6 +1,6 @@
 use crate::{
     Result,
-    plan::TestPlan,
+    tests::TestPlan,
 };
 
 mod concatenated_armor;

@@ -14,7 +14,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -34,7 +33,7 @@ impl CertExpiration {
     }
 }
 
-impl Test for CertExpiration {
+impl crate::plan::Runnable<TestMatrix> for CertExpiration {
     fn title(&self) -> String {
         "Certificate expiration".into()
     }

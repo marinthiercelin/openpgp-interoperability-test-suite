@@ -14,7 +14,6 @@ use crate::{
     data,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -29,7 +28,7 @@ impl RSAEncryption {
     }
 }
 
-impl Test for RSAEncryption {
+impl crate::plan::Runnable<TestMatrix> for RSAEncryption {
     fn title(&self) -> String {
         "RSA encryption corner cases".into()
     }

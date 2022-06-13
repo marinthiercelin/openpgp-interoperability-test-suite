@@ -9,7 +9,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -26,7 +25,7 @@ impl ShortRSASigs {
     }
 }
 
-impl Test for ShortRSASigs {
+impl crate::plan::Runnable<TestMatrix> for ShortRSASigs {
     fn title(&self) -> String {
         "Improbably short RSA signatures".into()
     }

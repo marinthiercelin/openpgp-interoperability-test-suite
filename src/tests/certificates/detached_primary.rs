@@ -31,7 +31,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -111,7 +110,7 @@ impl DetachedPrimary {
     }
 }
 
-impl Test for DetachedPrimary {
+impl crate::plan::Runnable<TestMatrix> for DetachedPrimary {
     fn title(&self) -> String {
         "Detached primary key".into()
     }

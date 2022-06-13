@@ -26,7 +26,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -68,7 +67,7 @@ impl BindingSignatureSubpackets {
     }
 }
 
-impl Test for BindingSignatureSubpackets {
+impl crate::plan::Runnable<TestMatrix> for BindingSignatureSubpackets {
     fn title(&self) -> String {
         "Binding signature subpackets".into()
     }

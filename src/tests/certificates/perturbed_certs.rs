@@ -15,7 +15,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -36,7 +35,7 @@ impl PerturbedCerts {
     }
 }
 
-impl Test for PerturbedCerts {
+impl crate::plan::Runnable<TestMatrix> for PerturbedCerts {
     fn title(&self) -> String {
         "Perturbed certificates".into()
     }

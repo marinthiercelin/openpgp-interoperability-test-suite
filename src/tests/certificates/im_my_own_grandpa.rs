@@ -14,7 +14,6 @@ use crate::{
     tests::{
         ConsumerTest,
         Expectation,
-        Test,
         TestMatrix,
     },
 };
@@ -35,7 +34,7 @@ impl ImMyOwnGrandpa {
     }
 }
 
-impl Test for ImMyOwnGrandpa {
+impl crate::plan::Runnable<TestMatrix> for ImMyOwnGrandpa {
     fn title(&self) -> String {
         "I'm My Own Grandpa".into()
     }

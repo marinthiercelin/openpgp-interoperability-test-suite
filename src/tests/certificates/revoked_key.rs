@@ -42,10 +42,9 @@ use crate::{
     Data,
     OpenPGP,
     Result,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         Expectation,
-        Test,
         TestMatrix,
         ConsumerTest,
     },
@@ -205,7 +204,7 @@ impl RevokedKey {
     }
 }
 
-impl Test for RevokedKey {
+impl crate::plan::Runnable<TestMatrix> for RevokedKey {
     fn title(&self) -> String {
         if let Revoked::NotRevoked = self.revoked {
             let flavor = self.flavor.to_string();

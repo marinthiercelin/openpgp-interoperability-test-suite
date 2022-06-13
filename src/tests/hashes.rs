@@ -5,7 +5,7 @@ use openpgp::types::HashAlgorithm;
 use crate::{
     Result,
     data,
-    plan::TestPlan,
+    tests::TestPlan,
     tests::{
         detached_signatures::DetachedSignVerifyRoundtrip,
     },
