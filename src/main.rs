@@ -112,7 +112,8 @@ fn main() -> anyhow::Result<()> {
 
     if let Some(p) = cli.html_out.as_ref() {
         use std::io::Write;
-        use templates::{Report, Renderable};
+        use templates::Renderable;
+        use tests::templates::Report;
 
         let mut sink = fs::File::create(p)?;
         write!(sink, "{}", Report::new(results)?.render()?)?;

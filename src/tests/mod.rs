@@ -16,6 +16,8 @@ use crate::{
     },
 };
 
+pub mod templates;
+
 mod asymmetric_encryption;
 mod symmetric_encryption;
 mod detached_signatures;

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block content %}
+   <section id="introduction">
+    <h1>{{title}}</h1>
+    <p>
+      These are the results of running the OpenPGP interoperability
+      test suite version {{version}}
+      (<a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/commit/{{
+      commit }}">{{commit}}</a>) on {{ timestamp | date(format="%Y-%m-%dT%H:%M") }}.
+    </p>
+    <p>
+      This test suite has been <a href="#hall-of-fame">very
+      successful</a> in identifying problems in many OpenPGP
+      implementations.  If you want to see your implementation
+      included in these results, please implement the
+      <a href="https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli-02">Stateless
+      OpenPGP Command Line Interface</a> and open an issue in our
+      <a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/issues">tracker</a>.
+      Note: The implementation doesn't have to be complete to be
+      useful.
+    </p>
+   </section>
+   <section>
+     <input id="search-input" name="search" autocomplete="off" spellcheck="false"
+	    placeholder="Search results, try 'SHA1'..." type="search">
+     <div id="search-note"></div>
+     <script>
+     </script>
+   </section>
+   <section class="hide-on-search">
+    <h1><a name="summary"><a name="test-summary" href="#test-summary">Test Summary</a></a></h1>
+    <p>
+      These charts summarize the results.  Reducing the wealth of
+      information to a set of numbers necessarily loses information,
+      so take them with a grain of salt.  Nevertheless, these number
+      provide an indication to what degree an implementation agrees
+      with the expectations of this test suite.
+    </p>
+    <p>
+      The first chart shows the percentage of tests where an
+      implementation agrees with the test suite's expectations on all
+      individual test vectors.
+    </p>
+    <div class="chart">
+      <span style="bottom: 100%">100%</span>
+      <span style="bottom: 75%">75%</span>
+      <span style="bottom: 50%">50%</span>
+      <span style="bottom: 25%">25%</span>
+      <span style="bottom: 0%">0%</span>
+      <ul>
+	{%- for row in summary -%}
+	<li>
+	  <span style="height: {{ row.1 | score_test_percentage }}%"
+		title="{{ row.1 | score_test_summary }}">
+	    <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
+	  </span>
+	</li>
+	{%- endfor -%}
+      </ul>
+    </div>
+    <p>
+      The second chart shows the percentage of individual test vectors
+      where an implementation agrees with the test suite's
+      expectations.
+    </p>
+    <div class="chart">
+      <span style="bottom: 100%">100%</span>
+      <span style="bottom: 75%">75%</span>
+      <span style="bottom: 50%">50%</span>
+      <span style="bottom: 25%">25%</span>
+      <span style="bottom: 0%">0%</span>
+      <ul>
+	{%- for row in summary -%}
+	<li>
+	  <span style="height: {{ row.1 | score_vector_percentage }}%"
+		title="{{ row.1 | score_vector_summary }}">
+	    <span><span title="{{ row.0 }}">{{ row.0 }}</span></span>
+	  </span>
+	</li>
+	{%- endfor -%}
+      </ul>
+    </div>
+   </section>
+   <nav>
+     <div class="hide-on-search">
+      <h1>Table of Contents</h1>
+      <ol>
+	<li><a href="#test-summary">Test Summary</a></li>
+	<li><a href="#how-to">How to read the test results</a></li>
+	<li>
+	  <a href="#test-results">Test Results</a>
+	  <ol>
+	    {%- for section in toc -%}
+	    <li><a href="#{{section.0.slug}}">{{section.0.title}}</a>
+	      <ol>
+		{%- for entry in section.1 -%}
+		<li><a href="#{{entry.slug}}">{{entry.title}}</a></li>
+		{%- endfor -%}
+	      </ol>
+	    </li>
+	    {%- endfor -%}
+	  </ol>
+	</li>
+	<li><a href="#hall-of-fame">Hall of Fame</a></li>
+	<li><a href="#versions">Versions</a></li>
+	<li><a href="#configuration">Configuration</a></li>
+      </ol>
+     </div>
+     <div class="show-on-search" hidden="hidden">
+       <h1>Search results</h1>
+       <ul id="search-results"></ul>
+     </div>
+   </nav>
+   <section class="hide-on-search">
+    {% include "tests/how-to.inc.html" %}
+   </section>
+   <section>
+    <h1><a name="test-results" href="#test-results">Test Results</a></h1>
+    {{body | safe}}
+   </section>
+   <section class="hide-on-search">
+    {% include "tests/hall-of-fame.inc.html" %}
+   </section>
+{% endblock %}
