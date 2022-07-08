@@ -27,6 +27,7 @@ use crate::{
 
 mod unknown_packets;
 mod short_rsa_sigs;
+mod digest_prefix;
 
 struct DetachedSignatureSubpacket {
     message: Vec<u8>,
@@ -964,5 +965,6 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     plan.add(Box::new(LineBreakNormalizationTest::new()?));
     plan.add(Box::new(unknown_packets::UnknownPackets::new()?));
     plan.add(Box::new(short_rsa_sigs::ShortRSASigs::new()?));
+    plan.add(Box::new(digest_prefix::DigestPrefix::new()?));
     Ok(())
 }
