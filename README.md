@@ -5,7 +5,7 @@ OpenPGP implementations.  It uses the [Stateless OpenPGP Command Line
 Interface] (*SOP* for short) that can be implemented by all OpenPGP
 implementations.
 
-  [Stateless OpenPGP Command Line Interface]: https://tools.ietf.org/html/draft-dkg-openpgp-stateless-cli-02">
+  [Stateless OpenPGP Command Line Interface]: https://datatracker.ietf.org/doc/draft-dkg-openpgp-stateless-cli/
 
 The result of running the test suite can be seen here:
 https://tests.sequoia-pgp.org/
