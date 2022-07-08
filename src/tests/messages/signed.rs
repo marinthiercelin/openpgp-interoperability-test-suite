@@ -152,6 +152,7 @@ impl ConsumerTest for Signed {
 
         // Different format fields, different signature types.
         for sig_type in vec![SignatureType::Binary, SignatureType::Text] {
+            #[allow(deprecated)]
             for format in vec![
                 DataFormat::Binary,
                 DataFormat::Text,
@@ -363,6 +364,7 @@ impl ConsumerTest for Signed {
         let text_sig = packets.next().unwrap();
 
         // Now, join them, mapping over the different literal formats.
+        #[allow(deprecated)]
         for format in vec![
             DataFormat::Binary,
             DataFormat::Text,
