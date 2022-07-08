@@ -50,7 +50,7 @@ This is an example configuration that showcases all the fields:
       "path": "/usr/bin/sqop"
     },
     {
-      "path": "glue/sopgpy"
+      "path": "glue/sopgpy",
       "env": { "PYTHONPATH": "..." }
     }
   ],
