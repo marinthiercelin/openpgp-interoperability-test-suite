@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+    <style>
+      main {
+	  min-height: 95vh;
+      }
+
+      @media (max-width: 2000px) {
+	  main {
+	      margin: 3em auto;
+	      max-width: 1200px;
+	  }
+      }
+
+      @media (min-width: 2000px) {
+	  main {
+	      margin-top: 3em;
+	      display: grid;
+	      grid-template-columns: 1fr max-content max-content 1fr;
+	      column-gap: 2em;
+	  }
+
+	  section {
+	      grid-column: 3;
+	  }
+	  nav {
+	      grid-column: 2;
+	      grid-row-start: 2;
+	      grid-row-end: 1000;
+	      align-self: start;
+	  }
+	  footer {
+	      grid-column-start: 1;
+	      grid-column-end: 5;
+	  }
+      }
+
+      footer {
+	  margin-top: 2em;
+	  border-top: 1px solid black;
+      }
+
+      p, pre, div.chart, div.description {
+	  max-width: 800px;
+      }
+
+      /* Headings.  */
+      h1 > a, h2 > a, h3 > a {
+	  text-decoration: none;
+	  color: black;
+      }
+      h1 > a:hover:after, h2 > a:hover:after, h3 > a:hover:after {
+	  content: "⁋";
+	  margin-left: 0.5em;
+      }
+
+      table {
+	  border-collapse: collapse;
+      }
+
+      table td { border-left:   1px solid #ccc }
+      table tr { border-bottom: 1px solid #ccc }
+
+      table th, table td { min-width: 3em }
+      table th { text-align: left }
+
+      table.matrix td { text-align: center }
+      table.matrix td:last-child { text-align: left }
+      table.matrix th > form { display: inline }
+
+      /* Rotate table headings.  */
+      table.matrix th.rotate {
+	  height: 250px;
+	  white-space: nowrap;
+      }
+
+      table.matrix th.rotate > div {
+	  transform: translate(25px, 51px) rotate(315deg);
+	  width: 30px;
+      }
+      table.matrix th.rotate > div > span {
+	  padding: 5px 10px;
+      }
+      /* /Rotate table headings.  */
+
+      pre { background-color: #eee; }
+
+      .score-good {
+	  background: no-repeat left top url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiPjxwYXRoIHN0eWxlPSJzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MXB4IiBkPSJtIDEwLDAgLTEwLDEwIi8+PC9zdmc+Cg==);
+	  background-color: lime;
+      }
+
+      .score-bad {
+	  background: no-repeat right top url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxzdmcgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiPjxwYXRoIHN0eWxlPSJzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MXB4IiBkPSJtIDEwLDEwIC0xMCwtMTAiLz48L3N2Zz4K);
+	  background-color: red;
+      }
+
+      figure {
+	  border: solid 1px black;
+	  padding: 25px 50px;
+	  margin: 50px;
+	  max-width: 600px;
+      }
+      figure figcaption {
+	  text-align: center;
+	  margin-top: 2em;
+      }
+
+      pre, code {
+	  background-color: #eee;
+      }
+
+      /* Search functionality.  */
+      input#search-input {
+	  width: 800px;
+	  font-size: 150%;
+      }
+
+      /* Chart code courtesy of https://codepen.io/Victa/pen/xDqbf */
+      .chart {
+	  position: relative;
+	  margin-top: 2em;
+      }
+
+      .chart > ul {
+	  display: table;
+	  table-layout: fixed;
+	  width: 60%;
+	  height: 200px;
+	  margin-bottom: 280px;
+	  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.1) 2%, rgba(0, 0, 0, 0) 2%);
+	  background-size: 100% 49.8px;
+	  background-position: left 1px;
+      }
+      .chart > ul > li {
+	  position: relative;
+	  display: table-cell;
+	  vertical-align: bottom;
+	  height: 200px;
+      }
+      .chart > ul > li > span {
+	  margin: 0 0.5em;
+	  display: block;
+	  background: rgba(209, 236, 250, 0.75);
+	  animation: draw 1s ease-in-out;
+      }
+      .chart > ul li > span > span {
+	  position: absolute;
+	  left: 0;
+	  right: 0;
+	  top: 100%;
+	  padding: 5px 1em 0;
+	  display: block;
+	  text-align: center;
+	  word-wrap: break-word;
+	  transform: rotate(90deg);
+      }
+      .chart > ul li > span > span > span {
+	  position: absolute;
+	  top: -0.5em;
+	  max-width: 250px;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	  white-space: nowrap;
+      }
+
+      @keyframes draw {
+	  0% {
+	      height: 0;
+	  }
+      }
+
+      /* Chart labels */
+      .chart > span {
+	  position: absolute;
+	  color: rgba(0, 0, 0, 0.5);
+      }
+
+      /* /Chart */
+    </style>
+    {% block more_head %}{% endblock %}
+  </head>
+  <body>
+   <main>
+     {% block content %}{% endblock %}
+   <section class="hide-on-search">
+    <h1><a name="versions" href="#versions">Versions</a></h1>
+    <p>
+      These are the SOP implementations used in this report:
+    </p>
+    <ul>
+    {%- for i in implementations -%}
+    <li><pre>{% if i.extended %}{{ i.extended }}{% else %}{{ i.summary }}{% endif %}</pre></li>
+    {%- endfor -%}
+    </ul>
+   </section>
+   <section class="hide-on-search">
+    <h1><a name="configuration" href="#configuration">Configuration</a></h1>
+    <p>
+      This is the configuration used to produce this report:
+    </p>
+    <pre><code>{{configuration | json_encode(pretty=true)}}</code></pre>
+   </section>
+   <footer>
+    <p>
+      OpenPGP interoperability test suite version {{version}}
+      (<a href="https://gitlab.com/sequoia-pgp/openpgp-interoperability-test-suite/commit/{{
+		commit }}">{{commit}}</a>) powered
+      by <a href="https://sequoia-pgp.org">Sequoia-PGP</a>.
+    </p>
+   </footer>
+   </main>
+   <script>
+     (() => {
+	 {% include "search.js" %}
+     })();
+   </script>
+  </body>
+</html>
