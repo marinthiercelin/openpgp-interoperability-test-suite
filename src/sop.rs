@@ -228,7 +228,7 @@ impl Sop {
         }
 
         let summary = if let Some(b) = &backend {
-            format!("{}/{}", frontend, b)
+            format!("{} ({})", b, frontend)
         } else {
             frontend.clone()
         };
