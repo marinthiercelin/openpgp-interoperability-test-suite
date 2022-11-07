@@ -29,6 +29,8 @@ const EXPECT_TWO_SIGS_AT: usize = 15;
 /// Tests support for signed and optionally encrypted messages.
 pub struct Signed {
     encrypted: bool,
+    bobs_fp: openpgp::Fingerprint,
+    annes_fp: openpgp::Fingerprint,
     annes_key: Data,
     annes_cert: Data,
 }
@@ -41,8 +43,13 @@ impl Signed {
             .generate()?;
         let annes_key = anne.as_tsk().armored().to_vec()?.into();
         let annes_cert = anne.armored().to_vec()?.into();
+        let annes_fp = anne.fingerprint();
+        let bobs_fp = openpgp::Cert::from_bytes(
+            data::certificate("bob.pgp"))?.fingerprint();
         Ok(Signed {
             encrypted,
+            bobs_fp,
+            annes_fp,
             annes_key,
             annes_cert,
         })
@@ -584,17 +591,26 @@ impl ConsumerTest for Signed {
             verify.message(artifact)?
         };
 
-        if let Some(_v) = verifications.get(0) {
-            // XXX check verification
-        } else {
+        if verifications.is_empty() {
             return Err(anyhow::anyhow!("No VERIFICATION emitted"));
         }
+        let signer_fps =
+            verifications.iter().map(|v| &v.cert).collect::<Vec<_>>();
 
-        if i >= EXPECT_TWO_SIGS_AT {
-            if let Some(_v) = verifications.get(1) {
-                // XXX check verification
-            } else {
-                return Err(anyhow::anyhow!("Only one VERIFICATION emitted"));
+        if i < EXPECT_TWO_SIGS_AT {
+            if ! signer_fps.contains(&&self.bobs_fp) {
+                return Err(
+                    anyhow::anyhow!("No VERIFICATION output for Bob found"));
+            }
+        } else {
+            if ! signer_fps.contains(&&self.bobs_fp) {
+                return Err(
+                    anyhow::anyhow!("No VERIFICATION output for Bob found"));
+            }
+
+            if ! signer_fps.contains(&&self.annes_fp) {
+                return Err(
+                    anyhow::anyhow!("No VERIFICATION output for Anne found"));
             }
         }
 
