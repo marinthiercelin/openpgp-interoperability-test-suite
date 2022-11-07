@@ -24,7 +24,7 @@ use crate::{
 };
 
 const MESSAGE: &[u8] = b"Hello\r\nWorld!\n";
-const EXPECT_TWO_SIGS_AT: usize = 14;
+const EXPECT_TWO_SIGS_AT: usize = 15;
 
 /// Tests support for signed and optionally encrypted messages.
 pub struct Signed {
@@ -228,6 +228,48 @@ impl ConsumerTest for Signed {
                         None));
             }
         }
+
+        // Test an old-style signed message (SIG LIT).
+        let mut buf = Vec::new();
+        let message = Message::new(&mut buf);
+        let message = Signer::with_template(
+            message, signer.clone(),
+            SignatureBuilder::new(SignatureType::Binary))
+            .build()?;
+        let mut message = LiteralWriter::new(message).build()?;
+        message.write_all(MESSAGE)?;
+        message.finalize()?;
+        let mut packets = PacketPile::from_bytes(&buf)?.into_children();
+        let _bob_ops = packets.next().unwrap();
+        let literal = packets.next().unwrap();
+        let bob_sig = packets.next().unwrap();
+
+        let mut buf = Vec::new();
+        let message = Message::new(&mut buf);
+        let mut message = if self.encrypted {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+
+            Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?
+        } else {
+            Armorer::new(message).build()?
+        };
+        bob_sig.serialize(&mut message)?;
+        literal.serialize(&mut message)?;
+        message.finalize()?;
+        t.push(("old-style: SIG LIT".into(), buf.into(), None));
 
         // Test messages with two signatures.
         assert_eq!(EXPECT_TWO_SIGS_AT, t.len());
@@ -453,6 +495,68 @@ impl ConsumerTest for Signed {
                     buf.into(),
                     None));
         }
+
+        // Test an mixed new and old-style signed message (SIG OPS LIT
+        // SIG).  Bob makes the old-style signature.
+        let mut buf = Vec::new();
+        let message = Message::new(&mut buf);
+        let mut message = if self.encrypted {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+
+            Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?
+        } else {
+            Armorer::new(message).build()?
+        };
+        bob_sig.serialize(&mut message)?;
+        anne_ops.serialize(&mut message)?;
+        literal.serialize(&mut message)?;
+        anne_sig.serialize(&mut message)?;
+        message.finalize()?;
+        t.push(("mix-style: SIG_b OPS_a LIT SIG_a".into(), buf.into(), None));
+
+        // Test an mixed new and old-style signed message (OPS SIG LIT
+        // SIG).  Bob makes the old-style signature.
+        let mut buf = Vec::new();
+        let message = Message::new(&mut buf);
+        let mut message = if self.encrypted {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+
+            Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?
+        } else {
+            Armorer::new(message).build()?
+        };
+        anne_ops.serialize(&mut message)?;
+        bob_sig.serialize(&mut message)?;
+        literal.serialize(&mut message)?;
+        anne_sig.serialize(&mut message)?;
+        message.finalize()?;
+        t.push(("mix-style: OPS_a SIG_b LIT SIG_a".into(), buf.into(), None));
 
         Ok(t)
     }
