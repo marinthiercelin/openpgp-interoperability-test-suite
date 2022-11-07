@@ -744,6 +744,8 @@ impl<'s> Decrypt<'s> {
         let verify_out_raw =
             if ! self.verify.certs.is_empty() {
                 let p = sop.allocate_out_file(&mut tmp)?;
+                // XXX: At some point, we should start to use use
+                // --verifications-out here.
                 args.push("--verify-out".into());
                 args.push(p.clone());
                 Some(p)
