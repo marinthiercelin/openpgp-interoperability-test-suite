@@ -26,14 +26,15 @@ use crate::{
 const MESSAGE: &[u8] = b"Hello\r\nWorld!\n";
 const EXPECT_TWO_SIGS_AT: usize = 14;
 
-/// Tests support for malformed messages.
+/// Tests support for signed and optionally encrypted messages.
 pub struct Signed {
+    encrypted: bool,
     annes_key: Data,
     annes_cert: Data,
 }
 
 impl Signed {
-    pub fn new() -> Result<Signed> {
+    pub fn new(encrypted: bool) -> Result<Signed> {
         let (anne, _rev) =
             CertBuilder::general_purpose(CipherSuite::RSA3k,
                                          Some("anne@example.org"))
@@ -41,6 +42,7 @@ impl Signed {
         let annes_key = anne.as_tsk().armored().to_vec()?.into();
         let annes_cert = anne.armored().to_vec()?.into();
         Ok(Signed {
+            encrypted,
             annes_key,
             annes_cert,
         })
@@ -49,18 +51,24 @@ impl Signed {
 
 impl crate::plan::Runnable<TestMatrix> for Signed {
     fn title(&self) -> String {
-        "Signed messages".into()
+        if self.encrypted {
+            "Signed (and encrypted) messages".into()
+        } else {
+            "Signed messages".into()
+        }
     }
 
     fn description(&self) -> String {
         format!(
-            "This is a collection of signed-then-encrypted messages.  The \
-             messages are signed by and encrypted to the same key.  The \
+            "This is a collection of {} messages.  {}The \
              message is {:?}.  We vary signature type (binary, text), and \
              literal data format identifier.  Finally, we do the same with \
              both a binary signature and a text signature at the same time.  \
              To avoid deduplication, we sign the second signature using \
              Anne's key.",
+            if self.encrypted { "signed-then-encrypted" } else { "signed" },
+            if self.encrypted { "The messages are signed by and encrypted \
+                                 to the same key.  " } else { "" },
             String::from_utf8_lossy(MESSAGE))
     }
 
@@ -95,22 +103,28 @@ impl ConsumerTest for Signed {
             .nth(0).unwrap().key().clone().into_keypair()?;
 
         // Base case binary.
-        let cipher = SymmetricAlgorithm::default();
-        let sk = SessionKey::new(cipher.key_size()?);
         let mut buf = Vec::new();
         let message = Message::new(&mut buf);
-        let message = Armorer::new(message)
-            .add_header("Comment",
-                        format!("Plaintext is {:?}",
-                                String::from_utf8_lossy(MESSAGE)))
-            .add_header("Comment",
-                        format!("Encrypted using {}", cipher))
-            .add_header("Comment",
-                        format!("Session key: {}", hex::encode(&sk)))
-            .build()?;
-        let message = Encryptor::with_session_key(message, cipher, sk)?
-            .add_recipients(vec![&recipient])
-            .build()?;
+        let message = if self.encrypted {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+            Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?
+        } else {
+            Armorer::new(message).build()?
+        };
+
         let message = Signer::new(message, signer.clone())
             .build()?;
         let mut message = LiteralWriter::new(message).build()?;
@@ -121,22 +135,29 @@ impl ConsumerTest for Signed {
                 Some(Ok("Compatibility concern.".into()))));
 
         // Base case text.
-        let cipher = SymmetricAlgorithm::default();
-        let sk = SessionKey::new(cipher.key_size()?);
         let mut buf = Vec::new();
         let message = Message::new(&mut buf);
-        let message = Armorer::new(message)
-            .add_header("Comment",
-                        format!("Plaintext is {:?}",
-                                String::from_utf8_lossy(MESSAGE)))
-            .add_header("Comment",
-                        format!("Encrypted using {}", cipher))
-            .add_header("Comment",
-                        format!("Session key: {}", hex::encode(&sk)))
-            .build()?;
-        let message = Encryptor::with_session_key(message, cipher, sk)?
-            .add_recipients(vec![&recipient])
-            .build()?;
+        let message = if self.encrypted {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+
+            Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?
+        } else {
+            Armorer::new(message).build()?
+        };
+
         let message = Signer::with_template(
             message, signer.clone(),
             SignatureBuilder::new(SignatureType::Text))
@@ -170,22 +191,29 @@ impl ConsumerTest for Signed {
                     continue; // These are the base cases.
                 }
 
-                let cipher = SymmetricAlgorithm::default();
-                let sk = SessionKey::new(cipher.key_size()?);
                 let mut buf = Vec::new();
                 let message = Message::new(&mut buf);
-                let message = Armorer::new(message)
-                    .add_header("Comment",
-                                format!("Plaintext is {:?}",
-                                        String::from_utf8_lossy(MESSAGE)))
-                    .add_header("Comment",
-                                format!("Encrypted using {}", cipher))
-                    .add_header("Comment",
-                                format!("Session key: {}", hex::encode(&sk)))
-                    .build()?;
-                let message = Encryptor::with_session_key(message, cipher, sk)?
-                    .add_recipients(vec![&recipient])
-                    .build()?;
+                let message = if self.encrypted {
+                    let cipher = SymmetricAlgorithm::default();
+                    let sk = SessionKey::new(cipher.key_size()?);
+
+                    let message = Armorer::new(message)
+                        .add_header("Comment",
+                                    format!("Plaintext is {:?}",
+                                            String::from_utf8_lossy(MESSAGE)))
+                        .add_header("Comment",
+                                    format!("Encrypted using {}", cipher))
+                        .add_header("Comment",
+                                    format!("Session key: {}", hex::encode(&sk)))
+                        .build()?;
+
+                    Encryptor::with_session_key(message, cipher, sk)?
+                        .add_recipients(vec![&recipient])
+                        .build()?
+                } else {
+                    Armorer::new(message).build()?
+                };
+
                 let message = Signer::with_template(
                     message, signer.clone(),
                     SignatureBuilder::new(sig_type))
@@ -260,22 +288,29 @@ impl ConsumerTest for Signed {
 
         // Now, compose them correctly (OPS_bob, OPS_anne, lit,
         // SIG_anne, SIG_bob).
-        let cipher = SymmetricAlgorithm::default();
-        let sk = SessionKey::new(cipher.key_size()?);
         let mut buf = Vec::new();
         let message = Message::new(&mut buf);
-        let message = Armorer::new(message)
-            .add_header("Comment",
-                        format!("Plaintext is {:?}",
-                                String::from_utf8_lossy(MESSAGE)))
-            .add_header("Comment",
-                        format!("Encrypted using {}", cipher))
-            .add_header("Comment",
-                        format!("Session key: {}", hex::encode(&sk)))
-            .build()?;
-        let mut message = Encryptor::with_session_key(message, cipher, sk)?
-            .add_recipients(vec![&recipient])
-            .build()?;
+        let mut message = if self.encrypted {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+
+            Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?
+        } else {
+            Armorer::new(message).build()?
+        };
+
         bob_ops.serialize(&mut message)?;
         anne_ops.serialize(&mut message)?;
         let mut message = LiteralWriter::new(message)
@@ -292,22 +327,29 @@ impl ConsumerTest for Signed {
 
         // Now, compose them correctly (OPS_bob, OPS_anne, lit,
         // SIG_anne, SIG_bob).
-        let cipher = SymmetricAlgorithm::default();
-        let sk = SessionKey::new(cipher.key_size()?);
         let mut buf = Vec::new();
         let message = Message::new(&mut buf);
-        let message = Armorer::new(message)
-            .add_header("Comment",
-                        format!("Plaintext is {:?}",
-                                String::from_utf8_lossy(MESSAGE)))
-            .add_header("Comment",
-                        format!("Encrypted using {}", cipher))
-            .add_header("Comment",
-                        format!("Session key: {}", hex::encode(&sk)))
-            .build()?;
-        let mut message = Encryptor::with_session_key(message, cipher, sk)?
-            .add_recipients(vec![&recipient])
-            .build()?;
+        let mut message = if self.encrypted {
+            let cipher = SymmetricAlgorithm::default();
+            let sk = SessionKey::new(cipher.key_size()?);
+
+            let message = Armorer::new(message)
+                .add_header("Comment",
+                            format!("Plaintext is {:?}",
+                                    String::from_utf8_lossy(MESSAGE)))
+                .add_header("Comment",
+                            format!("Encrypted using {}", cipher))
+                .add_header("Comment",
+                            format!("Session key: {}", hex::encode(&sk)))
+                .build()?;
+
+            Encryptor::with_session_key(message, cipher, sk)?
+                .add_recipients(vec![&recipient])
+                .build()?
+        } else {
+            Armorer::new(message).build()?
+        };
+
         bob_ops.serialize(&mut message)?;
         anne_ops.serialize(&mut message)?;
         let mut message = LiteralWriter::new(message)
@@ -374,22 +416,29 @@ impl ConsumerTest for Signed {
             DataFormat::from(b'1'),
             DataFormat::from(0),
         ] {
-            let cipher = SymmetricAlgorithm::default();
-            let sk = SessionKey::new(cipher.key_size()?);
             let mut buf = Vec::new();
             let message = Message::new(&mut buf);
-            let message = Armorer::new(message)
-                .add_header("Comment",
-                            format!("Plaintext is {:?}",
-                                    String::from_utf8_lossy(MESSAGE)))
-                .add_header("Comment",
-                            format!("Encrypted using {}", cipher))
-                .add_header("Comment",
-                            format!("Session key: {}", hex::encode(&sk)))
-                .build()?;
-            let mut message = Encryptor::with_session_key(message, cipher, sk)?
-                .add_recipients(vec![&recipient])
-                .build()?;
+            let mut message = if self.encrypted {
+                let cipher = SymmetricAlgorithm::default();
+                let sk = SessionKey::new(cipher.key_size()?);
+
+                let message = Armorer::new(message)
+                    .add_header("Comment",
+                                format!("Plaintext is {:?}",
+                                        String::from_utf8_lossy(MESSAGE)))
+                    .add_header("Comment",
+                                format!("Encrypted using {}", cipher))
+                    .add_header("Comment",
+                                format!("Session key: {}", hex::encode(&sk)))
+                    .build()?;
+
+                Encryptor::with_session_key(message, cipher, sk)?
+                    .add_recipients(vec![&recipient])
+                    .build()?
+            } else {
+                Armorer::new(message).build()?
+            };
+
             binary_ops.serialize(&mut message)?;
             text_ops.serialize(&mut message)?;
             let mut message = LiteralWriter::new(message)
@@ -410,15 +459,26 @@ impl ConsumerTest for Signed {
 
     fn consume(&self, i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
                -> Result<Data> {
-        let mut decrypt = pgp.sop()
-            .decrypt()
-            .verify_cert(data::certificate("bob.pgp"));
-        if i >= EXPECT_TWO_SIGS_AT {
-            decrypt = decrypt.verify_cert(&self.annes_cert);
-        }
-        let (verifications, plaintext) =
+        let (verifications, plaintext) = if self.encrypted {
+            let mut decrypt = pgp.sop()
+                .decrypt()
+                .verify_cert(data::certificate("bob.pgp"));
+            if i >= EXPECT_TWO_SIGS_AT {
+                decrypt = decrypt.verify_cert(&self.annes_cert);
+            }
+
             decrypt.key(data::certificate("bob-secret.pgp"))
-            .ciphertext(artifact)?;
+                .ciphertext(artifact)?
+        } else {
+            let mut verify = pgp.sop()
+                .inline_verify()
+                .cert(data::certificate("bob.pgp"));
+            if i >= EXPECT_TWO_SIGS_AT {
+                verify = verify.cert(&self.annes_cert);
+            }
+
+            verify.message(artifact)?
+        };
 
         if let Some(_v) = verifications.get(0) {
             // XXX check verification

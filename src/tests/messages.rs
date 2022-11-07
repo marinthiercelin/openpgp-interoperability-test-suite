@@ -220,7 +220,8 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     plan.add_section("Message structure");
     plan.add(Box::new(MessageStructure::new()?));
     plan.add(Box::new(RecursionDepth::new(7)?));
-    plan.add(Box::new(signed::Signed::new()?));
+    plan.add(Box::new(signed::Signed::new(false)?));
+    plan.add(Box::new(signed::Signed::new(true)?));
     plan.add(Box::new(marker::MarkerPacket::new()?));
     plan.add(Box::new(trust::TrustPacket::new()?));
     plan.add(Box::new(unknown_packets::UnknownPackets::new()?));
