@@ -163,6 +163,18 @@ impl Sop {
         }
     }
 
+    /// Verifies Inline-Signed Messages.
+    ///
+    /// Customize the operation using the builder [`InlineVerify`].
+    pub fn inline_verify(&self) -> InlineVerify {
+        InlineVerify {
+            sop: self,
+            not_before: None,
+            not_after: None,
+            certs: Default::default(),
+        }
+    }
+
     /// Converts binary OpenPGP data to ASCII.
     ///
     /// Customize the operation using the builder [`Armor`].
@@ -795,6 +807,92 @@ impl<'s> Decrypt<'s> {
             };
 
         Ok((verify_raw, o.stdout.into()))
+    }
+}
+
+/// Builder for [`Sop::inline_verify`].
+pub struct InlineVerify<'s> {
+    sop: &'s Sop,
+    not_before: Option<DateTime<Utc>>,
+    not_after: Option<DateTime<Utc>>,
+    certs: Vec<&'s [u8]>,
+}
+
+impl<'s> InlineVerify<'s> {
+    /// Makes SOP consider signatures before this date invalid.
+    pub fn not_before(mut self, t: DateTime<Utc>) -> Self {
+        self.not_before = Some(t);
+        self
+    }
+
+    /// Makes SOP consider signatures after this date invalid.
+    pub fn not_after(mut self, t: DateTime<Utc>) -> Self {
+        self.not_after = Some(t);
+        self
+    }
+
+    /// Adds the verification cert.
+    pub fn cert(mut self, cert: &'s [u8]) -> Self {
+        self.certs.push(cert);
+        self
+    }
+
+    /// Adds the verification certs.
+    pub fn certs(mut self, certs: impl IntoIterator<Item = &'s [u8]>)
+                -> Self {
+        certs.into_iter().for_each(|k| self.certs.push(k));
+        self
+    }
+
+    /// Verifies the authenticity of `data`.
+    pub fn message(self, data: &[u8]) -> Result<(Vec<Verification>, Data)> {
+        let (verification_raw, plaintext) =
+            self.message_raw(data)?;
+
+        let verifications = String::from_utf8(verification_raw.into())
+            .map_err(Into::into)
+            .and_then(|verifications| -> Result<_> {
+                let mut r = Vec::new();
+                if ! verifications.is_empty() {
+                    for v in verifications.trim_end().split('\n') {
+                        r.push(v.parse()?);
+                    }
+                }
+                Ok(r)
+            })?;
+
+        Ok((verifications, plaintext))
+    }
+
+    /// Verifies the authenticity of `data` returning the raw result.
+    pub fn message_raw(self, data: &[u8]) -> Result<(Data, Data)> {
+        let mut tmp = Vec::new();
+        let mut args = vec!["inline-verify".to_string()];
+        let verifications_out = self.sop.allocate_out_file(&mut tmp)?;
+        args.push("--verifications-out".into());
+        args.push(verifications_out.clone());
+
+        if let Some(t) = self.not_before {
+            args.push("--not-before".into());
+            args.push(t.format("%+").to_string());
+        }
+        if let Some(t) = self.not_after {
+            args.push("--not-after".into());
+            args.push(t.format("%+").to_string());
+        }
+
+        for cert in self.certs {
+            args.push(self.sop.stash_bytes(cert, &mut tmp)?);
+        }
+
+        let o = self.sop.run(&args[..], data)?;
+
+        let verifications_raw = std::fs::read(&verifications_out)
+            .context("No verifications written to --verifications-out")?
+            .into();
+        std::fs::remove_file(verifications_out)?;
+
+        Ok((verifications_raw, o.stdout.into()))
     }
 }
 
