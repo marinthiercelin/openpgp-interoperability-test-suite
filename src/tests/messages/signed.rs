@@ -325,8 +325,8 @@ impl ConsumerTest for Signed {
                 buf.into(),
                 Some(Ok("Compatibility concern.".into()))));
 
-        // Now, compose them correctly (OPS_bob, OPS_anne, lit,
-        // SIG_anne, SIG_bob).
+        // Now, compose them incorrectly (OPS_bob, OPS_anne, lit,
+        // SIG_bob, SIG_anne).
         let mut buf = Vec::new();
         let message = Message::new(&mut buf);
         let mut message = if self.encrypted {
