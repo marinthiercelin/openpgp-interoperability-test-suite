@@ -75,32 +75,34 @@ impl ConsumerTest for UnknownPackets {
             .keys().secret().for_signing().next().unwrap()
             .key().clone().into_keypair()?;
 
-        let mut sig = Vec::new();
-        {
-            let message = Message::new(&mut sig);
-            let mut signer = Signer::new(message, primary_signer)
-                .add_signer(ricarda_signer)
-                .detached()
-                .build()?;
-            signer.write_all(crate::tests::MESSAGE)?;
-            signer.finalize()?;
-        }
+        let make_sig = |signer| -> Result<(Vec<u8>, openpgp::Packet)> {
+            let mut buf = Vec::new();
+            {
+                let message = Message::new(&mut buf);
+                let mut signer = Signer::new(message, signer)
+                    .detached()
+                    .build()?;
+                signer.write_all(crate::tests::MESSAGE)?;
+                signer.finalize()?;
+            }
 
-        let pp = openpgp::PacketPile::from_bytes(&sig)?
-            .into_children().collect::<Vec<_>>();
-        assert_eq!(pp.len(), 2);
-        let sig4 = pp[0].clone();
-        assert_eq!(sig4.tag(), Tag::Signature);
-        assert_eq!(sig4.kind(), Some(Tag::Signature));
-        let sig4_r = pp[1].clone();
-        assert_eq!(sig4_r.tag(), Tag::Signature);
-        assert_eq!(sig4_r.kind(), Some(Tag::Signature));
+            let pp = openpgp::PacketPile::from_bytes(&buf)?
+                .into_children().collect::<Vec<_>>();
+            assert_eq!(pp.len(), 1);
+            let sig = pp[0].clone();
+            assert_eq!(sig.tag(), Tag::Signature);
+            assert_eq!(sig.kind(), Some(Tag::Signature));
+            Ok((buf, sig))
+        };
+
+        let (mut sig, sig4) = make_sig(primary_signer)?;
+        let (_, sig4_r) = make_sig(ricarda_signer)?;
 
         // Make a fictitious v23 signature.
         sig[3] = 23;
         let pp = openpgp::PacketPile::from_bytes(&sig)?
             .into_children().collect::<Vec<_>>();
-        assert_eq!(pp.len(), 2);
+        assert_eq!(pp.len(), 1);
         let sig23 = pp[0].clone();
         assert_eq!(sig23.tag(), Tag::Signature);
         assert_eq!(sig23.kind(), None);
