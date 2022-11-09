@@ -720,7 +720,7 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
         pgp.sign_detached(&self.key, &self.message)
     }
 
-    fn check_producer(&self, artifact: &[u8]) -> Result<()> {
+    fn check_producer(&self, artifact: Data) -> Result<Data> {
         let pp = openpgp::PacketPile::from_bytes(&artifact)
             .context("Produced data is malformed")?;
         if pp.children().count() != 1 {
@@ -745,7 +745,7 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
                      {:?} packet", p)),
         }
 
-        Ok(())
+        Ok(artifact)
     }
 
     fn consume(&self,

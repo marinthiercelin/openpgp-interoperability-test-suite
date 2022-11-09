@@ -114,7 +114,9 @@ pub trait ConsumerTest: Runnable<TestMatrix> {
 /// by another.
 pub trait ProducerConsumerTest: Runnable<TestMatrix> {
     fn produce(&self, pgp: &dyn OpenPGP) -> Result<Data>;
-    fn check_producer(&self, _artifact: &[u8]) -> Result<()> { Ok(()) }
+    fn check_producer(&self, artifact: Data) -> Result<Data> {
+        Ok(artifact)
+    }
     fn consume(&self,
                producer: &dyn OpenPGP,
                consumer: &dyn OpenPGP,
@@ -129,16 +131,13 @@ pub trait ProducerConsumerTest: Runnable<TestMatrix> {
 
         for p in implementations.iter() {
             let expectation = self.expectation();
-            let mut artifact = match self.produce(p) {
+            let artifact = match self.produce(p)
+                .and_then(|data| self.check_producer(data))
+            {
                 Ok(d) => Artifact::ok(p.version()?.to_string(), d),
                 Err(e) => Artifact::err(p.version()?.to_string(),
                                         Default::default(), e),
             };
-            if artifact.error.len() == 0 {
-                if let Err(e) = self.check_producer(&artifact.data) {
-                    artifact.error = e.to_string();
-                }
-            }
 
             let mut results = Vec::new();
             if artifact.error.len() == 0 {

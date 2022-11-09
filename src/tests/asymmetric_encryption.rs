@@ -116,7 +116,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
         pgp.encrypt(&self.cert, &self.message)
     }
 
-    fn check_producer(&self, artifact: &[u8]) -> Result<()> {
+    fn check_producer(&self, artifact: Data) -> Result<Data> {
         if let Some(aead_algo) = self.aead {
             let pp = openpgp::PacketPile::from_bytes(&artifact)
                 .context("Produced data is malformed")?;
@@ -174,7 +174,7 @@ impl ProducerConsumerTest for EncryptDecryptRoundtrip {
             }
         }
 
-        Ok(())
+        Ok(artifact)
     }
 
     fn consume(&self,
