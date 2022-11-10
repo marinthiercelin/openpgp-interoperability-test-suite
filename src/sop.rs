@@ -1313,9 +1313,9 @@ impl From<ExitStatus> for SOPError {
         String::from_utf8_lossy(stdout),
         String::from_utf8_lossy(stderr))]
 pub struct ErrorWithOutput {
-    stdout: Vec<u8>,
-    stderr: Vec<u8>,
-    source: SOPError,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+    pub source: SOPError,
 }
 
 impl ErrorWithOutput {
