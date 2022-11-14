@@ -102,8 +102,8 @@ pub trait ConsumerTest: Runnable<TestMatrix> {
         Ok(TestMatrix {
             title: self.title(),
             slug: crate::templates::slug(&self.title()),
-            description: self.description(),
             tags: self.tags().into_iter().map(Into::into).collect(),
+            description: maybe_add_paragraph(self.description()),
             artifacts: self.artifacts(),
             consumers: implementations.iter().map(|i| i.version().unwrap())
                 .collect(),
@@ -181,8 +181,8 @@ pub trait ProducerConsumerTest: Runnable<TestMatrix> {
         Ok(TestMatrix {
             title: self.title(),
             slug: crate::templates::slug(&self.title()),
-            description: self.description(),
             tags: self.tags().into_iter().map(Into::into).collect(),
+            description: maybe_add_paragraph(self.description()),
             artifacts: self.artifacts(),
             consumers: implementations.iter().map(|i| i.version().unwrap())
                 .collect(),
@@ -494,4 +494,13 @@ where T: AsRef<str>,
         w.finalize()?;
     }
     Ok((test.as_ref().into(), buf.into(), expectation))
+}
+
+/// Adds a paragraph tag if there is none in the description.
+fn maybe_add_paragraph(description: String) -> String {
+    if description.trim_start().starts_with('<') {
+        description
+    } else {
+        format!("<p>{}</p>", description)
+    }
 }
