@@ -270,10 +270,12 @@ impl Sop {
             child.stdin.as_mut().unwrap().write_all(input.as_ref());
         let o = child.wait_with_output()?;
 
-        if let Err(e) = write_result {
-            Err(ErrorWithOutput::new(e, o))
-        } else if o.status.success() {
-            Ok(o)
+        if o.status.success() {
+            if let Err(e) = write_result {
+                Err(ErrorWithOutput::new(e, o))
+            } else {
+                Ok(o)
+            }
         } else {
             Err(ErrorWithOutput::new(o.status, o))
         }
