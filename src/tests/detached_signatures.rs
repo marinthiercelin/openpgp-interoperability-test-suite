@@ -650,18 +650,23 @@ pub struct DetachedSignVerifyRoundtrip {
     key: Vec<u8>,
     hash: Option<HashAlgorithm>,
     message: Data,
+    expectation: Option<Expectation>,
 }
 
 impl DetachedSignVerifyRoundtrip {
-    pub fn new(title: &str, description: &str, cert: openpgp::Cert,
-               message: Data) -> Result<DetachedSignVerifyRoundtrip> {
+    pub fn new(title: &str, description: &str, key: &[u8], cert: &[u8],
+               message: Data,
+               expectation: Option<Expectation>)
+               -> Result<DetachedSignVerifyRoundtrip>
+    {
         Ok(DetachedSignVerifyRoundtrip {
             title: title.into(),
             description: description.into(),
-            cert: cert.armored().to_vec()?,
-            key: cert.as_tsk().armored().to_vec()?,
+            cert: cert.into(),
+            key: key.into(),
             hash: None,
             message,
+            expectation,
         })
     }
 
@@ -692,6 +697,7 @@ impl DetachedSignVerifyRoundtrip {
             key,
             hash: Some(hash),
             message,
+            expectation: Some(Ok("Interoperability concern.".into())),
         })
     }
 }
@@ -771,7 +777,7 @@ impl ProducerConsumerTest for DetachedSignVerifyRoundtrip {
                     Some(Ok("Interoperability concern.".into())),
             }
         } else {
-            Some(Ok("Interoperability concern.".into()))
+            self.expectation.clone()
         }
     }
 }
@@ -952,15 +958,36 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
             "Detached Sign-Verify roundtrip with key 'Alice'",
             "Detached Sign-Verify roundtrip using the 'Alice' key from \
              draft-bre-openpgp-samples-00.",
-            openpgp::Cert::from_bytes(data::certificate("alice-secret.pgp"))?,
-            crate::tests::MESSAGE.to_vec().into())?));
+            data::certificate("alice-secret.pgp"),
+            data::certificate("alice.pgp"),
+            crate::tests::MESSAGE.to_vec().into(),
+            Some(Ok("Interoperability concern.".into())))?));
     plan.add(Box::new(
         DetachedSignVerifyRoundtrip::new(
             "Detached Sign-Verify roundtrip with key 'Bob'",
             "Detached Sign-Verify roundtrip using the 'Bob' key from \
              draft-bre-openpgp-samples-00.",
-            openpgp::Cert::from_bytes(data::certificate("bob-secret.pgp"))?,
-            crate::tests::MESSAGE.to_vec().into())?));
+            data::certificate("bob-secret.pgp"),
+            data::certificate("bob.pgp"),
+            crate::tests::MESSAGE.to_vec().into(),
+            Some(Ok("Interoperability concern.".into())))?));
+    plan.add(Box::new(
+        DetachedSignVerifyRoundtrip::new(
+            "Detached Sign-Verify roundtrip with key 'Carol'",
+            "Detached Sign-Verify roundtrip using the 'Carol' key from \
+             draft-bre-openpgp-samples-00.",
+            data::certificate("carol-secret.pgp"),
+            data::certificate("carol.pgp"),
+            crate::tests::MESSAGE.to_vec().into(),
+            Some(Ok("Interoperability concern.".into())))?));
+    plan.add(Box::new(
+        DetachedSignVerifyRoundtrip::new(
+            "Detached Sign-Verify roundtrip with key 'John'",
+            "This is an OpenPGP v3 key.",
+            data::certificate("john-secret.pgp"),
+            data::certificate("john.pgp"),
+            crate::tests::MESSAGE.to_vec().into(),
+            None)?));
     plan.add(Box::new(DetachedSignatureSubpacket::new()?));
     plan.add(Box::new(LineBreakNormalizationTest::new()?));
     plan.add(Box::new(unknown_packets::UnknownPackets::new()?));
