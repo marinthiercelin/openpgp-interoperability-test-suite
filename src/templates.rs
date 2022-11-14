@@ -125,9 +125,9 @@ fn score2class(v: tera::Value,
     use tera::Value;
     match v {
         Value::Null        => Ok(Value::String("score".into())),
-        Value::Bool(true)  => Ok(Value::String("score-good".into())),
-        Value::Bool(false) => Ok(Value::String("score-bad".into())),
-        _ => unimplemented!(),
+        Value::String(s)   =>
+            Ok(Value::String(format!("score-{}", s.to_lowercase()))),
+        _ => unimplemented!("Don't know what to do with {:?}", v),
     }
 }
 

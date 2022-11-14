@@ -36,6 +36,21 @@
   expectations.  Again, details can be found in the tooltip.
 </p>
 <p>
+  If an operation is not supported by an implementation, the result is
+  marked as failing with a cross mark (✗) with a light-yellow
+  background and a diagonal line in the bottom-left corner.  Details
+  can be found in the tooltip.
+</p>
+<p>
+  If an operation is not done correctly by an implementation, i.e. the
+  operation returned success, some data was produced, but the test
+  suite found an issue with the produced data, or the operation failed
+  in any other way (say communication with the backend failed), the
+  result is marked as failing with a cross mark (✗) with a light-red
+  background and a diagonal line in the bottom-right corner.  Details
+  can be found in the tooltip.
+</p>
+<p>
   Up to this point, we did not judge whether or not a operation
   should be successful or not, we merely recorded the facts.  This
   answers the question of how implementations react to certain
@@ -76,9 +91,10 @@
     <tr style="border: none">
       <th></th>
       <th class="rotate"><div><span>Consumer</span></div></th>
-      <th class="rotate"><div><span>FooPGP/1</span></div></th>
-      <th class="rotate"><div><span>BarPGP/2</span></div></th>
-      <th class="rotate"><div><span>BazPGP/3</span></div></th>
+      <th class="rotate"><div><span>FooPGP 1</span></div></th>
+      <th class="rotate"><div><span>BarPGP 2</span></div></th>
+      <th class="rotate"><div><span>BazPGP 3</span></div></th>
+      <th class="rotate"><div><span>PartialPGP 4</span></div></th>
       <th class="rotate"><div><span>Expectation</span></div></th>
       <th class="rotate"><div><span>Comment</span></div></th>
     </tr>
@@ -93,13 +109,16 @@
 	  <button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
 	</form>
       </th>
-      <td class="score-good">
+      <td class="score score-success">
 	<span title="Output of the successful operation">✓</span>
       </td>
-      <td class="score-good">
+      <td class="score score-success">
 	<span title="Output of the successful operation">✓</span>
       </td>
-      <td class="score-good">
+      <td class="score score-success">
+	<span title="Output of the successful operation">✓</span>
+      </td>
+      <td class="score score-success">
 	<span title="Output of the successful operation">✓</span>
       </td>
       <td class="score">
@@ -116,14 +135,17 @@
 	  <button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
 	</form>
       </th>
-      <td class="score-good">
+      <td class="score score-success">
 	<span title="Output of the successful operation">✓</span>
       </td>
-      <td class="score-good">
+      <td class="score score-success">
 	<span title="Output of the successful operation">✓</span>
       </td>
-      <td class="score-bad">
+      <td class="score score-failure">
 	<span title="Error message">✗</span>
+      </td>
+      <td class="score score-unsupported">
+	<span title="Unsupported algorithm">✗</span>
       </td>
       <td class="score">
 	<span>✓</span>
@@ -139,14 +161,17 @@
 	  <button type="submit" title="Inspect with packet dumper" disabled="true">🔎</button>
 	</form>
       </th>
-      <td class="score-good">
+      <td class="score score-success">
 	<span title="Error message">✗</span>
       </td>
-      <td class="score-bad">
+      <td class="score score-failure">
 	<span title="Output of the successful operation">✓</span>
       </td>
-      <td class="score-good">
+      <td class="score score-success">
 	<span title="Error message">✗</span>
+      </td>
+      <td class="score score-unknown">
+	<span title="Some issue with the produced artifact">✗</span>
       </td>
       <td class="score">
 	<span>✗</span>
@@ -171,6 +196,9 @@
       <td class="score">
 	<span title="Output of the successful operation">✓</span>
       </td>
+      <td class="score score-io">
+	<span title="Writing to child process failed">✗</span>
+      </td>
       <td class="score">
       </td>
       <td class="score">
@@ -181,6 +209,8 @@
       <th>
 	<span title="Producer failed">✗</span>
       </th>
+      <td class="score">
+      </td>
       <td class="score">
       </td>
       <td class="score">

@@ -38,7 +38,7 @@
   {%- for row in results -%}
   <tr>
     <th>{{row.artifact.producer}}</th>
-    <th>
+    <th class="score {{ row.artifact.score | score2class }}">
       {%- if row.artifact.data -%}
       <form action="{{dump_url()}}" method="post">
 	<button type="submit" title="Inspect with packet dumper">🔎</button>
@@ -51,7 +51,7 @@
     </th>
     {%- if row.results -%}
     {%- for result in row.results -%}
-    <td class="{{ result.score | score2class }}">
+    <td class="score {{ result.score | score2class }}">
       {%- if result.error -%}
       <span title="{{result.error | addslashes}}">✗</span>
       {%- else -%}

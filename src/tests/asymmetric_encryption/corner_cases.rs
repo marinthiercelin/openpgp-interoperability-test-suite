@@ -203,15 +203,13 @@ impl ConsumerTest for RSAEncryption {
             // have something like check_consumer, that operates on
             // the Result<_> of consume().
 
-            use crate::sop::{ErrorWithOutput, SOPError};
-            use std::ops::Deref;
             match r {
                 Ok(v) => Err(anyhow::anyhow!(
                     "Expected an error, but got success: {:?}", v)),
-                Err(e) => match e.downcast_ref::<ErrorWithOutput>().unwrap().deref() {
-                    SOPError::Signal(_) => Err(e),
-                    SOPError::IoError(_) => Err(e),
-                    _ => Ok(b"failed gracefully".to_vec().into()),
+                Err(e) => if crate::tests::Score::hard_failure(&e).is_some() {
+                    Err(e)
+                } else {
+                    Ok(b"failed gracefully".to_vec().into())
                 },
             }
         }

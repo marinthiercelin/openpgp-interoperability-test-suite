@@ -78,12 +78,13 @@ pub trait ConsumerTest: Runnable<TestMatrix> {
                         Artifact::ok(c.version()?.to_string(), p),
                     Err(e) =>
                         Artifact::err(c.version()?.to_string(),
-                                      Default::default(), e),
+                                      Default::default(), &e),
                 };
 
                 if a.error.len() == 0 {
                     if let Err(e) = self.check_consumer(i, &a.data) {
                         a.error = e.to_string();
+                        a.score = e.into();
                     }
                 }
 
@@ -135,8 +136,12 @@ pub trait ProducerConsumerTest: Runnable<TestMatrix> {
                 .and_then(|data| self.check_producer(data))
             {
                 Ok(d) => Artifact::ok(p.version()?.to_string(), d),
-                Err(e) => Artifact::err(p.version()?.to_string(),
-                                        Default::default(), e),
+                Err(e) => {
+                    let mut a = Artifact::err(p.version()?.to_string(),
+                                              Default::default(), &e);
+                    a.score = e.into();
+                    a
+                },
             };
 
             let mut results = Vec::new();
@@ -150,12 +155,13 @@ pub trait ProducerConsumerTest: Runnable<TestMatrix> {
                             Artifact::ok(c.version()?.to_string(), p),
                         Err(e) =>
                             Artifact::err(c.version()?.to_string(),
-                                          Default::default(), e),
+                                          Default::default(), &e),
                     };
 
                     if a.error.len() == 0 {
                         if let Err(e) = self.check_consumer(&a.data) {
                             a.error = e.to_string();
+                            a.score = e.into();
                         }
                     }
 
@@ -189,7 +195,58 @@ struct Artifact {
     producer: String,
     data: Data,
     error: String,
-    score: Option<bool>,
+    score: Score,
+}
+
+/// A score associated with an artifact.
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+enum Score {
+    Neutral,
+    Success,
+    Failure,
+    Unsupported,
+    IO,
+    Unknown,
+}
+
+impl Score {
+    fn hard_failure(e: &anyhow::Error) -> Option<Score> {
+        if let Some(e) = e.downcast_ref::<crate::sop::ErrorWithOutput>() {
+            use crate::sop::SOPError::*;
+            match e.source {
+                UnsupportedAsymmetricAlgo
+                    | UnsupportedOption
+                    | UnsupportedSubcommand
+                    | UnsupportedSpecialPrefix => Some(Score::Unsupported),
+                IoError(_) => Some(Score::IO),
+                _ => None,
+            }
+        } else if let Some(_) = e.downcast_ref::<std::io::Error>() {
+            Some(Score::IO)
+        } else {
+            Some(Score::Unknown)
+        }
+    }
+}
+
+impl From<anyhow::Error> for Score {
+    fn from(e: anyhow::Error) -> Score {
+        if let Some(e) = e.downcast_ref::<crate::sop::ErrorWithOutput>() {
+            use crate::sop::SOPError::*;
+            match e.source {
+                UnsupportedAsymmetricAlgo
+                    | UnsupportedOption
+                    | UnsupportedSubcommand
+                    | UnsupportedSpecialPrefix => Score::Unsupported,
+                IoError(_) => Score::IO,
+                _ => Score::Failure,
+            }
+        } else if let Some(_) = e.downcast_ref::<std::io::Error>() {
+            Score::IO
+        } else {
+            Score::Unknown
+        }
+    }
 }
 
 impl Artifact {
@@ -198,11 +255,11 @@ impl Artifact {
             producer,
             data,
             error: Default::default(),
-            score: None,
+            score: Score::Neutral,
         }
     }
 
-    fn err(producer: String, data: Data, err: anyhow::Error) -> Self {
+    fn err(producer: String, data: Data, err: &anyhow::Error) -> Self {
         use std::fmt::Write;
         let mut error = String::new();
         writeln!(error, "{}", err).unwrap();
@@ -213,13 +270,18 @@ impl Artifact {
             producer,
             data,
             error,
-            score: None,
+            score: Score::hard_failure(err).unwrap_or(Score::Neutral),
         }
     }
 
     fn set_score(&mut self, expectation: &Option<Expectation>) {
-        self.score =
-            expectation.as_ref().map(|e| e.is_err() == (self.error.len() > 0));
+        if let (Score::Neutral, Some(e)) = (&self.score, expectation) {
+            self.score = if e.is_ok() == self.error.is_empty() {
+                Score::Success
+            } else {
+                Score::Failure
+            }
+        }
     }
 
     /// Limits the artifact size.
@@ -252,31 +314,52 @@ impl TestMatrix {
 
     pub fn summarize(&self, summary: &mut Summary) {
         for (i, imp) in self.consumers.iter().enumerate() {
-            let mut good = 0;
-            let mut bad = 0;
+            let mut results = 0;
+            let mut successes = 0;
+            let mut failures = 0;
+            let mut errors = 0;
+            let mut matched_expectations = true;
 
             for row in &self.results {
                 // Get the result corresponding to implementation
                 // 'imp'.
                 if let Some(r) = row.results.get(i) {
+                    results += 1;
+
+                    use Score::*;
                     match r.score {
-                        None => (),
-                        Some(true) => good += 1,
-                        Some(false) => bad += 1,
+                        Neutral => (),
+                        Success => successes += 1,
+                        Failure => failures += 1,
+                        Unsupported | IO | Unknown => errors += 1,
                     }
+
+                    matched_expectations &= match (&r.score, &row.expectation) {
+                        (_, None) =>
+                            true, // Vacuous truth, handled below.
+                        (Success, Some(_)) =>
+                            true, // The expectation has been checked already.
+                        (Failure, Some(_)) =>
+                            false, // The expectation has not been met.
+                        _ => false,
+                    };
                 }
             }
 
-            // Count all rows where we have an expectation, and the
-            // producer produced an artifact.
-            let have_expectations = self.results.iter().filter(|row| {
-                row.expectation.is_some() && ! row.results.is_empty()
-            }).count();
+            // If there are no expectations, we shouldn't count them
+            // as being matched, as this is a vacuous truth.  Counting
+            // them makes null implementations fare better than they
+            // should.
+            if ! self.results.iter().any(|row| row.expectation.is_some()) {
+                matched_expectations = false;
+            }
 
-            // Did it pass on all test vectors?
-            let all_good = good == have_expectations;
+            // Likewise if there are no results from this implementation.
+            if results == 0 {
+                matched_expectations = false;
+            }
 
-            summary.add(imp.clone(), good, bad, all_good);
+            summary.add(imp.clone(), successes, failures, errors, matched_expectations);
         }
     }
 }
@@ -294,11 +377,13 @@ pub struct Summary {
 }
 
 impl Summary {
-    fn add(&mut self, imp: Version, good: usize, bad: usize, all_good: bool) {
+    fn add(&mut self, imp: Version,
+           successes: usize, failures: usize, errors: usize,
+           matched_expectations: bool) {
         let e = self.score.entry(imp).or_default();
-        e.vector_good += good;
-        e.vector_bad += bad;
-        if all_good {
+        e.vector_good += successes;
+        e.vector_bad += failures + errors;
+        if matched_expectations {
             e.test_good += 1;
         } else {
             e.test_bad += 1;
