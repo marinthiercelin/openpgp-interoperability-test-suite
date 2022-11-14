@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
 };
 
 use sequoia_openpgp as openpgp;
@@ -103,6 +103,7 @@ pub trait ConsumerTest: Runnable<TestMatrix> {
             title: self.title(),
             slug: crate::templates::slug(&self.title()),
             description: self.description(),
+            tags: self.tags().into_iter().map(Into::into).collect(),
             artifacts: self.artifacts(),
             consumers: implementations.iter().map(|i| i.version().unwrap())
                 .collect(),
@@ -181,6 +182,7 @@ pub trait ProducerConsumerTest: Runnable<TestMatrix> {
             title: self.title(),
             slug: crate::templates::slug(&self.title()),
             description: self.description(),
+            tags: self.tags().into_iter().map(Into::into).collect(),
             artifacts: self.artifacts(),
             consumers: implementations.iter().map(|i| i.version().unwrap())
                 .collect(),
@@ -301,6 +303,7 @@ impl Artifact {
 pub struct TestMatrix {
     title: String,
     slug: String,
+    tags: BTreeSet<String>,
     description: String,
     artifacts: Vec<(String, Data)>,
     consumers: Vec<Version>,

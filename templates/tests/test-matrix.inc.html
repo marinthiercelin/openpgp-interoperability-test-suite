@@ -1,5 +1,10 @@
 <div class="test-result">
 <h3><a name="{{slug}}" href="#{{slug}}">{{title}}</a></h3>
+<ul class="tags">
+  {%- for tag in tags -%}
+  <li>{{tag}}</li>
+  {%- endfor -%}
+</ul>
 <div class="description">
   {{description | safe}}
 </div>

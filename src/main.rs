@@ -1,5 +1,6 @@
 use std::fs;
 use std::{
+    collections::BTreeSet,
     path::PathBuf,
 };
 
@@ -39,6 +40,10 @@ pub struct Cli {
     /// expression.
     #[structopt(long)]
     retain_tests: Option<String>,
+
+    /// Prunes the tests, retaining those with any of the given tags.
+    #[structopt(long)]
+    retain_tag: Vec<String>,
 
     /// Write results to a JSON file.
     #[structopt(long)]
@@ -100,6 +105,13 @@ fn main() -> anyhow::Result<()> {
                 r.is_match(&t.title())
                     || r.is_match(&t.description())
             });
+        }
+
+        if ! cli.retain_tag.is_empty() {
+            let tags: BTreeSet::<&str> =
+                cli.retain_tag.iter().map(|s| s.as_str()).collect();
+            plan.retain_tests(
+                |t| t.tags().intersection(&tags).next().is_some());
         }
 
         plan.run(&implementations[..])?

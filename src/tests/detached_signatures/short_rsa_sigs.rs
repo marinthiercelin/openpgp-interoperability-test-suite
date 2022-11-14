@@ -46,6 +46,10 @@ signature again, or omitting RFC 3447's length check.
         vec![("Certificate".into(), data::certificate("bob.pgp").into())]
     }
 
+    fn tags(&self) -> std::collections::BTreeSet<&'static str> {
+        ["verify-only"].iter().cloned().collect()
+    }
+
     fn run(&self, implementations: &[crate::Sop])
            -> Result<TestMatrix> {
         ConsumerTest::run(self, implementations)

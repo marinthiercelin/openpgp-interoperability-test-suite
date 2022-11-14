@@ -31,6 +31,15 @@ run the test suite:
     $ cp config.json.dist config.json
     $ cargo run -- --html-out results.html
 
+## Running a subset of the tests
+
+To run a subset of tests, use either `--retain-tests` which matches on
+title and description using regular expressions, or `--retain-tag`
+which selects only those tests with a given tag:
+
+    $ cargo run -- --html-out sha1.html --retain-tests sha1
+    $ cargo run -- --html-out verify-only.html --retain-tag verify-only
+
 # Configuration
 
 The backends are configured using a JSON file.  It contains a list of

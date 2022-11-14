@@ -1,3 +1,6 @@
+use std::{
+    collections::BTreeSet,
+};
 use rayon::prelude::*;
 
 use crate::{
@@ -13,6 +16,13 @@ pub trait Runnable<T>: Sync {
     fn artifacts(&self) -> Vec<(String, crate::Data)> {
         Vec::with_capacity(0)
     }
+
+    /// Returns the set of tags associated with this test or
+    /// benchmark.
+    fn tags(&self) -> BTreeSet<&'static str> {
+        BTreeSet::new()
+    }
+
     fn run(&self, implementations: &[crate::Sop]) -> Result<T>;
 }
 
