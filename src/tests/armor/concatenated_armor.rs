@@ -137,3 +137,132 @@ impl ConsumerTest for ConcatenatedArmorKeyring {
         pgp.verify_detached(artifact, self.message(), &self.signature()?)
     }
 }
+
+/// Explores whether concatenated ASCII Armor blocks are recognized as
+/// a sequence of signatures.
+pub struct ConcatenatedArmorSignatures {
+}
+
+impl ConcatenatedArmorSignatures {
+    pub fn new() -> Result<ConcatenatedArmorSignatures> {
+        Ok(ConcatenatedArmorSignatures {
+        })
+    }
+}
+
+impl crate::plan::Runnable<TestMatrix> for ConcatenatedArmorSignatures {
+    fn title(&self) -> String {
+        "Concatenated ASCII Armor Signatures".into()
+    }
+
+    fn description(&self) -> String {
+      format!(
+          "<p>Explores whether concatenated ASCII Armor blocks are \
+           recognized as sequence of signatures.  This is not \
+           mandated by OpenPGP, but some implementations may \
+           chose to support this.</p> \
+           \
+           <p>The signatures are from Bob and Ricarda over the \
+           string <code>{}</code>, but we only use Bob's cert to \
+           verify the signatures.</p>",
+          String::from_utf8(crate::tests::MESSAGE.into()).unwrap())
+    }
+
+    fn artifacts(&self) -> Vec<(String, Data)> {
+        vec![
+            ("Bob's Cert".into(), data::certificate("bob.pgp").into()),
+            ("Ricarda's Cert".into(), data::certificate("ricarda.pgp").into()),
+        ]
+    }
+
+    fn run(&self, implementations: &[crate::Sop])
+           -> Result<TestMatrix> {
+        ConsumerTest::run(self, implementations)
+    }
+}
+
+impl ConsumerTest for ConcatenatedArmorSignatures {
+    fn produce(&self) -> Result<Vec<(String, Data, Option<Expectation>)>> {
+        let make_sig = |cert| -> Result<Vec<u8>> {
+            let cert = openpgp::Cert::from_bytes(cert)?;
+            let signer =
+                cert.with_policy(crate::tests::P, None)?
+                .keys().secret().for_signing().next().unwrap()
+                .key().clone().into_keypair()?;
+
+            let mut buf = Vec::new();
+            {
+                let message = Message::new(&mut buf);
+                let message = Armorer::new(message)
+                    .kind(armor::Kind::Signature)
+                    .build()?;
+                let mut signer = Signer::new(message, signer)
+                    .detached()
+                    .build()?;
+                signer.write_all(crate::tests::MESSAGE)?;
+                signer.finalize()?;
+            }
+            Ok(buf)
+        };
+
+        let bob = make_sig(data::certificate("bob-secret.pgp"))?;
+        let ricarda = make_sig(data::certificate("ricarda-secret.pgp"))?;
+
+        const TEXT: &[u8] = b"TEXT\n";
+        Ok(vec![
+            ("[Bob]".into(),
+             {
+                 let v = bob.clone();
+                 v.into()
+             },
+             Some(Ok("Base case".into()))),
+
+            ("[Bob] [Ricarda]".into(),
+             {
+                 let mut v = bob.clone();
+                 v.extend_from_slice(&ricarda);
+                 v.into()
+             },
+             None),
+
+            ("[Ricarda] [Bob]".into(),
+             {
+                 let mut v = ricarda.clone();
+                 v.extend_from_slice(&bob);
+                 v.into()
+             },
+             None),
+
+            ("Text [Bob] Text [Ricarda] Text".into(),
+             {
+                 let mut v = TEXT.to_vec();
+                 v.extend_from_slice(&bob);
+                 v.extend_from_slice(TEXT);
+                 v.extend_from_slice(&ricarda);
+                 v.extend_from_slice(TEXT);
+                 v.into()
+             },
+             None),
+
+            ("Text [Ricarda] Text [Bob] Text".into(),
+             {
+                 let mut v = TEXT.to_vec();
+                 v.extend_from_slice(&ricarda);
+                 v.extend_from_slice(TEXT);
+                 v.extend_from_slice(&bob);
+                 v.extend_from_slice(TEXT);
+                 v.into()
+             },
+             None),
+        ])
+    }
+
+    fn consume(&self, _i: usize, pgp: &dyn OpenPGP, artifact: &[u8])
+               -> Result<Data> {
+        pgp.sop()
+            .verify()
+            .cert(data::certificate("bob.pgp"))
+            .signatures(artifact)
+            .data_raw(crate::tests::MESSAGE)
+    }
+}
