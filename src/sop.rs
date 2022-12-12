@@ -175,6 +175,18 @@ impl Sop {
         }
     }
 
+    /// Creates Inline-Signed Messages.
+    ///
+    /// Customize the operation using the builder [`InlineSign`].
+    pub fn inline_sign(&self) -> InlineSign {
+        InlineSign {
+            sop: self,
+            no_armor: false,
+            as_: Default::default(),
+            keys: Default::default(),
+        }
+    }
+
     /// Converts binary OpenPGP data to ASCII.
     ///
     /// Customize the operation using the builder [`Armor`].
@@ -895,6 +907,65 @@ impl<'s> InlineVerify<'s> {
         std::fs::remove_file(verifications_out)?;
 
         Ok((verifications_raw, o.stdout.into()))
+    }
+}
+
+/// Builder for [`Sop::inline_sign`].
+pub struct InlineSign<'s> {
+    sop: &'s Sop,
+    no_armor: bool,
+    as_: SignAs,
+    keys: Vec<&'s [u8]>,
+}
+
+impl<'s> InlineSign<'s> {
+    /// Disables armor encoding.
+    pub fn no_armor(mut self) -> Self {
+        self.no_armor = true;
+        self
+    }
+
+    /// Sets signature mode.
+    pub fn as_(mut self, as_: SignAs) -> Self {
+        self.as_ = as_;
+        self
+    }
+
+    /// Adds the signer key.
+    pub fn key(mut self, key: &'s [u8]) -> Self {
+        self.keys.push(key);
+        self
+    }
+
+    /// Adds the signer keys.
+    pub fn keys(mut self, keys: impl IntoIterator<Item = &'s [u8]>)
+                -> Self {
+        keys.into_iter().for_each(|k| self.keys.push(k));
+        self
+    }
+
+    /// Signs data.
+    pub fn data(self, data: &[u8]) -> Result<Data> {
+        let mut tmp = Vec::new();
+        let mut args = vec!["inline-sign".to_string()];
+        if self.no_armor {
+            args.push("--no-armor".into());
+        }
+
+        if let SignAs::Binary = self.as_ {
+            // This is the default.  Omit it as a courtesy to
+            // implementations that do not implement this parameter.
+        } else {
+            args.push("--as".into());
+            args.push(self.as_.to_string());
+        }
+
+        for key in self.keys {
+            args.push(self.sop.stash_bytes(key, &mut tmp)?);
+        }
+
+        let o = self.sop.run(&args[..], data)?;
+        Ok(o.stdout.into())
     }
 }
 
