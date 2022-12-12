@@ -21,6 +21,7 @@ pub mod templates;
 mod asymmetric_encryption;
 mod symmetric_encryption;
 mod detached_signatures;
+mod inline_signatures;
 mod hashes;
 mod compression;
 mod key_generation;
@@ -461,6 +462,7 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
     asymmetric_encryption::schedule(plan)?;
     symmetric_encryption::schedule(plan)?;
     detached_signatures::schedule(plan)?;
+    inline_signatures::schedule(plan)?;
     hashes::schedule(plan)?;
     compression::schedule(plan)?;
     key_generation::schedule(plan)?;
