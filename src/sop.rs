@@ -1116,6 +1116,7 @@ impl std::str::FromStr for Verification {
 pub enum SignAs {
     Binary,
     Text,
+    Clearsigned,
 }
 
 impl Default for SignAs {
@@ -1130,6 +1131,7 @@ impl std::str::FromStr for SignAs {
         match s {
             "binary" => Ok(SignAs::Binary),
             "text" => Ok(SignAs::Text),
+            "clearsigned" => Ok(SignAs::Clearsigned),
             _ => Err(anyhow::anyhow!(
                 "{:?}, expected one of {{binary|text}}", s)),
         }
@@ -1141,6 +1143,7 @@ impl fmt::Display for SignAs {
         match self {
             SignAs::Binary => f.write_str("binary"),
             SignAs::Text => f.write_str("text"),
+            SignAs::Clearsigned => f.write_str("clearsigned"),
         }
     }
 }

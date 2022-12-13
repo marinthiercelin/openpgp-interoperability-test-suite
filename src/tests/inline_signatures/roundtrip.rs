@@ -13,6 +13,7 @@ use crate::{
     Data,
     OpenPGP,
     Result,
+    sop::SignAs,
     tests::{
         Expectation,
         TestMatrix,
@@ -27,6 +28,7 @@ pub struct InlineSignVerifyRoundtrip {
     description: String,
     signer_key: Vec<u8>,
     signer_cert: Vec<u8>,
+    cleartext: bool,
     recipient_key: Option<Vec<u8>>,
     recipient_cert: Option<Vec<u8>>,
     expectation: Option<Expectation>,
@@ -48,8 +50,27 @@ impl InlineSignVerifyRoundtrip {
             description: description.into(),
             signer_cert: signer_cert.into(),
             signer_key: signer_key.into(),
+            cleartext: false,
             recipient_key: recipient_key.into().map(|c| c.into()),
             recipient_cert: recipient_cert.into().map(|c| c.into()),
+            expectation,
+        })
+    }
+
+    pub fn cleartext(title: &str, description: &str,
+                     signer_key: &[u8],
+                     signer_cert: &[u8],
+                     expectation: Option<Expectation>)
+                     -> Result<InlineSignVerifyRoundtrip>
+    {
+        Ok(InlineSignVerifyRoundtrip {
+            title: title.into(),
+            description: description.into(),
+            signer_cert: signer_cert.into(),
+            signer_key: signer_key.into(),
+            cleartext: true,
+            recipient_key: None,
+            recipient_cert: None,
             expectation,
         })
     }
@@ -86,6 +107,9 @@ impl crate::plan::Runnable<TestMatrix> for InlineSignVerifyRoundtrip {
 impl ProducerConsumerTest for InlineSignVerifyRoundtrip {
     fn produce(&self, pgp: &dyn OpenPGP)
                -> Result<Data> {
+        assert_eq!(self.recipient_cert.is_none(), self.recipient_key.is_none());
+        assert!(!self.cleartext || self.recipient_cert.is_none());
+
         if let Some(recipient) = &self.recipient_cert {
             pgp.sop()
                 .encrypt()
@@ -95,14 +119,33 @@ impl ProducerConsumerTest for InlineSignVerifyRoundtrip {
         } else {
             pgp.sop()
                 .inline_sign()
+                .as_(if self.cleartext {
+                    SignAs::Clearsigned
+                } else {
+                    SignAs::Binary
+                })
                 .key(&self.signer_key)
                 .data(crate::tests::MESSAGE)
         }
     }
 
     fn check_producer(&self, artifact: Data) -> Result<Data> {
+        /// Given a verification result, produce the signature type.
+        fn typ(r: &VerificationResult) -> SignatureType {
+            use VerificationError::*;
+            match r {
+                Ok(v) => v.sig.typ(),
+                Err(MalformedSignature { sig, .. }) => sig.typ(),
+                Err(MissingKey { sig, .. }) => sig.typ(),
+                Err(UnboundKey { sig, .. }) => sig.typ(),
+                Err(BadKey { sig, .. }) => sig.typ(),
+                Err(BadSignature { sig, .. }) => sig.typ(),
+            }
+        }
+
         struct Helper {
             key: Option<Cert>,
+            cleartext: bool,
         }
         impl VerificationHelper for Helper {
             fn get_certs(&mut self, _ids: &[openpgp::KeyHandle])
@@ -125,6 +168,13 @@ impl ProducerConsumerTest for InlineSignVerifyRoundtrip {
                             || (i == 0 && ! self.key.is_some()) => (),
                         MessageLayer::SignatureGroup { ref results } => {
                             saw_signature |= ! results.is_empty();
+                            if self.cleartext && ! results.iter()
+                                .all(|r| typ(r) == SignatureType::Text)
+                            {
+                                return Err(anyhow::anyhow!(
+                                    "Cleartext signature framework must use \
+                                     text signatures"));
+                            }
                         },
                         _ => return Err(anyhow::anyhow!(
                             "Unexpected message structure")),
@@ -161,13 +211,27 @@ impl ProducerConsumerTest for InlineSignVerifyRoundtrip {
         let h = Helper {
             key: self.recipient_key.as_ref()
                 .map(|k| Cert::from_bytes(k).unwrap()),
+            cleartext: self.cleartext,
         };
-        let mut v = DecryptorBuilder::from_bytes(&artifact[..])?
-            .with_policy(P, None, h)?;
 
         let mut content = Vec::new();
-        v.read_to_end(&mut content)?;
-        drop(v);
+        if self.recipient_key.is_some() {
+            let mut v = DecryptorBuilder::from_bytes(&artifact[..])?
+                .with_policy(P, None, h)?;
+            v.read_to_end(&mut content)?;
+        } else {
+            let mut v = VerifierBuilder::from_bytes(&artifact[..])?
+                .with_policy(P, None, h)?;
+            v.read_to_end(&mut content)?;
+        }
+
+        if self.cleartext {
+            // Drop trailing whitespace.
+            while content[content.len() - 1].is_ascii_whitespace() {
+                content.pop();
+            }
+        }
+
         if &content[..] != crate::tests::MESSAGE {
             return Err(anyhow::anyhow!(
                 "Bad message, expected {:?}, got {:?}",
@@ -196,6 +260,14 @@ impl ProducerConsumerTest for InlineSignVerifyRoundtrip {
                     .cert(&self.signer_cert)
                     .message_raw(artifact)?
             };
+
+        let mut message = Vec::from(message);
+        if self.cleartext {
+            // Drop trailing whitespace.
+            while message[message.len() - 1].is_ascii_whitespace() {
+                message.pop();
+            }
+        }
 
         if &message[..] != crate::tests::MESSAGE {
             return Err(anyhow::anyhow!(

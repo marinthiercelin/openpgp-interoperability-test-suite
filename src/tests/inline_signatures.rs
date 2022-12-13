@@ -90,5 +90,14 @@ pub fn schedule(plan: &mut TestPlan) -> Result<()> {
             data::certificate("bob.pgp"),
             None)?));
 
+    plan.add(Box::new(
+        roundtrip::InlineSignVerifyRoundtrip::cleartext(
+            "Cleartext Signature Sign-Verify roundtrip with key 'Bob'",
+            "Cleartext Signature Sign-Verify roundtrip using the 'Bob' key from \
+             draft-bre-openpgp-samples-00.",
+            data::certificate("bob-secret.pgp"),
+            data::certificate("bob.pgp"),
+            Some(Ok("Interoperability concern.".into())))?));
+
     Ok(())
 }
